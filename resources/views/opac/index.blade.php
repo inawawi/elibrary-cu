@@ -20,170 +20,146 @@
         }"
         @mouseenter="paused = true"
         @mouseleave="paused = false"
-        class="relative overflow-hidden min-h-[500px] lg:min-h-[560px] flex flex-col justify-between pt-10 pb-14 border-b border-slate-800 bg-slate-950 text-white">
+        class="relative overflow-hidden pt-16 pb-20 border-b border-slate-800 bg-slate-950 text-white">
 
     <!-- Background Image Slideshow Layer -->
     <div class="absolute inset-0 z-0">
         @foreach($heroSlides as $index => $slide)
             <div x-show="active === {{ $index }}"
                  @if($index !== 0) x-cloak @endif
-                 x-transition:enter="transition-all ease-out duration-1000"
+                 x-transition:enter="transition-opacity ease-in-out duration-1000"
                  x-transition:enter-start="opacity-0 scale-105"
                  x-transition:enter-end="opacity-100 scale-100"
-                 x-transition:leave="transition-all ease-in duration-1000"
+                 x-transition:leave="transition-opacity ease-in-out duration-1000"
                  x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-100"
                  class="absolute inset-0 w-full h-full">
-                <img src="{{ $slide['img'] }}" alt="{{ $slide['title'] }}" class="w-full h-full object-cover object-center">
+                <img src="{{ $slide['img'] }}" alt="{{ $slide['title'] }}" class="w-full h-full object-cover">
             </div>
         @endforeach
 
         <!-- Soft Balanced Overlay: Makes photos bright & vibrant while text stays readable -->
-        <div class="absolute inset-0 bg-slate-950/20"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-transparent to-slate-950/85"></div>
+        <div class="absolute inset-0 bg-slate-950/35"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-slate-950/45"></div>
     </div>
 
-    <!-- Top: Compact & Elegant Search Hub (Leaves Center of Image Clear) -->
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full text-center pt-2">
-        <!-- University Badge -->
-        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900/60 border border-white/20 backdrop-blur-md text-sky-300 text-xs font-semibold mb-3 shadow-lg">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Perpustakaan Digital Universitas Siber Indonesia</span>
+    <!-- Foreground Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="text-center max-w-3xl mx-auto mb-8">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-sky-300 text-xs font-bold mb-4 shadow-lg">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Koleksi Pustaka Digital Terbaru & Terlengkap</span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.15] mb-5 drop-shadow-lg">
+                Jelajahi Ribuan <span class="bg-gradient-to-r from-sky-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent">Buku & Literatur</span> Ilmiah
+            </h1>
+            <p class="text-base sm:text-lg text-slate-200 leading-relaxed font-normal max-w-2xl mx-auto drop-shadow-md">
+                Pusat referensi dan katalog perpustakaan digital Universitas Siber Indonesia. Temukan buku teks, karya ilmiah, jurnal, dan modul akademik dengan mudah dan cepat.
+            </p>
         </div>
 
-        <!-- Punchy, Clear Headline -->
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 drop-shadow-lg leading-tight">
-            Jelajahi <span class="bg-gradient-to-r from-sky-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent">Koleksi Pustaka & Literatur</span> Digital
-        </h1>
-        <p class="text-xs sm:text-sm text-slate-200 max-w-xl mx-auto mb-5 drop-shadow font-normal">
-            Akses ribuan judul buku teks, karya ilmiah, jurnal akademik, dan repositori riset sivitas akademika.
-        </p>
-
-        <!-- Sleek Search Box -->
-        <div class="max-w-2xl mx-auto">
+        <!-- Big Search Box -->
+        <div class="max-w-3xl mx-auto mb-8">
             <form action="{{ route('opac.search') }}" method="GET" class="relative group">
-                <div class="relative flex items-center bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl shadow-black/40 border border-white/30 dark:border-slate-700/80 p-1.5 focus-within:ring-2 focus-within:ring-sky-400 transition-all">
-                    <div class="pl-3.5 text-slate-400">
-                        <i data-lucide="search" class="w-5 h-5"></i>
+                <div class="relative flex items-center bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl shadow-black/50 border-2 border-white/30 dark:border-slate-700/80 group-focus-within:border-sky-400 transition-all p-2">
+                    <div class="pl-4 text-slate-400 dark:text-slate-500">
+                        <i data-lucide="search" class="w-6 h-6"></i>
                     </div>
                     <input type="text"
                            name="q"
-                           placeholder="Cari judul buku, pengarang, subjek, atau nomor ISBN..."
-                           class="w-full px-3 py-2 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none text-sm font-medium">
-                    <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-500 hover:to-sky-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex-shrink-0">
+                           placeholder="Cari judul buku, nama pengarang, subjek, atau nomor ISBN..."
+                           class="w-full px-4 py-3 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none text-base font-medium"
+                           autofocus>
+                    <button type="submit" class="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-500 hover:to-sky-500 text-white font-bold rounded-xl shadow-lg shadow-sky-500/30 transition-all flex-shrink-0">
                         <span>Cari</span>
-                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </button>
                 </div>
             </form>
 
             <!-- Popular Quick Tags -->
-            <div class="flex items-center flex-wrap gap-1.5 mt-3 justify-center">
-                <span class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mr-1">Topik Populer:</span>
+            <div class="flex items-center flex-wrap gap-2 mt-4 justify-center">
+                <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Topik Populer:</span>
                 @foreach($popularTopics->take(5) as $top)
-                    <a href="{{ route('opac.search', ['topic' => $top->topic_id]) }}" class="px-2.5 py-0.5 rounded-lg bg-slate-900/60 hover:bg-slate-900/90 text-[11px] font-medium text-slate-200 hover:text-white backdrop-blur-sm border border-white/15 hover:border-white/40 transition-all">
+                    <a href="{{ route('opac.search', ['topic' => $top->topic_id]) }}" class="px-3.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-medium text-white backdrop-blur border border-white/15 hover:border-white/40 transition-all">
                         {{ $top->topic }} ({{ $top->biblios_count }})
                     </a>
                 @endforeach
             </div>
         </div>
-    </div>
 
-    <!-- Center Space: Unobstructed View of Campus & Facility Background Photos -->
-
-    <!-- Bottom: Interactive Facility Promotion Banner -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-8">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 px-5 rounded-2xl bg-slate-950/75 backdrop-blur-md border border-white/15 shadow-2xl">
-            <!-- Facility Info (Left) -->
+        <!-- Slide Info & Indicator Badge -->
+        <div class="max-w-2xl mx-auto my-6 p-3 px-5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 flex items-center justify-between gap-4 shadow-xl">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center flex-shrink-0 border border-sky-400/30">
-                    <i data-lucide="building-2" class="w-4 h-4"></i>
-                </div>
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping flex-shrink-0"></span>
                 <div class="truncate text-left">
-                    <div class="flex items-center gap-2">
-                        <span class="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 text-[10px] font-bold uppercase tracking-wider border border-sky-400/30" x-text="slides[active] ? slides[active].tag : 'Fasilitas Kampus'"></span>
-                        <span class="text-[11px] text-slate-400 hidden md:inline">Sarana & Prasarana Cyber University</span>
-                    </div>
-                    <h3 class="text-xs sm:text-sm font-bold text-white truncate mt-0.5" x-text="slides[active] ? slides[active].title : ''"></h3>
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-sky-400 block" x-text="slides[active] ? slides[active].tag : ''"></span>
+                    <span class="text-xs font-semibold text-white truncate block" x-text="slides[active] ? slides[active].title : ''"></span>
                 </div>
             </div>
 
-            <!-- Slide Navigation & Counter (Right) -->
-            <div class="flex items-center gap-2.5 flex-shrink-0">
-                <!-- Slide Counter -->
-                <div class="text-[11px] font-bold text-sky-300 font-mono tracking-wider px-1">
-                    <span x-text="String(active + 1).padStart(2, '0')"></span>
-                    <span class="text-slate-500">/</span>
-                    <span x-text="String(slides.length).padStart(2, '0')" class="text-slate-400"></span>
-                </div>
-
-                <!-- Prev Button -->
-                <button @click="active = (active - 1 + slides.length) % slides.length" title="Foto Sebelumnya" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+            <!-- Slide Indicator Dots & Prev/Next -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button @click="active = (active - 1 + slides.length) % slides.length" title="Sebelumnya" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
                     <i data-lucide="chevron-left" class="w-4 h-4"></i>
                 </button>
-
-                <!-- Dots -->
-                <div class="flex items-center gap-1.5 px-0.5">
+                <div class="flex items-center gap-1.5 px-1">
                     <template x-for="(slide, index) in slides" :key="index">
                         <button @click="active = index"
-                                :class="active === index ? 'w-5 bg-sky-400' : 'w-1.5 bg-white/30 hover:bg-white/60'"
-                                class="h-1.5 rounded-full transition-all duration-300"></button>
+                                :class="active === index ? 'w-5 bg-sky-400' : 'w-2 bg-white/30 hover:bg-white/60'"
+                                class="h-2 rounded-full transition-all duration-300"></button>
                     </template>
                 </div>
-
-                <!-- Next Button -->
-                <button @click="active = (active + 1) % slides.length" title="Foto Berikutnya" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                <button @click="active = (active + 1) % slides.length" title="Berikutnya" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
                     <i data-lucide="chevron-right" class="w-4 h-4"></i>
                 </button>
             </div>
         </div>
+
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-2">
+            <div class="p-5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-4 hover:border-sky-400/40 transition-colors">
+                <div class="w-12 h-12 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center flex-shrink-0 border border-sky-400/30">
+                    <i data-lucide="book" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-white">{{ number_format($stats['total_books']) }}</div>
+                    <div class="text-xs text-slate-300 font-medium">Judul Buku</div>
+                </div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-4 hover:border-indigo-400/40 transition-colors">
+                <div class="w-12 h-12 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0 border border-indigo-400/30">
+                    <i data-lucide="copy" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-white">{{ number_format($stats['total_items']) }}</div>
+                    <div class="text-xs text-slate-300 font-medium">Eksemplar Fisik</div>
+                </div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-4 hover:border-emerald-400/40 transition-colors">
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-400/30">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-white">{{ number_format($stats['total_members']) }}</div>
+                    <div class="text-xs text-slate-300 font-medium">Anggota Terdaftar</div>
+                </div>
+            </div>
+
+            <div class="p-5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-4 hover:border-amber-400/40 transition-colors">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 border border-amber-400/30">
+                    <i data-lucide="feather" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-black text-white">{{ number_format($stats['total_authors']) }}</div>
+                    <div class="text-xs text-slate-300 font-medium">Pengarang / Penulis</div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
-
-<!-- Floating Key Metrics Cards Ribbon (Placed right below the slider) -->
-<div class="relative -mt-7 sm:-mt-8 z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-900/5 dark:shadow-black/40 flex items-center gap-3.5 hover:border-sky-400/50 hover:-translate-y-1 transition-all duration-300">
-            <div class="w-11 h-11 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 border border-sky-200 dark:border-sky-800">
-                <i data-lucide="book" class="w-5 h-5"></i>
-            </div>
-            <div>
-                <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{{ number_format($stats['total_books']) }}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Judul Buku</div>
-            </div>
-        </div>
-
-        <div class="p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-900/5 dark:shadow-black/40 flex items-center gap-3.5 hover:border-indigo-400/50 hover:-translate-y-1 transition-all duration-300">
-            <div class="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 border border-indigo-200 dark:border-indigo-800">
-                <i data-lucide="copy" class="w-5 h-5"></i>
-            </div>
-            <div>
-                <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{{ number_format($stats['total_items']) }}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Eksemplar Fisik</div>
-            </div>
-        </div>
-
-        <div class="p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-900/5 dark:shadow-black/40 flex items-center gap-3.5 hover:border-emerald-400/50 hover:-translate-y-1 transition-all duration-300">
-            <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-200 dark:border-emerald-800">
-                <i data-lucide="users" class="w-5 h-5"></i>
-            </div>
-            <div>
-                <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{{ number_format($stats['total_members']) }}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Anggota Terdaftar</div>
-            </div>
-        </div>
-
-        <div class="p-4 sm:p-5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-900/5 dark:shadow-black/40 flex items-center gap-3.5 hover:border-amber-400/50 hover:-translate-y-1 transition-all duration-300">
-            <div class="w-11 h-11 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 border border-amber-200 dark:border-amber-800">
-                <i data-lucide="feather" class="w-5 h-5"></i>
-            </div>
-            <div>
-                <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">{{ number_format($stats['total_authors']) }}</div>
-                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">Pengarang / Penulis</div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Featured Books (Koleksi Pilihan) -->
 <section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
