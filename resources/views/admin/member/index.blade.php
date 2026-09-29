@@ -23,10 +23,17 @@
                 @endforeach
             </select>
 
+            <select name="status" class="px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
+                <option value="">Semua Status</option>
+                <option value="active" {{ ($status ?? '') == 'active' ? 'selected' : '' }}>Aktif</option>
+                <option value="expired" {{ ($status ?? '') == 'expired' ? 'selected' : '' }}>Kedaluwarsa</option>
+                <option value="inactive" {{ ($status ?? '') == 'inactive' ? 'selected' : '' }}>Non-Aktif</option>
+            </select>
+
             <button type="submit" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-colors">
                 Filter
             </button>
-            @if($search || $typeId)
+            @if($search || $typeId || ($status ?? ''))
                 <a href="{{ route('admin.member.index') }}" class="text-xs text-rose-500 hover:underline">Reset</a>
             @endif
         </form>
@@ -68,12 +75,23 @@
                                 </span>
                             </td>
                             <td class="py-3 px-6">
-                                <div>{{ $m->expire_date ? \Carbon\Carbon::parse($m->expire_date)->format('d/m/Y') : '-' }}</div>
-                                @if($m->isExpired())
-                                    <span class="text-[10px] text-rose-600 font-bold">Kedaluwarsa</span>
-                                @else
-                                    <span class="text-[10px] text-emerald-600 font-semibold">Aktif</span>
-                                @endif
+                                <div class="text-xs">{{ $m->expire_date ? \Carbon\Carbon::parse($m->expire_date)->format('d/m/Y') : '-' }}</div>
+                                <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                    @if($m->is_pending == 1)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300">
+                                            Non-Aktif
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
+                                            Aktif
+                                        </span>
+                                    @endif
+                                    @if($m->isExpired())
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300" title="Masa berlaku kartu telah habis">
+                                            Kedaluwarsa
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="py-3 px-6 text-center">
                                 @if($m->activeLoans->isNotEmpty())
@@ -85,7 +103,20 @@
                                 @endif
                             </td>
                             <td class="py-3 px-6 text-right">
-                                <div class="flex items-center justify-end gap-2">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <form action="{{ route('admin.member.toggle-status', $m->member_id) }}" method="POST" onsubmit="return confirm('{{ $m->is_pending == 1 ? 'Aktifkan kembali keanggotaan ini?' : 'Nonaktifkan keanggotaan ini? (Anggota tidak dapat meminjam buku)' }}')">
+                                        @csrf
+                                        @method('PATCH')
+                                        @if($m->is_pending == 1)
+                                            <button type="submit" class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors" title="Aktifkan Anggota">
+                                                <i data-lucide="user-check" class="w-4 h-4"></i>
+                                            </button>
+                                        @else
+                                            <button type="submit" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/50 dark:hover:text-rose-400 transition-colors" title="Nonaktifkan Anggota">
+                                                <i data-lucide="user-x" class="w-4 h-4"></i>
+                                            </button>
+                                        @endif
+                                    </form>
                                     <a href="{{ route('admin.circulation.index', ['member_id' => $m->member_id]) }}" class="p-2 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 hover:bg-sky-100 transition-colors" title="Pinjam/Kembali">
                                         <i data-lucide="repeat" class="w-4 h-4"></i>
                                     </a>

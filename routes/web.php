@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CirculationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\MemberController;
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\MemberAreaController;
 use App\Http\Controllers\OpacController;
 use Illuminate\Support\Facades\Route;
@@ -70,6 +71,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/member/{id}/edit', [MemberController::class, 'edit'])->name('admin.member.edit');
         Route::put('/member/{id}', [MemberController::class, 'update'])->name('admin.member.update');
         Route::get('/member/{id}/card', [MemberController::class, 'showCard'])->name('admin.member.card');
+        Route::patch('/member/{id}/toggle-status', [MemberController::class, 'toggleStatus'])->name('admin.member.toggle-status');
         Route::delete('/member/{id}', [MemberController::class, 'destroy'])->name('admin.member.destroy');
 
         // Master Data
@@ -84,5 +86,13 @@ Route::prefix('admin')->group(function () {
         Route::get('/master/topics', [MasterDataController::class, 'topics'])->name('admin.master.topics');
         Route::post('/master/topics', [MasterDataController::class, 'storeTopic'])->name('admin.master.topics.store');
         Route::delete('/master/topics/{id}', [MasterDataController::class, 'deleteTopic'])->name('admin.master.topics.delete');
+
+        // Pengaturan & Aturan Perpustakaan
+        Route::get('/settings', [SettingController::class, 'index'])->name('admin.settings.index');
+        Route::put('/settings/member-types/{id}', [SettingController::class, 'updateMemberType'])->name('admin.settings.member-type.update');
+        Route::post('/settings/member-types', [SettingController::class, 'storeMemberType'])->name('admin.settings.member-type.store');
+        Route::delete('/settings/member-types/{id}', [SettingController::class, 'deleteMemberType'])->name('admin.settings.member-type.delete');
+        Route::post('/settings/announcement', [SettingController::class, 'updateAnnouncement'])->name('admin.settings.announcement.update');
+        Route::post('/settings/general', [SettingController::class, 'updateGeneral'])->name('admin.settings.general.update');
     });
 });

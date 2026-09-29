@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Models\Setting;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -95,7 +97,21 @@ class MemberAreaController extends Controller
             ->take(10)
             ->get();
 
-        return view('member.dashboard', compact('member', 'activeLoans', 'loanHistories'));
+        $announcement = Setting::get('member_announcement');
+        if ($announcement && !empty($announcement['is_active'])) {
+            $today = Carbon::today()->toDateString();
+            if (!empty($announcement['start_date']) && $today < $announcement['start_date']) {
+                $announcement = null;
+            } elseif (!empty($announcement['end_date']) && $today > $announcement['end_date']) {
+                $announcement = null;
+            }
+        } else {
+            $announcement = null;
+        }
+
+        $libraryRules = Setting::get('library_rules');
+
+        return view('member.dashboard', compact('member', 'activeLoans', 'loanHistories', 'announcement', 'libraryRules'));
     }
 
     public function logout(Request $request)

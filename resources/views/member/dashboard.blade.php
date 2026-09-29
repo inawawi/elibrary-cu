@@ -21,6 +21,50 @@
 </div>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Announcement / Broadcast Banner -->
+    @if(!empty($announcement))
+        @php
+            $aType = $announcement['type'] ?? 'info';
+            $bannerColors = match($aType) {
+                'warning' => 'bg-amber-500/10 border-amber-400/40 text-amber-900 dark:text-amber-200',
+                'danger' => 'bg-rose-500/10 border-rose-400/40 text-rose-900 dark:text-rose-200',
+                'success' => 'bg-emerald-500/10 border-emerald-400/40 text-emerald-900 dark:text-emerald-200',
+                default => 'bg-sky-500/10 border-sky-400/40 text-sky-900 dark:text-sky-200',
+            };
+            $icon = match($aType) {
+                'warning' => 'alert-triangle',
+                'danger' => 'alert-circle',
+                'success' => 'check-circle-2',
+                default => 'megaphone',
+            };
+        @endphp
+        <div class="mb-8 rounded-3xl border p-6 shadow-sm relative overflow-hidden {{ $bannerColors }}">
+            <div class="flex items-start gap-4">
+                <div class="p-3 rounded-2xl bg-white/70 dark:bg-slate-900/70 shadow-sm flex-shrink-0">
+                    <i data-lucide="{{ $icon }}" class="w-6 h-6"></i>
+                </div>
+                <div class="flex-grow min-w-0">
+                    <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                        <h3 class="font-black text-base tracking-tight leading-snug">{{ $announcement['title'] }}</h3>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/80 dark:bg-slate-800/80 uppercase">
+                            Informasi Perpustakaan
+                        </span>
+                    </div>
+                    <p class="text-xs sm:text-sm leading-relaxed opacity-95 whitespace-pre-line">{{ $announcement['content'] }}</p>
+                    <div class="mt-3 flex items-center justify-between text-[11px] opacity-75 pt-2.5 border-t border-current/15">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                            Pemberitahuan Resmi Perpustakaan Universitas Siber Indonesia
+                        </span>
+                        @if(!empty($announcement['updated_at']))
+                            <span>{{ $announcement['updated_at'] }}</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Left: Digital Member Card -->
         <div class="lg:col-span-5 space-y-6">
@@ -61,8 +105,10 @@
                     </div>
                     <div>
                         <span class="text-white/60 block text-[9px] uppercase tracking-wider">Status</span>
-                        @if($member->isExpired())
-                            <span class="px-2 py-0.5 rounded bg-rose-500/80 text-[10px] font-bold">Kedaluwarsa</span>
+                        @if($member->is_pending == 1)
+                            <span class="px-2 py-0.5 rounded bg-rose-500/80 text-[10px] font-bold">Non-Aktif</span>
+                        @elseif($member->isExpired())
+                            <span class="px-2 py-0.5 rounded bg-amber-500/80 text-[10px] font-bold">Kedaluwarsa</span>
                         @else
                             <span class="px-2 py-0.5 rounded bg-emerald-500/80 text-[10px] font-bold">Aktif</span>
                         @endif
@@ -74,7 +120,7 @@
             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
                 <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
                     <i data-lucide="user-check" class="w-4 h-4 text-brand-500"></i>
-                    Informasi Biodata
+                    Informasi & Ketentuan Pinjam
                 </h3>
                 <div class="space-y-3 text-xs">
                     <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
@@ -86,15 +132,36 @@
                         <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $member->member_phone ?: '-' }}</span>
                     </div>
                     <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
-                        <span class="text-slate-400">Terdaftar Sejak:</span>
-                        <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $member->register_date ? \Carbon\Carbon::parse($member->register_date)->format('d/m/Y') : '-' }}</span>
-                    </div>
-                    <div class="flex justify-between py-2">
                         <span class="text-slate-400">Maks. Peminjaman:</span>
                         <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $member->memberType?->loan_limit ?? 3 }} Buku</span>
                     </div>
+                    <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+                        <span class="text-slate-400">Durasi Pinjam:</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $member->memberType?->loan_periode ?? 7 }} Hari / Peminjaman</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+                        <span class="text-slate-400">Denda Keterlambatan:</span>
+                        <span class="font-bold text-rose-600 dark:text-rose-400">Rp {{ number_format($member->memberType?->fine_each_day ?? 1000, 0, ',', '.') }} / hari / buku</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-slate-400">Toleransi Keterlambatan:</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $member->memberType?->grace_periode ?? 0 }} Hari</span>
+                    </div>
                 </div>
             </div>
+
+            <!-- Tata Tertib Card -->
+            @if(!empty($libraryRules))
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i data-lucide="scroll-text" class="w-4 h-4 text-brand-500"></i>
+                    Tata Tertib Perpustakaan
+                </h3>
+                <div class="text-xs text-slate-600 dark:text-slate-400 whitespace-pre-line leading-relaxed">
+{{ $libraryRules }}
+                </div>
+            </div>
+            @endif
         </div>
 
         <!-- Right: Active Loans & History -->

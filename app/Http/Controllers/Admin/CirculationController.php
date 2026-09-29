@@ -26,7 +26,10 @@ class CirculationController extends Controller
             if ($member) {
                 $activeLoans = $member->activeLoans;
 
-                if ($member->isExpired()) {
+                if ($member->is_pending == 1) {
+                    $canBorrow = false;
+                    $borrowBlockReason = 'Status keanggotaan sedang dinonaktifkan (Suspen). Hubungi petugas perpustakaan.';
+                } elseif ($member->isExpired()) {
                     $canBorrow = false;
                     $borrowBlockReason = 'Masa berlaku keanggotaan telah habis (' . $member->expire_date . ').';
                 }
@@ -51,6 +54,14 @@ class CirculationController extends Controller
 
         $member = Member::with('memberType')->where('member_id', $request->member_id)->firstOrFail();
         $item = Item::with(['biblio', 'activeLoan'])->where('item_code', $request->item_code)->firstOrFail();
+
+        if ($member->is_pending == 1) {
+            return back()->with('error', 'Peminjaman ditolak: Status keanggotaan "' . $member->member_name . '" sedang dinonaktifkan.');
+        }
+
+        if ($member->isExpired()) {
+            return back()->with('error', 'Peminjaman ditolak: Masa berlaku keanggotaan telah habis (' . $member->expire_date . ').');
+        }
 
         if ($item->activeLoan) {
             return back()->with('error', 'Buku dengan kode eksemplar "' . $item->item_code . '" sedang dipinjam oleh anggota lain!');

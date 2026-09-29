@@ -149,6 +149,17 @@
                 </nav>
             </div>
 
+            <!-- Settings -->
+            <div>
+                <span class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Konfigurasi</span>
+                <nav class="space-y-1">
+                    <a href="{{ route('admin.settings.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.settings*') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                        <span>Pengaturan Perpustakaan</span>
+                    </a>
+                </nav>
+            </div>
+
             <!-- Link to OPAC -->
             <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
                 <a href="{{ route('opac.index') }}" target="_blank" class="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-brand-600 dark:text-sky-400 hover:underline">

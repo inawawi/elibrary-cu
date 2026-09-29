@@ -15,7 +15,7 @@ class MemberController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
-        $typeId = $request->input('type_id');
+        $status = $request->input('status');
 
         $query = Member::with(['memberType', 'activeLoans']);
 
@@ -32,10 +32,24 @@ class MemberController extends Controller
             $query->where('member_type_id', $typeId);
         }
 
+        if ($status === 'active') {
+            $query->where('is_pending', 0)
+                  ->where(function ($q) {
+                      $q->whereNull('expire_date')
+                        ->orWhere('expire_date', '>=', Carbon::today()->toDateString());
+                  });
+        } elseif ($status === 'expired') {
+            $query->where('is_pending', 0)
+                  ->whereNotNull('expire_date')
+                  ->where('expire_date', '<', Carbon::today()->toDateString());
+        } elseif ($status === 'inactive') {
+            $query->where('is_pending', 1);
+        }
+
         $members = $query->orderBy('member_id', 'desc')->paginate(15)->withQueryString();
         $memberTypes = MemberType::all();
 
-        return view('admin.member.index', compact('members', 'search', 'typeId', 'memberTypes'));
+        return view('admin.member.index', compact('members', 'search', 'typeId', 'status', 'memberTypes'));
     }
 
     public function create()
@@ -140,6 +154,19 @@ class MemberController extends Controller
     {
         $member = Member::with('memberType')->findOrFail($id);
         return view('admin.member.card', compact('member'));
+    }
+
+    public function toggleStatus($id)
+    {
+        $member = Member::findOrFail($id);
+        $newPending = $member->is_pending == 1 ? 0 : 1;
+        $member->update([
+            'is_pending' => $newPending,
+            'last_update' => Carbon::now(),
+        ]);
+
+        $statusLabel = $newPending == 0 ? 'diaktifkan kembali' : 'dinonaktifkan';
+        return back()->with('success', "Status keanggotaan {$member->member_name} ({$member->member_id}) berhasil {$statusLabel}.");
     }
 
     public function destroy($id)
