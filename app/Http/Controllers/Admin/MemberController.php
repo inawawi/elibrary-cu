@@ -84,12 +84,14 @@ class MemberController extends Controller
         }
 
         $memberType = MemberType::find($validated['member_type_id']);
-        $periodeDays = $memberType?->member_periode ?? 365;
+        $isLecturer = (int)$validated['member_type_id'] === 2 
+            || str_contains(strtolower($memberType?->member_type_name ?? ''), 'dosen');
 
-        // Dosen (member_type_id == 2) or zero period has no expiration date (tanpa masa berlaku)
-        $expireDate = ($periodeDays > 0 && (int)$validated['member_type_id'] !== 2)
-            ? Carbon::today()->addDays($periodeDays)->toDateString()
-            : null;
+        // Dosen tidak memiliki masa aktif (aktif selama masih menjadi dosen)
+        // Mahasiswa masa aktif 7 tahun dihitung dari 2 digit tahun angkatan pada NIM (digit ke 3 & 4)
+        $expireDate = $isLecturer 
+            ? null 
+            : Member::calculateStudentExpireDate($validated['member_id'], Carbon::today()->toDateString());
 
         $member = Member::create([
             'member_id' => $validated['member_id'],
@@ -162,6 +164,13 @@ class MemberController extends Controller
             $validated['mpasswd'] = Hash::make($validated['password']);
         }
         unset($validated['password']);
+
+        // Dosen tidak ada batas masa berlaku
+        if ((int)$validated['member_type_id'] === 2) {
+            $validated['expire_date'] = null;
+        } elseif (empty($validated['expire_date'])) {
+            $validated['expire_date'] = Member::calculateStudentExpireDate($member->member_id, $member->register_date);
+        }
 
         $validated['last_update'] = Carbon::now();
         $member->update($validated);

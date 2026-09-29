@@ -56,8 +56,8 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Tujuan Kunjungan *</label>
                             <select name="tujuan" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-brand-600 dark:text-sky-400">
-                                <option value="Library" {{ old('tujuan') === 'Library' ? 'selected' : '' }}>1. Library</option>
-                                <option value="Student Corner" {{ old('tujuan') === 'Student Corner' ? 'selected' : '' }}>2. Student Corner</option>
+                                <option value="Library" {{ old('tujuan') === 'Library' ? 'selected' : '' }}>Library</option>
+                                <option value="Student Corner" {{ old('tujuan') === 'Student Corner' ? 'selected' : '' }}>Student Corner</option>
                             </select>
                         </div>
                     </div>

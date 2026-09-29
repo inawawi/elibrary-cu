@@ -101,7 +101,7 @@
                 <div class="pt-4 border-t border-white/15 flex items-center justify-between text-[11px] relative">
                     <div>
                         <span class="text-white/60 block text-[9px] uppercase tracking-wider">Masa Berlaku</span>
-                        <span class="font-semibold">{{ $member->expire_date ? \Carbon\Carbon::parse($member->expire_date)->format('d F Y') : 'Seumur Hidup' }}</span>
+                        <span class="font-semibold">{{ $member->isLecturer() ? 'Selama Bertugas' : ($member->expire_date ? \Carbon\Carbon::parse($member->expire_date)->translatedFormat('d F Y') : 'Seumur Hidup') }}</span>
                     </div>
                     <div>
                         <span class="text-white/60 block text-[9px] uppercase tracking-wider">Status</span>

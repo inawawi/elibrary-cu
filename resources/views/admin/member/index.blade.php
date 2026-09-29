@@ -75,20 +75,25 @@
                                 </span>
                             </td>
                             <td class="py-3 px-6">
-                                <div class="text-xs">{{ $m->expire_date ? \Carbon\Carbon::parse($m->expire_date)->format('d/m/Y') : '-' }}</div>
+                                @if($m->isLecturer())
+                                    <div class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Selama Bertugas</div>
+                                @else
+                                    <div class="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                        {{ $m->expire_date ? \Carbon\Carbon::parse($m->expire_date)->format('d/m/Y') : '-' }}
+                                    </div>
+                                @endif
                                 <div class="mt-1 flex items-center gap-1.5 flex-wrap">
                                     @if($m->is_pending == 1)
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300">
                                             Non-Aktif
                                         </span>
+                                    @elseif($m->isExpired())
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300" title="Masa berlaku 7 tahun telah habis">
+                                            Kedaluwarsa
+                                        </span>
                                     @else
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
                                             Aktif
-                                        </span>
-                                    @endif
-                                    @if($m->isExpired())
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300" title="Masa berlaku kartu telah habis">
-                                            Kedaluwarsa
                                         </span>
                                     @endif
                                 </div>
@@ -126,10 +131,10 @@
                                     <a href="{{ route('admin.member.edit', $m->member_id) }}" class="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 hover:bg-amber-100 transition-colors" title="Ubah">
                                         <i data-lucide="pencil" class="w-4 h-4"></i>
                                     </a>
-                                    <form action="{{ route('admin.member.destroy', $m->member_id) }}" method="POST" onsubmit="return confirm('Hapus anggota ini?')">
+                                    <form action="{{ route('admin.member.destroy', $m->member_id) }}" method="POST" onsubmit="return confirm('{{ $m->isLecturer() ? 'Hapus data dosen ini? Pastikan dosen sudah tidak aktif bertugas di Universitas Siber Indonesia.' : 'Hapus data anggota ini?' }}')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors" title="Hapus">
+                                        <button type="submit" class="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors" title="{{ $m->isLecturer() ? 'Hapus Data Dosen' : 'Hapus Anggota' }}">
                                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                                         </button>
                                     </form>
