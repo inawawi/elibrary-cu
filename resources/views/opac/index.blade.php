@@ -24,8 +24,9 @@
 
     <!-- Background Image Slideshow Layer -->
     <div class="absolute inset-0 z-0">
-        <template x-for="(slide, index) in slides" :key="index">
-            <div x-show="active === index"
+        @foreach($heroSlides as $index => $slide)
+            <div x-show="active === {{ $index }}"
+                 @if($index !== 0) x-cloak @endif
                  x-transition:enter="transition-opacity ease-in-out duration-1000"
                  x-transition:enter-start="opacity-0 scale-105"
                  x-transition:enter-end="opacity-100 scale-100"
@@ -33,14 +34,13 @@
                  x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-100"
                  class="absolute inset-0 w-full h-full">
-                <img :src="slide.img" :alt="slide.title" class="w-full h-full object-cover">
+                <img src="{{ $slide['img'] }}" alt="{{ $slide['title'] }}" class="w-full h-full object-cover">
             </div>
-        </template>
+        @endforeach
 
-        <!-- Dark Gradient Overlays for High Legibility & Contrast -->
-        <div class="absolute inset-0 bg-slate-950/75 backdrop-blur-[1px]"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/85"></div>
-        <div class="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-transparent to-slate-950/90"></div>
+        <!-- Soft Balanced Overlay: Makes photos bright & vibrant while text stays readable -->
+        <div class="absolute inset-0 bg-slate-950/35"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-slate-950/45"></div>
     </div>
 
     <!-- Foreground Content -->
@@ -93,8 +93,8 @@
             <div class="flex items-center gap-3 min-w-0">
                 <span class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping flex-shrink-0"></span>
                 <div class="truncate text-left">
-                    <span class="text-[10px] uppercase tracking-wider font-bold text-sky-400 block" x-text="slides[active].tag"></span>
-                    <span class="text-xs font-semibold text-white truncate block" x-text="slides[active].title"></span>
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-sky-400 block" x-text="slides[active] ? slides[active].tag : ''"></span>
+                    <span class="text-xs font-semibold text-white truncate block" x-text="slides[active] ? slides[active].title : ''"></span>
                 </div>
             </div>
 
