@@ -19,6 +19,7 @@ class User extends Authenticatable
         'realname',
         'passwd',
         'email',
+        'role',
         'user_type',
         'user_image',
         'last_login',
@@ -52,5 +53,39 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return (int) $this->user_type === 1;
+    }
+
+    public function isDeveloper(): bool
+    {
+        $role = strtolower(trim($this->role ?? ''));
+        if ($role === 'pengembang sistem' || $role === 'developer' || $role === 'superadmin') {
+            return true;
+        }
+
+        $groups = @unserialize($this->groups ?? '');
+        return is_array($groups) && in_array('2', $groups, true);
+    }
+
+    public function getRoleNameAttribute(): string
+    {
+        if ($this->isDeveloper()) {
+            return 'Pengembang Sistem';
+        }
+
+        $role = strtolower(trim($this->role ?? ''));
+        if ($role === 'staf' || $role === 'staff') {
+            return 'Staf Perpustakaan';
+        }
+
+        return 'Administrator';
+    }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        if (!empty($this->user_image) && file_exists(public_path('images/persons/' . $this->user_image))) {
+            return asset('images/persons/' . $this->user_image);
+        }
+        $bg = $this->isDeveloper() ? '4f46e5' : '0284c7';
+        return "https://ui-avatars.com/api/?name=" . urlencode($this->realname ?: $this->username) . "&background=" . $bg . "&color=fff&size=100";
     }
 }

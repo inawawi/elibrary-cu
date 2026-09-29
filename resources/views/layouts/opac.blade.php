@@ -187,7 +187,7 @@
                         <img src="{{ asset('images/logo.png') }}" alt="Logo Universitas Siber Indonesia" class="w-10 h-10 object-contain">
                         <span class="text-lg font-bold text-slate-900 dark:text-white">PERPUSTAKAAN UNIVERSITAS SIBER INDONESIA</span>
                     </div>
-                    <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400 mb-6 max-w-md">
+                    <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400 mb-6 max-w-md" style="text-align: justify;">
                         Sistem informasi perpustakaan digital modern dengan katalog buku lengkap, sirkulasi terpadu, dan akses pustaka ilmiah untuk sivitas akademika Universitas Siber Indonesia.
                     </p>
                     <!-- <div class="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
@@ -220,7 +220,7 @@
             </div>
 
             <div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-                <p>&copy; 2026 Perpustakaan Universitas Siber Indonesia.</p>
+                <p>&copy; {{ date('Y') }} Perpustakaan Universitas Siber Indonesia.</p>
             </div>
         </div>
     </footer>

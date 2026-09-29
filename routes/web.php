@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\MemberAreaController;
 use App\Http\Controllers\OpacController;
 use Illuminate\Support\Facades\Route;
@@ -109,5 +110,11 @@ Route::prefix('admin')->group(function () {
         Route::post('/settings/news', [SettingController::class, 'storeNews'])->name('admin.settings.news.store');
         Route::post('/settings/news/{id}/update', [SettingController::class, 'updateNews'])->name('admin.settings.news.update');
         Route::delete('/settings/news/{id}', [SettingController::class, 'deleteNews'])->name('admin.settings.news.delete');
+
+        // Manajemen User Admin (Khusus Pengembang Sistem)
+        Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
+        Route::put('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
+        Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
     });
 });

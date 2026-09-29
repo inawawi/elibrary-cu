@@ -165,6 +165,12 @@
                         <i data-lucide="settings" class="w-4 h-4"></i>
                         <span>Pengaturan Perpustakaan</span>
                     </a>
+                    @if(Auth::user()?->isDeveloper())
+                    <a href="{{ route('admin.users.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.users*') ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/80 dark:text-indigo-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-indigo-500"></i>
+                        <span>Manajemen User Admin</span>
+                    </a>
+                    @endif
                 </nav>
             </div>
 
@@ -180,14 +186,16 @@
         <!-- Current User Profile & Logout -->
         <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-3 min-w-0">
-                <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+                <div class="w-9 h-9 rounded-xl {{ Auth::user()?->isDeveloper() ? 'bg-indigo-600' : 'bg-brand-600' }} text-white flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-sm">
                     {{ strtoupper(substr(Auth::user()?->realname ?: Auth::user()?->username ?: 'Admin', 0, 1)) }}
                 </div>
                 <div class="truncate">
                     <div class="text-xs font-bold text-slate-900 dark:text-white truncate">
                         {{ Auth::user()?->realname ?: Auth::user()?->username ?: 'Administrator' }}
                     </div>
-                    <div class="text-[10px] text-slate-400">Pustakawan</div>
+                    <div class="text-[10px] {{ Auth::user()?->isDeveloper() ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-slate-400' }}">
+                        {{ Auth::user()?->role_name ?: 'Administrator' }}
+                    </div>
                 </div>
             </div>
 
