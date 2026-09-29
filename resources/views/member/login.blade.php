@@ -40,17 +40,6 @@
                     </div>
                 </div>
 
-                <!-- Info Box -->
-                <div class="p-3.5 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 text-xs">
-                    <div class="font-bold text-sky-800 dark:text-sky-300 flex items-center gap-1.5 mb-1">
-                        <i data-lucide="info" class="w-4 h-4 text-sky-500 flex-shrink-0"></i>
-                        <span>Petunjuk Sandi Default:</span>
-                    </div>
-                    <p class="leading-relaxed text-slate-600 dark:text-slate-300 text-[11px]">
-                        Kata sandi standar adalah <strong>NIM Anda</strong> (contoh: <code class="font-mono bg-white dark:bg-slate-800 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 font-bold">12220001</code>) atau <strong>Tanggal Lahir</strong> (<code class="font-mono bg-white dark:bg-slate-800 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700">2004-08-13</code> / <code class="font-mono bg-white dark:bg-slate-800 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700">13082004</code>).
-                    </p>
-                </div>
-
                 <button type="submit" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 transition-all">
                     Masuk ke Akun
                 </button>
