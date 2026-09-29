@@ -34,6 +34,7 @@ Route::post('/member/logout', [MemberAreaController::class, 'logout'])->name('me
 
 Route::middleware('auth:member')->group(function () {
     Route::get('/member/dashboard', [MemberAreaController::class, 'dashboard'])->name('member.dashboard');
+    Route::post('/member/update-contact', [MemberAreaController::class, 'updateContact'])->name('member.update-contact');
 });
 
 /*

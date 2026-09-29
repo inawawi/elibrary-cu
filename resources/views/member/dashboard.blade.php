@@ -3,6 +3,7 @@
 @section('title', 'Dasbor Anggota - ' . $member->member_name)
 
 @section('content')
+<div class="{{ !empty($isContactIncomplete) ? 'filter blur-[2px] pointer-events-none select-none opacity-50 transition-all' : '' }}">
 <div class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 py-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -288,4 +289,104 @@
         </div>
     </div>
 </div>
+</div>
+
+@if(!empty($isContactIncomplete))
+<!-- BLOCKING MANDATORY CONTACT COMPLETION MODAL -->
+<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 relative my-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center shadow-inner mb-4">
+                <i data-lucide="phone-call" class="w-8 h-8"></i>
+            </div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 mb-2">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+                Wajib Dilengkapi
+            </span>
+            <h2 class="text-xl font-black text-slate-900 dark:text-white">Lengkapi Nomor WhatsApp & Email</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed max-w-sm mx-auto">
+                Halo <strong>{{ $member->member_name }}</strong>, sesuai ketentuan perpustakaan digital Universitas Siber Indonesia, Anda wajib melengkapi data kontak aktif sebelum dapat mengakses seluruh fitur portal.
+            </p>
+        </div>
+
+        <!-- Warning Notice -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 mb-6 flex items-start gap-3">
+            <i data-lucide="lock" class="w-4 h-4 text-brand-500 mt-0.5 flex-shrink-0"></i>
+            <span class="text-[11px] leading-relaxed">
+                Fitur kartu anggota digital, peminjaman buku, dan riwayat sirkulasi dikunci sementara sampai Anda mengisi data nomor WhatsApp dan email di bawah ini.
+            </span>
+        </div>
+
+        @if($errors->any())
+            <div class="mb-4 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300">
+                <ul class="list-disc list-inside space-y-1">
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('member.update-contact') }}" method="POST" class="space-y-4">
+            @csrf
+
+            <!-- Identity Preview -->
+            <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <span class="text-slate-400">NIM / Anggota:</span>
+                <span class="font-mono text-brand-600 dark:text-sky-400 font-bold">{{ $member->member_id }}</span>
+            </div>
+
+            <!-- Phone / WA -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <i data-lucide="phone" class="w-3.5 h-3.5 text-brand-500"></i>
+                    <span>Nomor Telepon / WhatsApp (Aktif) *</span>
+                </label>
+                <div class="relative">
+                    <input type="tel" name="member_phone" required autofocus
+                        value="{{ old('member_phone', $member->member_phone) }}"
+                        placeholder="Contoh: 081234567890"
+                        class="w-full pl-3.5 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <span class="text-[10px] text-slate-400 mt-1 block">Digunakan untuk notifikasi peminjaman & batas waktu pengembalian buku.</span>
+            </div>
+
+            <!-- Email -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <i data-lucide="mail" class="w-3.5 h-3.5 text-brand-500"></i>
+                    <span>Alamat Email (Aktif) *</span>
+                </label>
+                <div class="relative">
+                    <input type="email" name="member_email" required
+                        value="{{ old('member_email', $member->member_email) }}"
+                        placeholder="Contoh: nama@cyber-univ.ac.id atau nama@gmail.com"
+                        class="w-full pl-3.5 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <span class="text-[10px] text-slate-400 mt-1 block">Digunakan untuk pengiriman bukti peminjaman dan pengumuman resmi.</span>
+            </div>
+
+            <div class="pt-3 space-y-2">
+                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold text-xs shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transition-all">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span>Simpan & Aktifkan Seluruh Layanan</span>
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+            <form action="{{ route('member.logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="text-[11px] text-slate-400 hover:text-rose-600 transition-colors inline-flex items-center gap-1">
+                    <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                    <span>Batalkan sesi dan keluar akun</span>
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+@endif
 @endsection

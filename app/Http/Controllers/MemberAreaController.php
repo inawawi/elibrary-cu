@@ -110,8 +110,47 @@ class MemberAreaController extends Controller
         }
 
         $libraryRules = Setting::get('library_rules');
+        $isContactIncomplete = empty(trim($member->member_phone ?? '')) || empty(trim($member->member_email ?? ''));
 
-        return view('member.dashboard', compact('member', 'activeLoans', 'loanHistories', 'announcement', 'libraryRules'));
+        return view('member.dashboard', compact('member', 'activeLoans', 'loanHistories', 'announcement', 'libraryRules', 'isContactIncomplete'));
+    }
+
+    public function updateContact(Request $request)
+    {
+        /** @var Member $member */
+        $member = Auth::guard('member')->user();
+
+        $validated = $request->validate([
+            'member_phone' => [
+                'required',
+                'string',
+                'min:9',
+                'max:25',
+                'regex:/^[0-9+\-\s()]+$/',
+            ],
+            'member_email' => [
+                'required',
+                'string',
+                'email',
+                'max:100',
+            ],
+        ], [
+            'member_phone.required' => 'Nomor Telepon / WhatsApp wajib diisi.',
+            'member_phone.min' => 'Nomor Telepon / WhatsApp minimal 9 digit.',
+            'member_phone.regex' => 'Format nomor telepon/WhatsApp hanya boleh berupa angka dan tanda (+, -).',
+            'member_email.required' => 'Alamat email aktif wajib diisi.',
+            'member_email.email' => 'Format alamat email tidak valid.',
+        ]);
+
+        $cleanPhone = preg_replace('/[^\d+]/', '', $validated['member_phone']);
+        $cleanEmail = strtolower(trim($validated['member_email']));
+
+        $member->member_phone = $cleanPhone;
+        $member->member_email = $cleanEmail;
+        $member->last_update = Carbon::now();
+        $member->save();
+
+        return redirect()->route('member.dashboard')->with('success', 'Data kontak Anda (Nomor WhatsApp & Email) berhasil disimpan! Seluruh layanan keanggotaan kini aktif.');
     }
 
     public function logout(Request $request)
