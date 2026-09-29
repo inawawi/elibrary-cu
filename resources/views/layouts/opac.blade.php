@@ -44,6 +44,72 @@
             display: none !important;
         }
 
+        @keyframes flashBounceIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.92);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(6px) scale(1.02);
+            }
+            75% {
+                transform: translateY(-3px) scale(0.99);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes flashBounceOut {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                max-height: 120px;
+                margin-bottom: 0.75rem;
+            }
+            20% {
+                opacity: 1;
+                transform: translateY(-8px) scale(1.03);
+            }
+            40% {
+                opacity: 0.95;
+                transform: translateY(4px) scale(0.98);
+            }
+            65% {
+                opacity: 0.7;
+                transform: translateY(-14px) scale(0.92);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-40px) scale(0.6);
+                max-height: 0;
+                margin-bottom: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+                overflow: hidden;
+            }
+        }
+
+        @keyframes flashProgress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        .flash-bounce-in {
+            animation: flashBounceIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .flash-bounce-out {
+            animation: flashBounceOut 0.6s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards !important;
+            pointer-events: none;
+        }
+
+        .flash-timer-progress {
+            animation: flashProgress 5s linear forwards;
+        }
+
         .glass {
             background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(16px);
@@ -140,33 +206,161 @@
 
     <!-- Flash Alerts -->
     @if(session('success') || session('error') || session('info') || $errors->any())
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-3">
         @if(session('success'))
-        <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm font-medium">
-            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500 flex-shrink-0"></i>
-            <div>{{ session('success') }}</div>
+        <div x-data="{
+                show: true,
+                isExiting: false,
+                timer: null,
+                duration: 5000,
+                startTimer() {
+                    this.timer = setTimeout(() => this.dismiss(), this.duration);
+                },
+                stopTimer() {
+                    if (this.timer) clearTimeout(this.timer);
+                },
+                dismiss() {
+                    if (this.isExiting) return;
+                    this.isExiting = true;
+                    setTimeout(() => { this.show = false; }, 580);
+                }
+            }"
+            x-init="startTimer()"
+            @mouseenter="stopTimer()"
+            @mouseleave="startTimer()"
+            x-show="show"
+            :class="isExiting ? 'flash-bounce-out' : 'flash-bounce-in'"
+            class="relative overflow-hidden flex items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm font-medium shadow-sm">
+            <div class="flex items-center gap-3">
+                <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500 flex-shrink-0"></i>
+                <div>{{ session('success') }}</div>
+            </div>
+            <button type="button" @click="dismiss()" class="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-200 p-1 rounded-lg hover:bg-emerald-100/50 dark:hover:bg-emerald-900/50 transition-colors flex-shrink-0" title="Tutup">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-200/40 dark:bg-emerald-800/40 overflow-hidden">
+                <div class="h-full bg-emerald-500 flash-timer-progress"></div>
+            </div>
         </div>
         @endif
+
         @if(session('error'))
-        <div class="flex items-center gap-3 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-sm font-medium">
-            <i data-lucide="alert-circle" class="w-5 h-5 text-rose-500 flex-shrink-0"></i>
-            <div>{{ session('error') }}</div>
+        <div x-data="{
+                show: true,
+                isExiting: false,
+                timer: null,
+                duration: 6000,
+                startTimer() {
+                    this.timer = setTimeout(() => this.dismiss(), this.duration);
+                },
+                stopTimer() {
+                    if (this.timer) clearTimeout(this.timer);
+                },
+                dismiss() {
+                    if (this.isExiting) return;
+                    this.isExiting = true;
+                    setTimeout(() => { this.show = false; }, 580);
+                }
+            }"
+            x-init="startTimer()"
+            @mouseenter="stopTimer()"
+            @mouseleave="startTimer()"
+            x-show="show"
+            :class="isExiting ? 'flash-bounce-out' : 'flash-bounce-in'"
+            class="relative overflow-hidden flex items-center justify-between gap-3 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-sm font-medium shadow-sm">
+            <div class="flex items-center gap-3">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-rose-500 flex-shrink-0"></i>
+                <div>{{ session('error') }}</div>
+            </div>
+            <button type="button" @click="dismiss()" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 p-1 rounded-lg hover:bg-rose-100/50 dark:hover:bg-rose-900/50 transition-colors flex-shrink-0" title="Tutup">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-rose-200/40 dark:bg-rose-800/40 overflow-hidden">
+                <div class="h-full bg-rose-500 flash-timer-progress" style="animation-duration: 6s;"></div>
+            </div>
         </div>
         @endif
+
         @if(session('info'))
-        <div class="flex items-center gap-3 p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300 text-sm font-medium">
-            <i data-lucide="info" class="w-5 h-5 text-sky-500 flex-shrink-0"></i>
-            <div>{{ session('info') }}</div>
+        <div x-data="{
+                show: true,
+                isExiting: false,
+                timer: null,
+                duration: 5000,
+                startTimer() {
+                    this.timer = setTimeout(() => this.dismiss(), this.duration);
+                },
+                stopTimer() {
+                    if (this.timer) clearTimeout(this.timer);
+                },
+                dismiss() {
+                    if (this.isExiting) return;
+                    this.isExiting = true;
+                    setTimeout(() => { this.show = false; }, 580);
+                }
+            }"
+            x-init="startTimer()"
+            @mouseenter="stopTimer()"
+            @mouseleave="startTimer()"
+            x-show="show"
+            :class="isExiting ? 'flash-bounce-out' : 'flash-bounce-in'"
+            class="relative overflow-hidden flex items-center justify-between gap-3 p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/70 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300 text-sm font-medium shadow-sm">
+            <div class="flex items-center gap-3">
+                <i data-lucide="info" class="w-5 h-5 text-sky-500 flex-shrink-0"></i>
+                <div>{{ session('info') }}</div>
+            </div>
+            <button type="button" @click="dismiss()" class="text-sky-500 hover:text-sky-700 dark:hover:text-sky-200 p-1 rounded-lg hover:bg-sky-100/50 dark:hover:bg-sky-900/50 transition-colors flex-shrink-0" title="Tutup">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-sky-200/40 dark:bg-sky-800/40 overflow-hidden">
+                <div class="h-full bg-sky-500 flash-timer-progress"></div>
+            </div>
         </div>
         @endif
+
         @if($errors->any())
-        <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-sm">
-            <div class="font-semibold mb-1">Periksa kembali data Anda:</div>
-            <ul class="list-disc list-inside space-y-0.5">
-                @foreach($errors->all() as $err)
-                <li>{{ $err }}</li>
-                @endforeach
-            </ul>
+        <div x-data="{
+                show: true,
+                isExiting: false,
+                timer: null,
+                duration: 7000,
+                startTimer() {
+                    this.timer = setTimeout(() => this.dismiss(), this.duration);
+                },
+                stopTimer() {
+                    if (this.timer) clearTimeout(this.timer);
+                },
+                dismiss() {
+                    if (this.isExiting) return;
+                    this.isExiting = true;
+                    setTimeout(() => { this.show = false; }, 580);
+                }
+            }"
+            x-init="startTimer()"
+            @mouseenter="stopTimer()"
+            @mouseleave="startTimer()"
+            x-show="show"
+            :class="isExiting ? 'flash-bounce-out' : 'flash-bounce-in'"
+            class="relative overflow-hidden p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-sm shadow-sm">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <div class="font-semibold mb-1 flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>
+                        Periksa kembali data Anda:
+                    </div>
+                    <ul class="list-disc list-inside space-y-0.5 text-xs">
+                        @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                <button type="button" @click="dismiss()" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-200 p-1 rounded-lg hover:bg-rose-100/50 dark:hover:bg-rose-900/50 transition-colors flex-shrink-0" title="Tutup">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-1 bg-rose-200/40 dark:bg-rose-800/40 overflow-hidden">
+                <div class="h-full bg-rose-500 flash-timer-progress" style="animation-duration: 7s;"></div>
+            </div>
         </div>
         @endif
     </div>
