@@ -101,45 +101,48 @@
             </div>
         </div>
 
-        <!-- Recent Visitors -->
-        <div class="md:col-span-6">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
-                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-5 flex items-center justify-between">
-                    <span class="flex items-center gap-2">
+        <!-- Recent Visitors (Balanced Height & Scrollable) -->
+        <div class="md:col-span-6 flex flex-col">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm flex flex-col h-full">
+                <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <i data-lucide="clock" class="w-5 h-5 text-indigo-500"></i>
-                        Pengunjung Terakhir
+                        <span>Pengunjung Terakhir</span>
+                    </h2>
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
+                        {{ $recentGuests->count() }} Kunjungan Terbaru
                     </span>
-                    <span class="text-xs font-normal text-slate-400">Hari ini & terbaru</span>
-                </h2>
+                </div>
 
-                <div class="space-y-3">
+                <!-- Scrollable Visitor Stream (Matches height of left form) -->
+                <div class="space-y-3 overflow-y-auto max-h-[480px] pr-2 scrollbar-thin">
                     @forelse($recentGuests as $guest)
-                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-xl bg-brand-100 dark:bg-sky-950 text-brand-700 dark:text-sky-300 flex items-center justify-center font-bold">
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-xl bg-brand-100 dark:bg-sky-950 text-brand-700 dark:text-sky-300 flex items-center justify-center font-bold flex-shrink-0">
                                 {{ strtoupper(substr($guest->nama, 0, 1)) }}
                             </div>
-                            <div>
-                                <div class="font-bold text-slate-900 dark:text-white text-sm">{{ $guest->nama }}</div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-slate-900 dark:text-white text-sm truncate">{{ $guest->nama }}</div>
                                 <div class="text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
                                     <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $guest->keperluan }}</span>
                                     @if($guest->tujuan)
-                                    <span class="px-2 py-0.2 rounded-md bg-brand-50 dark:bg-sky-950/80 text-brand-600 dark:text-sky-300 text-[10px] font-bold">{{ $guest->tujuan }}</span>
+                                    <span class="px-2 py-0.5 rounded-md bg-brand-50 dark:bg-sky-950/80 text-brand-600 dark:text-sky-300 text-[10px] font-bold">{{ $guest->tujuan }}</span>
                                     @endif
                                     @if($guest->prodi)
-                                    <span class="px-2 py-0.2 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px]">{{ $guest->prodi }}</span>
+                                    <span class="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px]">{{ $guest->prodi }}</span>
                                     @endif
                                 </div>
                             </div>
                         </div>
-                        <div class="text-right text-slate-400 flex-shrink-0">
+                        <div class="text-right text-slate-400 flex-shrink-0 ml-3">
                             <div>{{ \Carbon\Carbon::parse($guest->tgl)->format('d/m/Y') }}</div>
                             <div class="font-mono text-[11px]">{{ substr($guest->jam, 0, 5) }} WIB</div>
                         </div>
                     </div>
                     @empty
-                    <div class="p-6 text-center text-slate-400 text-sm">
-                        Belum ada riwayat pengunjung.
+                    <div class="p-8 text-center text-slate-400 text-xs">
+                        Belum ada riwayat pengunjung hari ini.
                     </div>
                     @endforelse
                 </div>

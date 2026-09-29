@@ -105,5 +105,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/settings/slides', [SettingController::class, 'storeSlide'])->name('admin.settings.slides.store');
         Route::post('/settings/slides/{id}/update', [SettingController::class, 'updateSlide'])->name('admin.settings.slides.update');
         Route::delete('/settings/slides/{id}', [SettingController::class, 'deleteSlide'])->name('admin.settings.slides.delete');
+        Route::post('/settings/news', [SettingController::class, 'storeNews'])->name('admin.settings.news.store');
+        Route::post('/settings/news/{id}/update', [SettingController::class, 'updateNews'])->name('admin.settings.news.update');
+        Route::delete('/settings/news/{id}', [SettingController::class, 'deleteNews'])->name('admin.settings.news.delete');
     });
 });

@@ -70,8 +70,9 @@ class SettingController extends Controller
         ];
 
         $heroSlides = Setting::get('hero_slides', self::getDefaultSlides());
+        $newsArticles = \App\Http\Controllers\OpacController::getNewsArticles();
 
-        return view('admin.settings.index', compact('memberTypes', 'announcement', 'libraryRules', 'generalSettings', 'heroSlides'));
+        return view('admin.settings.index', compact('memberTypes', 'announcement', 'libraryRules', 'generalSettings', 'heroSlides', 'newsArticles'));
     }
 
     public function updateMemberType(Request $request, $id)
@@ -258,5 +259,103 @@ class SettingController extends Controller
         Setting::set('hero_slides', $filtered);
 
         return back()->with('success', 'Slide gambar berhasil dihapus.');
+    }
+
+    public function storeNews(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:100',
+            'source' => 'required|string|max:100',
+            'url' => 'required|url|max:255',
+            'date' => 'required|string|max:50',
+            'excerpt' => 'required|string|max:1000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $news = Setting::get('library_news', \App\Http\Controllers\OpacController::getNewsArticles());
+
+        $imagePath = 'images/slides/slide1_campus.jpg';
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = 'news_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('images/news'), $filename);
+            $imagePath = 'images/news/' . $filename;
+        }
+
+        $nextId = empty($news) ? 1 : (max(array_column($news, 'id')) + 1);
+
+        $news[] = [
+            'id' => $nextId,
+            'title' => $validated['title'],
+            'category' => $validated['category'],
+            'source' => $validated['source'],
+            'url' => $validated['url'],
+            'date' => $validated['date'],
+            'excerpt' => $validated['excerpt'],
+            'image' => $imagePath,
+        ];
+
+        Setting::set('library_news', $news);
+
+        return back()->with('success', 'Artikel berita baru berhasil ditambahkan!');
+    }
+
+    public function updateNews(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:100',
+            'source' => 'required|string|max:100',
+            'url' => 'required|url|max:255',
+            'date' => 'required|string|max:50',
+            'excerpt' => 'required|string|max:1000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $news = Setting::get('library_news', \App\Http\Controllers\OpacController::getNewsArticles());
+
+        $found = false;
+        foreach ($news as &$item) {
+            if ($item['id'] == $id) {
+                $item['title'] = $validated['title'];
+                $item['category'] = $validated['category'];
+                $item['source'] = $validated['source'];
+                $item['url'] = $validated['url'];
+                $item['date'] = $validated['date'];
+                $item['excerpt'] = $validated['excerpt'];
+
+                if ($request->hasFile('image')) {
+                    $file = $request->file('image');
+                    $filename = 'news_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('images/news'), $filename);
+                    $item['image'] = 'images/news/' . $filename;
+                }
+
+                $found = true;
+                break;
+            }
+        }
+
+        if (!$found) {
+            return back()->with('error', 'Artikel berita tidak ditemukan.');
+        }
+
+        Setting::set('library_news', $news);
+
+        return back()->with('success', 'Data berita berhasil diperbarui!');
+    }
+
+    public function deleteNews($id)
+    {
+        $news = Setting::get('library_news', \App\Http\Controllers\OpacController::getNewsArticles());
+
+        $filtered = array_values(array_filter($news, function ($n) use ($id) {
+            return $n['id'] != $id;
+        }));
+
+        Setting::set('library_news', $filtered);
+
+        return back()->with('success', 'Artikel berita berhasil dihapus.');
     }
 }

@@ -3,7 +3,7 @@
 @section('title', 'Pengaturan Perpustakaan & Aturan Keanggotaan')
 
 @section('content')
-<div class="space-y-8" x-data="{ activeTab: 'rules', newTypeModal: false, newSlideModal: false }">
+<div class="space-y-8" x-data="{ activeTab: 'rules', newTypeModal: false, newSlideModal: false, newNewsModal: false }">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -11,7 +11,7 @@
                 <i data-lucide="sliders" class="w-7 h-7 text-brand-500"></i>
                 Pengaturan Perpustakaan
             </h1>
-            <p class="text-xs text-slate-500 mt-1">Konfigurasi aturan peminjaman, denda, kuota keanggotaan, gambar slide hero, dan informasi berkala</p>
+            <p class="text-xs text-slate-500 mt-1">Konfigurasi aturan peminjaman, denda, kuota keanggotaan, gambar slide hero, berita publikasi, dan informasi berkala</p>
         </div>
 
         <!-- Tab Switcher -->
@@ -22,7 +22,11 @@
             </button>
             <button @click="activeTab = 'slides'" :class="activeTab === 'slides' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                 <i data-lucide="image" class="w-4 h-4"></i>
-                <span>Slide Gambar Hero</span>
+                <span>Slide Hero</span>
+            </button>
+            <button @click="activeTab = 'news'" :class="activeTab === 'news' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                <i data-lucide="newspaper" class="w-4 h-4"></i>
+                <span>Kelola Berita</span>
             </button>
             <button @click="activeTab = 'announcement'" :class="activeTab === 'announcement' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                 <i data-lucide="megaphone" class="w-4 h-4"></i>
@@ -462,6 +466,112 @@
         </div>
     </div>
 
+    <!-- TAB 5: KELOLA BERITA & PUBLIKASI -->
+    <div x-show="activeTab === 'news'" class="space-y-6" x-cloak>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">Kelola Berita & Publikasi Perpustakaan</h2>
+                <p class="text-xs text-slate-500">Kelola artikel kegiatan, warta literasi, dan publikasi media eksternal seputar Perpustakaan Cyber University</p>
+            </div>
+            <button @click="newNewsModal = true" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/20 transition-all flex-shrink-0">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>+ Tambah Berita Baru</span>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            @foreach($newsArticles as $article)
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:border-brand-300 dark:hover:border-sky-700 transition-all flex flex-col justify-between">
+                    <div>
+                        <!-- Article Thumbnail & Meta -->
+                        <div class="relative aspect-[16/9] rounded-2xl overflow-hidden bg-slate-950 mb-4 border border-slate-200 dark:border-slate-800">
+                            <img src="{{ asset($article['image']) }}" alt="{{ $article['title'] }}" class="w-full h-full object-cover">
+                            <div class="absolute top-3 left-3">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-brand-600/90 text-white backdrop-blur shadow-sm">
+                                    {{ $article['category'] }}
+                                </span>
+                            </div>
+                            <div class="absolute top-3 right-3">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-900/80 text-white backdrop-blur shadow-sm">
+                                    {{ $article['date'] }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Edit Form -->
+                        <form action="{{ route('admin.settings.news.update', $article['id']) }}" method="POST" enctype="multipart/form-data" class="space-y-3 text-xs">
+                            @csrf
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Judul Artikel Berita *</label>
+                                <input type="text" name="title" value="{{ $article['title'] }}" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Kategori *</label>
+                                    <input type="text" name="category" value="{{ $article['category'] }}" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Sumber / Media *</label>
+                                    <input type="text" name="source" value="{{ $article['source'] }}" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Publikasi *</label>
+                                    <input type="text" name="date" value="{{ $article['date'] }}" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tautan / Link Berita *</label>
+                                    <input type="url" name="url" value="{{ $article['url'] }}" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ringkasan / Cuplikan *</label>
+                                <textarea name="excerpt" rows="2" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-normal focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">{{ $article['excerpt'] }}</textarea>
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ganti Foto Sampul (Opsional)</label>
+                                <input type="file" name="image" accept="image/*" class="w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:text-[11px] file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                            </div>
+
+                            <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-sm transition-colors">
+                                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                        <span>Simpan Perubahan</span>
+                                    </button>
+                                    <a href="{{ $article['url'] }}" target="_blank" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-xs font-semibold">
+                                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                        <span>Buka</span>
+                                    </a>
+                                </div>
+                        </form>
+
+                        <form action="{{ route('admin.settings.news.delete', $article['id']) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus berita ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition-colors">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                <span>Hapus</span>
+                            </button>
+                        </form>
+                            </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
     <!-- MODAL: TAMBAH TIPE KEANGGOTAAN BARU -->
     <div x-show="newTypeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" x-cloak>
         <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
@@ -581,5 +691,79 @@
             </form>
         </div>
     </div>
+
+    <!-- MODAL: TAMBAH BERITA BARU -->
+    <div x-show="newNewsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" x-cloak>
+        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-4 sticky top-0 bg-white dark:bg-slate-900 z-10">
+                <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="newspaper" class="w-5 h-5 text-brand-500"></i>
+                    Tambah Berita & Publikasi Baru
+                </h3>
+                <button @click="newNewsModal = false" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form action="{{ route('admin.settings.news.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
+                @csrf
+
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Judul Berita *</label>
+                    <input type="text" name="title" required placeholder="Contoh: Sosialisasi Layanan Akses Jurnal Internasional 2026"
+                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Kategori *</label>
+                        <input type="text" name="category" required placeholder="Contoh: Pengumuman, Layanan, Workshop"
+                            class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Sumber / Penulis *</label>
+                        <input type="text" name="source" required placeholder="Contoh: Humas Perpustakaan, Cyber Univ"
+                            class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tanggal Terbit</label>
+                        <input type="text" name="date" placeholder="Contoh: 29 Sep 2026 (kosongkan untuk hari ini)"
+                            class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tautan Web Asli (URL)</label>
+                        <input type="url" name="url" placeholder="https://cyber-univ.ac.id/..."
+                            class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ringkasan Berita (Excerpt) *</label>
+                    <textarea name="excerpt" rows="3" required placeholder="Tuliskan ringkasan singkat konten berita..."
+                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-normal text-slate-900 dark:text-white"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Foto Sampul Berita</label>
+                    <input type="file" name="image" accept="image/*"
+                        class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                    <span class="text-[10px] text-slate-400 mt-1 block">Format didukung: JPG, PNG, WEBP (Jika dikosongkan, gambar default akan digunakan)</span>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+                    <button type="button" @click="newNewsModal = false" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 font-semibold hover:bg-slate-50">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold">
+                        Simpan Berita Baru
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection
+
