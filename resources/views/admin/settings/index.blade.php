@@ -3,7 +3,7 @@
 @section('title', 'Pengaturan Perpustakaan & Aturan Keanggotaan')
 
 @section('content')
-<div class="space-y-8" x-data="{ activeTab: 'rules', newTypeModal: false }">
+<div class="space-y-8" x-data="{ activeTab: 'rules', newTypeModal: false, newSlideModal: false }">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -11,22 +11,26 @@
                 <i data-lucide="sliders" class="w-7 h-7 text-brand-500"></i>
                 Pengaturan Perpustakaan
             </h1>
-            <p class="text-xs text-slate-500 mt-1">Konfigurasi aturan peminjaman, denda, kuota keanggotaan, dan informasi berkala anggota</p>
+            <p class="text-xs text-slate-500 mt-1">Konfigurasi aturan peminjaman, denda, kuota keanggotaan, gambar slide hero, dan informasi berkala</p>
         </div>
 
         <!-- Tab Switcher -->
-        <div class="flex items-center gap-1.5 p-1 bg-slate-200/80 dark:bg-slate-800 rounded-2xl">
-            <button @click="activeTab = 'rules'" :class="activeTab === 'rules' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+        <div class="flex items-center flex-wrap gap-1.5 p-1 bg-slate-200/80 dark:bg-slate-800 rounded-2xl">
+            <button @click="activeTab = 'rules'" :class="activeTab === 'rules' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                 <i data-lucide="scale" class="w-4 h-4"></i>
                 <span>Aturan & Denda</span>
             </button>
-            <button @click="activeTab = 'announcement'" :class="activeTab === 'announcement' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
-                <i data-lucide="megaphone" class="w-4 h-4"></i>
-                <span>Pengumuman Anggota</span>
+            <button @click="activeTab = 'slides'" :class="activeTab === 'slides' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                <i data-lucide="image" class="w-4 h-4"></i>
+                <span>Slide Gambar Hero</span>
             </button>
-            <button @click="activeTab = 'general'" :class="activeTab === 'general' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+            <button @click="activeTab = 'announcement'" :class="activeTab === 'announcement' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                <i data-lucide="megaphone" class="w-4 h-4"></i>
+                <span>Pengumuman</span>
+            </button>
+            <button @click="activeTab = 'general'" :class="activeTab === 'general' ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-sky-300 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                 <i data-lucide="info" class="w-4 h-4"></i>
-                <span>Tata Tertib & Identitas</span>
+                <span>Tata Tertib</span>
             </button>
         </div>
     </div>
@@ -360,6 +364,104 @@
         </div>
     </div>
 
+    <!-- TAB 4: PENGATURAN SLIDE GAMBAR HERO -->
+    <div x-show="activeTab === 'slides'" class="space-y-6" x-cloak>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">Slide Gambar Background Dashboard</h2>
+                <p class="text-xs text-slate-500">Kelola foto pemandangan kampus, fasilitas, judul, dan status aktif slide hero utama</p>
+            </div>
+            <button @click="newSlideModal = true" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-500/20 transition-all flex-shrink-0">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>+ Tambah Slide Baru</span>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            @foreach($heroSlides as $slide)
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:border-brand-300 dark:hover:border-sky-700 transition-all flex flex-col justify-between">
+                    <div>
+                        <!-- Slide Image Preview -->
+                        <div class="relative aspect-[16/9] rounded-2xl overflow-hidden bg-slate-950 mb-4 border border-slate-200 dark:border-slate-800">
+                            <img src="{{ asset($slide['image']) }}" alt="{{ $slide['title'] }}" class="w-full h-full object-cover">
+                            <div class="absolute top-3 left-3 flex items-center gap-2">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-brand-600/90 text-white backdrop-blur shadow-sm">
+                                    {{ $slide['tag'] }}
+                                </span>
+                            </div>
+                            <div class="absolute top-3 right-3">
+                                @if($slide['is_active'])
+                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500 text-white backdrop-blur shadow-sm flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                                        Aktif
+                                    </span>
+                                @else
+                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-500/90 text-white backdrop-blur shadow-sm">
+                                        Nonaktif
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Edit Form -->
+                        <form action="{{ route('admin.settings.slides.update', $slide['id']) }}" method="POST" enctype="multipart/form-data" class="space-y-3 text-xs">
+                            @csrf
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tag / Label Kategori *</label>
+                                <input type="text" name="tag" value="{{ $slide['tag'] }}" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Judul Utama Slide *</label>
+                                <input type="text" name="title" value="{{ $slide['title'] }}" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                            </div>
+
+                            <div>
+                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Keterangan / Deskripsi *</label>
+                                <textarea name="desc" rows="2" required
+                                    class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-normal focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">{{ $slide['desc'] }}</textarea>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Status Tampil</label>
+                                    <select name="is_active" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                                        <option value="1" {{ $slide['is_active'] ? 'selected' : '' }}>Aktif (Ditampilkan)</option>
+                                        <option value="0" {{ !$slide['is_active'] ? 'selected' : '' }}>Nonaktif (Disembunyikan)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ganti Foto (Opsional)</label>
+                                    <input type="file" name="image" accept="image/*" class="w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:text-[11px] file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                                </div>
+                            </div>
+
+                            <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-sm transition-colors">
+                                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                    <span>Simpan Perubahan</span>
+                                </button>
+                        </form>
+
+                        @if(count($heroSlides) > 1)
+                            <form action="{{ route('admin.settings.slides.delete', $slide['id']) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus slide ini?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold transition-colors">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    <span>Hapus</span>
+                                </button>
+                            </form>
+                        @endif
+                            </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
     <!-- MODAL: TAMBAH TIPE KEANGGOTAAN BARU -->
     <div x-show="newTypeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" x-cloak>
         <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
@@ -421,6 +523,59 @@
                     </button>
                     <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold">
                         Simpan Tipe Baru
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: TAMBAH SLIDE BARU -->
+    <div x-show="newSlideModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" x-cloak>
+        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-4">
+                <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="image-plus" class="w-5 h-5 text-brand-500"></i>
+                    Tambah Slide Gambar Hero Baru
+                </h3>
+                <button @click="newSlideModal = false" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form action="{{ route('admin.settings.slides.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
+                @csrf
+
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tag / Label Kategori *</label>
+                    <input type="text" name="tag" required placeholder="Contoh: Gedung Kampus, Student Corner, Perpustakaan..."
+                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Judul Utama Slide *</label>
+                    <input type="text" name="title" required placeholder="Contoh: The First Fintech University in Indonesia..."
+                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Deskripsi / Keterangan *</label>
+                    <textarea name="desc" rows="2" required placeholder="Tuliskan keterangan singkat slide..."
+                        class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-normal text-slate-900 dark:text-white"></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Upload File Foto Slide *</label>
+                    <input type="file" name="image" required accept="image/*"
+                        class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                    <span class="text-[10px] text-slate-400 mt-1 block">Format didukung: JPG, PNG, WEBP (Rekomendasi rasio 16:9 atau foto landscape)</span>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+                    <button type="button" @click="newSlideModal = false" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 font-semibold hover:bg-slate-50">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold">
+                        Simpan Slide Baru
                     </button>
                 </div>
             </form>

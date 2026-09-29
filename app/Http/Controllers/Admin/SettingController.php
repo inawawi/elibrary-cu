@@ -10,6 +10,44 @@ use Illuminate\Http\Request;
 
 class SettingController extends Controller
 {
+    public static function getDefaultSlides(): array
+    {
+        return [
+            [
+                'id' => 1,
+                'tag' => 'Kampus Cyber University',
+                'title' => 'The First Fintech University in Indonesia',
+                'desc' => 'Kampus modern berorientasi digital dan keunggulan teknologi siber untuk mencetak generasi inovator masa depan.',
+                'image' => 'images/slides/slide1_campus.jpg',
+                'is_active' => 1,
+            ],
+            [
+                'id' => 2,
+                'tag' => 'Ruang Koleksi Perpustakaan',
+                'title' => 'Koleksi Pustaka & Literatur Ilmiah Lengkap',
+                'desc' => 'Akses ribuan judul buku teks fisik, e-book, jurnal akademik, dan repositori skripsi untuk sivitas akademika.',
+                'image' => 'images/slides/slide2_library.jpg',
+                'is_active' => 1,
+            ],
+            [
+                'id' => 3,
+                'tag' => 'Student Corner & Diskusi',
+                'title' => 'Ruang Belajar Kolaboratif & Kreatif Mahasiswa',
+                'desc' => 'Fasilitas student lounge nyaman untuk bedah referensi riset, belajar bersama, dan penyusunan tugas akhir.',
+                'image' => 'images/slides/slide3_student_corner.jpg',
+                'is_active' => 1,
+            ],
+            [
+                'id' => 4,
+                'tag' => 'Podcast Studio & Media Hub',
+                'title' => 'Pusat Literasi Digital & Podcast Edukasi',
+                'desc' => 'Studio podcast modern untuk menyiarkan diskursus ilmu pengetahuan, review literatur, dan kreativitas mahasiswa.',
+                'image' => 'images/slides/slide4_podcast.jpg',
+                'is_active' => 1,
+            ],
+        ];
+    }
+
     public function index()
     {
         $memberTypes = MemberType::withCount('members')->orderBy('member_type_id')->get();
@@ -31,7 +69,9 @@ class SettingController extends Controller
             'library_subname' => Setting::get('library_subname', 'Universitas Siber Indonesia'),
         ];
 
-        return view('admin.settings.index', compact('memberTypes', 'announcement', 'libraryRules', 'generalSettings'));
+        $heroSlides = Setting::get('hero_slides', self::getDefaultSlides());
+
+        return view('admin.settings.index', compact('memberTypes', 'announcement', 'libraryRules', 'generalSettings', 'heroSlides'));
     }
 
     public function updateMemberType(Request $request, $id)
@@ -128,5 +168,95 @@ class SettingController extends Controller
         }
 
         return back()->with('success', 'Aturan umum dan identitas perpustakaan berhasil diperbarui!');
+    }
+
+    public function storeSlide(Request $request)
+    {
+        $validated = $request->validate([
+            'tag' => 'required|string|max:100',
+            'title' => 'required|string|max:200',
+            'desc' => 'required|string|max:500',
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $slides = Setting::get('hero_slides', self::getDefaultSlides());
+
+        $file = $request->file('image');
+        $filename = 'slide_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('images/slides'), $filename);
+
+        $nextId = empty($slides) ? 1 : (max(array_column($slides, 'id')) + 1);
+
+        $newSlide = [
+            'id' => $nextId,
+            'tag' => $validated['tag'],
+            'title' => $validated['title'],
+            'desc' => $validated['desc'],
+            'image' => 'images/slides/' . $filename,
+            'is_active' => 1,
+        ];
+
+        $slides[] = $newSlide;
+        Setting::set('hero_slides', $slides);
+
+        return back()->with('success', 'Slide gambar baru berhasil ditambahkan!');
+    }
+
+    public function updateSlide(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'tag' => 'required|string|max:100',
+            'title' => 'required|string|max:200',
+            'desc' => 'required|string|max:500',
+            'is_active' => 'required|in:0,1',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $slides = Setting::get('hero_slides', self::getDefaultSlides());
+
+        $found = false;
+        foreach ($slides as &$slide) {
+            if ($slide['id'] == $id) {
+                $slide['tag'] = $validated['tag'];
+                $slide['title'] = $validated['title'];
+                $slide['desc'] = $validated['desc'];
+                $slide['is_active'] = (int) $validated['is_active'];
+
+                if ($request->hasFile('image')) {
+                    $file = $request->file('image');
+                    $filename = 'slide_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('images/slides'), $filename);
+                    $slide['image'] = 'images/slides/' . $filename;
+                }
+
+                $found = true;
+                break;
+            }
+        }
+
+        if (!$found) {
+            return back()->with('error', 'Slide tidak ditemukan.');
+        }
+
+        Setting::set('hero_slides', $slides);
+
+        return back()->with('success', 'Pengaturan slide berhasil diperbarui!');
+    }
+
+    public function deleteSlide($id)
+    {
+        $slides = Setting::get('hero_slides', self::getDefaultSlides());
+
+        if (count($slides) <= 1) {
+            return back()->with('error', 'Minimal harus ada 1 slide gambar yang tersimpan!');
+        }
+
+        $filtered = array_values(array_filter($slides, function ($s) use ($id) {
+            return $s['id'] != $id;
+        }));
+
+        Setting::set('hero_slides', $filtered);
+
+        return back()->with('success', 'Slide gambar berhasil dihapus.');
     }
 }

@@ -58,7 +58,33 @@ class OpacController extends Controller
 
         $newsArticles = self::getNewsArticles();
 
-        return view('opac.index', compact('featuredBooks', 'latestBooks', 'popularTopics', 'stats', 'newsArticles'));
+        $defaultSlides = \App\Http\Controllers\Admin\SettingController::getDefaultSlides();
+        $storedSlides = Setting::get('hero_slides', $defaultSlides);
+        $heroSlides = collect($storedSlides)
+            ->where('is_active', 1)
+            ->map(function ($s) {
+                return [
+                    'img' => str_starts_with($s['image'], 'http') ? $s['image'] : asset($s['image']),
+                    'tag' => $s['tag'],
+                    'title' => $s['title'],
+                    'desc' => $s['desc'],
+                ];
+            })
+            ->values()
+            ->all();
+
+        if (empty($heroSlides)) {
+            $heroSlides = collect($defaultSlides)->map(function ($s) {
+                return [
+                    'img' => asset($s['image']),
+                    'tag' => $s['tag'],
+                    'title' => $s['title'],
+                    'desc' => $s['desc'],
+                ];
+            })->values()->all();
+        }
+
+        return view('opac.index', compact('featuredBooks', 'latestBooks', 'popularTopics', 'stats', 'newsArticles', 'heroSlides'));
     }
 
     public function search(Request $request)

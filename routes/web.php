@@ -102,5 +102,8 @@ Route::prefix('admin')->group(function () {
         Route::delete('/settings/member-types/{id}', [SettingController::class, 'deleteMemberType'])->name('admin.settings.member-type.delete');
         Route::post('/settings/announcement', [SettingController::class, 'updateAnnouncement'])->name('admin.settings.announcement.update');
         Route::post('/settings/general', [SettingController::class, 'updateGeneral'])->name('admin.settings.general.update');
+        Route::post('/settings/slides', [SettingController::class, 'storeSlide'])->name('admin.settings.slides.store');
+        Route::post('/settings/slides/{id}/update', [SettingController::class, 'updateSlide'])->name('admin.settings.slides.update');
+        Route::delete('/settings/slides/{id}', [SettingController::class, 'deleteSlide'])->name('admin.settings.slides.delete');
     });
 });
