@@ -25,14 +25,19 @@ class BiblioController extends Controller
         $search = $request->input('search');
         $publisherId = $request->input('publisher_id');
         $gmdId = $request->input('gmd_id');
+        $year = $request->input('year');
+        $itemStatus = $request->input('item_status');
+        $hasFile = $request->input('has_file');
+        $sort = $request->input('sort', 'latest');
 
-        $books = Biblio::with(['authors', 'publisher', 'items']);
+        $books = Biblio::with(['authors', 'publisher', 'items', 'gmd']);
 
         if (!empty($search)) {
             $books->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('isbn_issn', 'like', "%{$search}%")
                   ->orWhere('call_number', 'like', "%{$search}%")
+                  ->orWhere('classification', 'like', "%{$search}%")
                   ->orWhereHas('authors', function ($aq) use ($search) {
                       $aq->where('author_name', 'like', "%{$search}%");
                   });
@@ -47,12 +52,52 @@ class BiblioController extends Controller
             $books->where('gmd_id', $gmdId);
         }
 
-        $biblios = $books->orderBy('biblio_id', 'desc')->paginate(15)->withQueryString();
+        if (!empty($year)) {
+            $books->where('publish_year', 'like', "%{$year}%");
+        }
+
+        if ($itemStatus === 'has_items') {
+            $books->has('items');
+        } elseif ($itemStatus === 'no_items') {
+            $books->doesntHave('items');
+        }
+
+        if ($hasFile === 'yes') {
+            $books->whereNotNull('file_att')->where('file_att', '!=', '');
+        } elseif ($hasFile === 'no') {
+            $books->where(function($q) {
+                $q->whereNull('file_att')->orWhere('file_att', '');
+            });
+        }
+
+        // Sorting
+        match ($sort) {
+            'oldest' => $books->orderBy('biblio_id', 'asc'),
+            'title_asc' => $books->orderBy('title', 'asc'),
+            'title_desc' => $books->orderBy('title', 'desc'),
+            'year_desc' => $books->orderBy('publish_year', 'desc'),
+            'year_asc' => $books->orderBy('publish_year', 'asc'),
+            default => $books->orderBy('biblio_id', 'desc'),
+        };
+
+        $biblios = $books->paginate(15)->withQueryString();
 
         $publishers = Publisher::has('biblios')->orderBy('publisher_name')->get();
-        $gmds = Gmd::all();
+        $gmds = Gmd::has('biblios')->orderBy('gmd_name')->get();
+        $years = Biblio::selectRaw('publish_year')
+            ->whereNotNull('publish_year')
+            ->whereRaw('publish_year REGEXP "^[0-9]{4}$"')
+            ->distinct()
+            ->orderByDesc('publish_year')
+            ->take(25)
+            ->pluck('publish_year');
 
-        return view('admin.biblio.index', compact('biblios', 'search', 'publishers', 'gmds', 'publisherId', 'gmdId'));
+        $activeFiltersCount = collect([$publisherId, $gmdId, $year, $itemStatus, $hasFile, $sort !== 'latest' ? $sort : null])->filter()->count();
+
+        return view('admin.biblio.index', compact(
+            'biblios', 'search', 'publishers', 'gmds', 'years',
+            'publisherId', 'gmdId', 'year', 'itemStatus', 'hasFile', 'sort', 'activeFiltersCount'
+        ));
     }
 
     public function create()
