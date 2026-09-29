@@ -173,11 +173,11 @@
         <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-                    {{ strtoupper(substr(Auth::user()->realname ?: Auth::user()->username, 0, 1)) }}
+                    {{ strtoupper(substr(Auth::user()?->realname ?: Auth::user()?->username ?: 'Admin', 0, 1)) }}
                 </div>
                 <div class="truncate">
                     <div class="text-xs font-bold text-slate-900 dark:text-white truncate">
-                        {{ Auth::user()->realname ?: Auth::user()->username }}
+                        {{ Auth::user()?->realname ?: Auth::user()?->username ?: 'Administrator' }}
                     </div>
                     <div class="text-[10px] text-slate-400">Pustakawan</div>
                 </div>
@@ -222,7 +222,7 @@
         </header>
 
         <!-- Flash Messages -->
-        @if(session('success') || session('error') || session('info') || $errors->any())
+        @if(session('success') || session('error') || session('info') || (isset($errors) && $errors->any()))
             <div class="px-6 pt-6">
                 @if(session('success'))
                     <div class="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
@@ -236,7 +236,7 @@
                         <div>{{ session('error') }}</div>
                     </div>
                 @endif
-                @if($errors->any())
+                @if(isset($errors) && $errors->any())
                     <div class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs">
                         <ul class="list-disc list-inside space-y-0.5">
                             @foreach($errors->all() as $err)

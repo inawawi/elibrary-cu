@@ -15,6 +15,7 @@ class MemberController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $typeId = $request->input('type_id');
         $status = $request->input('status');
 
         $query = Member::with(['memberType', 'activeLoans']);

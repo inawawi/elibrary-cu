@@ -39,6 +39,8 @@ Route::middleware('auth:member')->group(function () {
 | Admin / Librarian Routes
 |--------------------------------------------------------------------------
 */
+Route::get('/login', fn () => redirect()->route('admin.login'))->name('login');
+
 Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
     Route::post('/login', [AdminAuthController::class, 'login'])->name('admin.login.post');
