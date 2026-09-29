@@ -20,7 +20,7 @@
         }"
         @mouseenter="paused = true"
         @mouseleave="paused = false"
-        class="relative overflow-hidden py-16 lg:py-24 border-b border-slate-800 bg-slate-950 text-white min-h-[480px] flex items-center">
+        class="relative overflow-hidden min-h-[580px] lg:min-h-[640px] flex flex-col justify-end pb-8 lg:pb-10 pt-16 border-b border-slate-800 bg-slate-950 text-white">
 
     <!-- Background Image Slideshow Layer -->
     <div class="absolute inset-0 z-0">
@@ -34,118 +34,121 @@
                  x-transition:leave-start="opacity-100 scale-100"
                  x-transition:leave-end="opacity-0 scale-100"
                  class="absolute inset-0 w-full h-full">
-                <img src="{{ $slide['img'] }}" alt="{{ $slide['title'] }}" class="w-full h-full object-cover">
+                <img src="{{ $slide['img'] }}" alt="{{ $slide['title'] }}" class="w-full h-full object-cover object-center">
             </div>
         @endforeach
 
         <!-- Soft Balanced Overlay: Makes photos bright & vibrant while text stays readable -->
-        <div class="absolute inset-0 bg-slate-950/35"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-slate-950/45"></div>
+        <div class="absolute inset-0 bg-slate-950/25"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent"></div>
     </div>
 
-    <!-- Foreground Content: Sejajar Horizontal Gambar 2 dengan Gambar 3 -->
+    <!-- Foreground Content: Sejajar 1 Baris Horizontal di Bagian Bawah -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
             
             <!-- Sisi Kiri: Gambar 2 (Pencarian & Topik Populer) -->
-            <div class="lg:col-span-6 xl:col-span-6 space-y-4">
+            <div class="lg:col-span-5 xl:col-span-5 space-y-2.5">
                 <form action="{{ route('opac.search') }}" method="GET" class="relative group">
-                    <div class="relative flex items-center bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl shadow-black/50 border-2 border-white/30 dark:border-slate-700/80 group-focus-within:border-sky-400 transition-all p-2">
-                        <div class="pl-4 text-slate-400 dark:text-slate-500">
-                            <i data-lucide="search" class="w-6 h-6"></i>
+                    <div class="relative flex items-center bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl shadow-black/50 border border-white/30 dark:border-slate-700/80 p-1.5 focus-within:ring-2 focus-within:ring-sky-400 transition-all">
+                        <div class="pl-3.5 text-slate-400 dark:text-slate-500">
+                            <i data-lucide="search" class="w-5 h-5"></i>
                         </div>
                         <input type="text"
                                name="q"
-                               placeholder="Cari judul buku, nama pengarang, subjek, atau nomor ISBN..."
-                               class="w-full px-4 py-3 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none text-base font-medium"
+                               placeholder="Cari judul buku, pengarang, subjek, ISBN..."
+                               class="w-full px-3 py-2.5 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none text-sm font-medium"
                                autofocus>
-                        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-500 hover:to-sky-500 text-white font-bold rounded-xl shadow-lg shadow-sky-500/30 transition-all flex-shrink-0">
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-500 hover:to-sky-500 text-white font-bold rounded-xl shadow-lg shadow-sky-500/30 transition-all text-xs flex-shrink-0">
                             <span>Cari</span>
-                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 </form>
 
                 <!-- Popular Quick Tags -->
-                <div class="flex items-center flex-wrap gap-2 pt-1">
-                    <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Topik Populer:</span>
-                    @foreach($popularTopics->take(5) as $top)
-                        <a href="{{ route('opac.search', ['topic' => $top->topic_id]) }}" class="px-3.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-medium text-white backdrop-blur border border-white/15 hover:border-white/40 transition-all">
+                <div class="flex items-center flex-wrap gap-1.5">
+                    <span class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mr-1">Topik Populer:</span>
+                    @foreach($popularTopics->take(4) as $top)
+                        <a href="{{ route('opac.search', ['topic' => $top->topic_id]) }}" class="px-2.5 py-0.5 rounded-lg bg-slate-900/70 hover:bg-slate-900/95 text-[11px] font-medium text-slate-200 hover:text-white backdrop-blur-sm border border-white/15 hover:border-white/40 transition-all">
                             {{ $top->topic }} ({{ $top->biblios_count }})
                         </a>
                     @endforeach
                 </div>
             </div>
 
-            <!-- Sisi Kanan: Gambar 3 (Slide Info Badge & 4 Kartu Statistik) -->
-            <div class="lg:col-span-6 xl:col-span-6 space-y-4">
+            <!-- Sisi Kanan: Gambar 3 (Slide Info Badge & 4 Kartu Statistik dalam 1 Baris Horizontal) -->
+            <div class="lg:col-span-7 xl:col-span-7 space-y-2.5">
                 <!-- Slide Info & Indicator Badge -->
-                <div class="p-3 px-5 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 flex items-center justify-between gap-4 shadow-xl">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping flex-shrink-0"></span>
-                        <div class="truncate text-left">
-                            <span class="text-[10px] uppercase tracking-wider font-bold text-sky-400 block" x-text="slides[active] ? slides[active].tag : ''"></span>
-                            <span class="text-xs font-semibold text-white truncate block" x-text="slides[active] ? slides[active].title : ''"></span>
+                <div class="p-2.5 px-4 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 flex items-center justify-between gap-3 shadow-xl">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping flex-shrink-0"></span>
+                        <div class="truncate text-left flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 text-[10px] font-bold uppercase tracking-wider border border-sky-400/30 flex-shrink-0" x-text="slides[active] ? slides[active].tag : 'Fasilitas Kampus'"></span>
+                            <span class="text-xs font-semibold text-white truncate" x-text="slides[active] ? slides[active].title : ''"></span>
                         </div>
                     </div>
 
                     <!-- Slide Indicator Dots & Prev/Next -->
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <button @click="active = (active - 1 + slides.length) % slides.length" title="Sebelumnya" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
-                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        <div class="text-[10px] font-bold text-sky-300 font-mono tracking-wider px-1">
+                            <span x-text="String(active + 1).padStart(2, '0')"></span>/<span x-text="String(slides.length).padStart(2, '0')" class="text-slate-400"></span>
+                        </div>
+                        <button @click="active = (active - 1 + slides.length) % slides.length" title="Sebelumnya" class="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                            <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
                         </button>
-                        <div class="flex items-center gap-1.5 px-1">
+                        <div class="flex items-center gap-1">
                             <template x-for="(slide, index) in slides" :key="index">
                                 <button @click="active = index"
-                                        :class="active === index ? 'w-5 bg-sky-400' : 'w-2 bg-white/30 hover:bg-white/60'"
-                                        class="h-2 rounded-full transition-all duration-300"></button>
+                                        :class="active === index ? 'w-4 bg-sky-400' : 'w-1.5 bg-white/30 hover:bg-white/60'"
+                                        class="h-1.5 rounded-full transition-all duration-300"></button>
                             </template>
                         </div>
-                        <button @click="active = (active + 1) % slides.length" title="Berikutnya" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
-                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        <button @click="active = (active + 1) % slides.length" title="Berikutnya" class="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Key Metrics Cards (2x2 Grid) -->
-                <div class="grid grid-cols-2 gap-3.5">
-                    <div class="p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-3.5 hover:border-sky-400/40 transition-colors">
-                        <div class="w-11 h-11 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center flex-shrink-0 border border-sky-400/30">
-                            <i data-lucide="book" class="w-5 h-5"></i>
+                <!-- 4 Kartu Statistik dalam 1 Baris Horizontal Proporsional -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div class="p-3 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-2.5 hover:border-sky-400/40 transition-colors">
+                        <div class="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center flex-shrink-0 border border-sky-400/30">
+                            <i data-lucide="book" class="w-4 h-4"></i>
                         </div>
-                        <div>
-                            <div class="text-xl font-black text-white">{{ number_format($stats['total_books']) }}</div>
-                            <div class="text-xs text-slate-300 font-medium">Judul Buku</div>
-                        </div>
-                    </div>
-
-                    <div class="p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-3.5 hover:border-indigo-400/40 transition-colors">
-                        <div class="w-11 h-11 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0 border border-indigo-400/30">
-                            <i data-lucide="copy" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <div class="text-xl font-black text-white">{{ number_format($stats['total_items']) }}</div>
-                            <div class="text-xs text-slate-300 font-medium">Eksemplar Fisik</div>
+                        <div class="min-w-0">
+                            <div class="text-base sm:text-lg font-black text-white leading-tight">{{ number_format($stats['total_books']) }}</div>
+                            <div class="text-[10px] text-slate-300 font-medium truncate">Judul Buku</div>
                         </div>
                     </div>
 
-                    <div class="p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-3.5 hover:border-emerald-400/40 transition-colors">
-                        <div class="w-11 h-11 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-400/30">
-                            <i data-lucide="users" class="w-5 h-5"></i>
+                    <div class="p-3 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-2.5 hover:border-indigo-400/40 transition-colors">
+                        <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0 border border-indigo-400/30">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
                         </div>
-                        <div>
-                            <div class="text-xl font-black text-white">{{ number_format($stats['total_members']) }}</div>
-                            <div class="text-xs text-slate-300 font-medium">Anggota Terdaftar</div>
+                        <div class="min-w-0">
+                            <div class="text-base sm:text-lg font-black text-white leading-tight">{{ number_format($stats['total_items']) }}</div>
+                            <div class="text-[10px] text-slate-300 font-medium truncate">Eksemplar</div>
                         </div>
                     </div>
 
-                    <div class="p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-3.5 hover:border-amber-400/40 transition-colors">
-                        <div class="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 border border-amber-400/30">
-                            <i data-lucide="feather" class="w-5 h-5"></i>
+                    <div class="p-3 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-2.5 hover:border-emerald-400/40 transition-colors">
+                        <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-400/30">
+                            <i data-lucide="users" class="w-4 h-4"></i>
                         </div>
-                        <div>
-                            <div class="text-xl font-black text-white">{{ number_format($stats['total_authors']) }}</div>
-                            <div class="text-xs text-slate-300 font-medium">Pengarang / Penulis</div>
+                        <div class="min-w-0">
+                            <div class="text-base sm:text-lg font-black text-white leading-tight">{{ number_format($stats['total_members']) }}</div>
+                            <div class="text-[10px] text-slate-300 font-medium truncate">Anggota</div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-2.5 hover:border-amber-400/40 transition-colors">
+                        <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 border border-amber-400/30">
+                            <i data-lucide="feather" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-base sm:text-lg font-black text-white leading-tight">{{ number_format($stats['total_authors']) }}</div>
+                            <div class="text-[10px] text-slate-300 font-medium truncate">Penulis</div>
                         </div>
                     </div>
                 </div>
