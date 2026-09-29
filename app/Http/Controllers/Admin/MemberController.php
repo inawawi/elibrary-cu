@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Author;
 use App\Models\Member;
 use App\Models\MemberType;
 use Carbon\Carbon;
@@ -85,7 +86,12 @@ class MemberController extends Controller
         $memberType = MemberType::find($validated['member_type_id']);
         $periodeDays = $memberType?->member_periode ?? 365;
 
-        Member::create([
+        // Dosen (member_type_id == 2) or zero period has no expiration date (tanpa masa berlaku)
+        $expireDate = ($periodeDays > 0 && (int)$validated['member_type_id'] !== 2)
+            ? Carbon::today()->addDays($periodeDays)->toDateString()
+            : null;
+
+        $member = Member::create([
             'member_id' => $validated['member_id'],
             'member_name' => $validated['member_name'],
             'gender' => (int) $validated['gender'],
@@ -99,11 +105,23 @@ class MemberController extends Controller
             'member_image' => $imageName,
             'register_date' => Carbon::today()->toDateString(),
             'member_since_date' => Carbon::today()->toDateString(),
-            'expire_date' => Carbon::today()->addDays($periodeDays)->toDateString(),
+            'expire_date' => $expireDate,
             'is_pending' => 0,
             'input_date' => Carbon::now(),
             'last_update' => Carbon::now(),
         ]);
+
+        // If member is Dosen, register as an Author to link to student theses (pembimbing skripsi)
+        if ((int)$validated['member_type_id'] === 2) {
+            Author::firstOrCreate(
+                ['author_name' => $validated['member_name']],
+                [
+                    'authority_type' => 'p',
+                    'input_date' => Carbon::today()->toDateString(),
+                    'last_update' => Carbon::today()->toDateString(),
+                ]
+            );
+        }
 
         return redirect()->route('admin.member.index')->with('success', 'Anggota ' . $validated['member_name'] . ' berhasil didaftarkan!');
     }

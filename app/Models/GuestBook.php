@@ -20,6 +20,8 @@ class GuestBook extends Model
         'tgl',
         'jam',
         'status',
+        'prodi',
+        'tujuan',
         'keperluan',
         'nomor_urut',
     ];

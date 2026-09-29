@@ -93,6 +93,14 @@
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
                         <span>Tambah Buku Baru</span>
                     </a>
+                    <a href="{{ route('admin.skripsi.create') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.skripsi.create') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-500"></i>
+                        <span>Tambah Data Skripsi</span>
+                    </a>
+                    <a href="{{ route('admin.ebook.create') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.ebook.create') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <i data-lucide="tablet" class="w-4 h-4 text-emerald-500"></i>
+                        <span>Tambah Data e-Book</span>
+                    </a>
                 </nav>
             </div>
 

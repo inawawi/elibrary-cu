@@ -77,10 +77,7 @@
                 <a href="{{ route('opac.index') }}" class="flex items-center gap-3 group">
                     <img src="{{ asset('images/logo.png') }}" alt="Logo Universitas Siber Indonesia" class="w-12 h-12 object-contain group-hover:scale-105 transition-transform duration-200">
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-600 via-sky-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent">PERPUSTAKAAN</span>
-                            <!-- <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-brand-100 text-brand-700 dark:bg-sky-950/80 dark:text-sky-300 border border-brand-200 dark:border-sky-800">DIGITAL</span> -->
-                        </div>
+                        <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-600 via-sky-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent block">PERPUSTAKAAN</span>
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Universitas Siber Indonesia</p>
                     </div>
                 </a>
@@ -95,6 +92,9 @@
                     </a>
                     <a href="{{ route('opac.guestbook') }}" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('opac.guestbook') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/60 dark:text-sky-400' : 'text-slate-600 hover:text-brand-600 dark:text-slate-300 dark:hover:text-white' }}">
                         Buku Tamu
+                    </a>
+                    <a href="{{ route('opac.news') }}" class="px-4 py-2 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('opac.news') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/60 dark:text-sky-400' : 'text-slate-600 hover:text-brand-600 dark:text-slate-300 dark:hover:text-white' }}">
+                        Berita
                     </a>
                 </nav>
 
@@ -203,6 +203,7 @@
                     <ul class="space-y-2 text-sm">
                         <li><a href="{{ route('opac.search') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Pencarian Koleksi</a></li>
                         <li><a href="{{ route('opac.guestbook') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Buku Tamu Pengunjung</a></li>
+                        <li><a href="{{ route('opac.news') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Berita & Informasi</a></li>
                         <li><a href="{{ route('member.login') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Area Mandiri Anggota</a></li>
                         <li><a href="{{ route('admin.login') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Portal Pustakawan</a></li>
                     </ul>
@@ -212,9 +213,8 @@
                 <div>
                     <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-4">Jam Operasional</h3>
                     <ul class="space-y-2 text-sm">
-                        <li class="flex items-center justify-between"><span class="text-slate-500">Senin - Kamis:</span> <span class="font-medium text-slate-700 dark:text-slate-300">08.00 - 16.00</span></li>
-                        <li class="flex items-center justify-between"><span class="text-slate-500">Jumat:</span> <span class="font-medium text-slate-700 dark:text-slate-300">08.00 - 16.30</span></li>
-                        <li class="flex items-center justify-between"><span class="text-slate-500">Sabtu - Minggu:</span> <span class="text-rose-500 font-medium">Tutup</span></li>
+                        <li class="flex items-center justify-between"><span class="text-slate-500">Senin - Jumat:</span> <span class="font-medium text-slate-700 dark:text-slate-300">08.00 - 17.00 WIB</span></li>
+                        <li class="flex items-center justify-between"><span class="text-slate-500">Sabtu - Minggu:</span> <span class="text-rose-500 font-medium font-semibold">Tutup</span></li>
                     </ul>
                 </div>
             </div>

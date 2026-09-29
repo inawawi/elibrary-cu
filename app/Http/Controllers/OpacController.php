@@ -9,6 +9,7 @@ use App\Models\GuestBook;
 use App\Models\Item;
 use App\Models\Member;
 use App\Models\Publisher;
+use App\Models\Setting;
 use App\Models\Topic;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -55,7 +56,9 @@ class OpacController extends Controller
             'total_authors' => Author::count(),
         ];
 
-        return view('opac.index', compact('featuredBooks', 'latestBooks', 'popularTopics', 'stats'));
+        $newsArticles = self::getNewsArticles();
+
+        return view('opac.index', compact('featuredBooks', 'latestBooks', 'popularTopics', 'stats', 'newsArticles'));
     }
 
     public function search(Request $request)
@@ -175,8 +178,16 @@ class OpacController extends Controller
                 'id_anggota' => 'nullable|string|max:12',
                 'nama' => 'required|string|max:60',
                 'status' => 'required|in:Anggota,Non Anggota',
+                'prodi' => 'nullable|string|max:60',
+                'tujuan' => 'required|string|max:50',
                 'keperluan' => 'required|string|max:100',
+                'keperluan_lainnya' => 'nullable|string|max:100',
             ]);
+
+            $finalKeperluan = $validated['keperluan'];
+            if ($finalKeperluan === 'Lainnya' && !empty($validated['keperluan_lainnya'])) {
+                $finalKeperluan = 'Lainnya: ' . $validated['keperluan_lainnya'];
+            }
 
             $lastId = GuestBook::orderBy('id_bukutamu', 'desc')->value('id_bukutamu');
             $newNum = $lastId ? (intval(substr($lastId, 2)) + 1) : 1;
@@ -190,7 +201,9 @@ class OpacController extends Controller
                 'tgl' => Carbon::today()->toDateString(),
                 'jam' => Carbon::now()->toTimeString(),
                 'status' => $validated['status'],
-                'keperluan' => $validated['keperluan'],
+                'prodi' => $validated['prodi'] ?? null,
+                'tujuan' => $validated['tujuan'],
+                'keperluan' => $finalKeperluan,
                 'nomor_urut' => $newNum,
             ]);
 
@@ -203,5 +216,59 @@ class OpacController extends Controller
             ->get();
 
         return view('opac.guestbook', compact('recentGuests'));
+    }
+
+    public function news()
+    {
+        $newsArticles = self::getNewsArticles();
+        return view('opac.news', compact('newsArticles'));
+    }
+
+    public static function getNewsArticles()
+    {
+        $defaultNews = [
+            [
+                'id' => 1,
+                'title' => 'Perpustakaan Universitas Siber Indonesia Perluas Akses Koleksi Digital & Layanan Sirkulasi Modern',
+                'source' => 'Cyber University News',
+                'url' => 'https://cyber-univ.ac.id',
+                'date' => '24 September 2026',
+                'image' => 'images/slides/slide2_library.jpg',
+                'excerpt' => 'Universitas Siber Indonesia resmi meluncurkan pembaruan sistem informasi perpustakaan berbasis teknologi web modern dengan integrasi katalog digital dan area mandiri anggota.',
+                'category' => 'Layanan & Inovasi',
+            ],
+            [
+                'id' => 2,
+                'title' => 'Cyber University Resmikan Student Corner & Podcast Studio Kreatif di Perpustakaan',
+                'source' => 'Portal Berita Kampus',
+                'url' => 'https://cyber-univ.ac.id',
+                'date' => '18 September 2026',
+                'image' => 'images/slides/slide4_podcast.jpg',
+                'excerpt' => 'Fasilitas Student Corner dan Podcast Studio kini hadir di Perpustakaan Cyber University untuk mendukung kreativitas, diskusi kolaboratif, serta produksi konten literasi mahasiswa.',
+                'category' => 'Fasilitas Kampus',
+            ],
+            [
+                'id' => 3,
+                'title' => 'Tingkatkan Mutu Akademik, Perpustakaan Cyber University Tambah Ribuan Koleksi Buku & e-Book Terkini',
+                'source' => 'Media Pendidikan Online',
+                'url' => 'https://cyber-univ.ac.id',
+                'date' => '10 September 2026',
+                'image' => 'images/slides/slide1_campus.jpg',
+                'excerpt' => 'Komitmen penguatan literasi ilmiah diwujudkan melalui penambahan ribuan judul literatur, e-book, dan repositori skripsi untuk lima program studi unggulan.',
+                'category' => 'Akademik & Riset',
+            ],
+            [
+                'id' => 4,
+                'title' => 'Kunjungan Studi Literasi & Kolaborasi Riset Mahasiswa di Student Lounge Perpustakaan',
+                'source' => 'Info Kampus Nasional',
+                'url' => 'https://cyber-univ.ac.id',
+                'date' => '02 September 2026',
+                'image' => 'images/slides/slide3_student_corner.jpg',
+                'excerpt' => 'Antusiasme mahasiswa memanfaatkan area Student Corner perpustakaan untuk bedah jurnal ilmiah, perancangan proposal skripsi, dan kegiatan belajar kelompok.',
+                'category' => 'Aktivitas Mahasiswa',
+            ],
+        ];
+
+        return Setting::get('library_news', $defaultNews);
     }
 }

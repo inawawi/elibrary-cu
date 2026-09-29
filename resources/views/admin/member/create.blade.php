@@ -23,22 +23,25 @@
         <div class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">ID Anggota / NIM *</label>
-                    <input type="text" name="member_id" value="{{ old('member_id') }}" required placeholder="Contoh: 12220099" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">ID Anggota / NIM / NIP / NIDN *</label>
+                    <input type="text" name="member_id" value="{{ old('member_id') }}" required placeholder="Contoh NIM: 12220099 atau NIP: 19850101..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Tipe Keanggotaan *</label>
                     <select name="member_type_id" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
                         @foreach($memberTypes as $mt)
-                            <option value="{{ $mt->member_type_id }}">{{ $mt->member_type_name }} (Limit: {{ $mt->loan_limit }} buku, {{ $mt->loan_periode }} hari)</option>
+                            <option value="{{ $mt->member_type_id }}" {{ old('member_type_id') == $mt->member_type_id ? 'selected' : '' }}>
+                                {{ $mt->member_type_name }} (Limit: {{ $mt->loan_limit }} buku, {{ $mt->loan_periode }} hari, {{ $mt->member_periode > 0 ? floor($mt->member_periode/365) . ' Thn' : 'Tanpa Masa Berlaku' }})
+                            </option>
                         @endforeach
                     </select>
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Nama Lengkap *</label>
-                <input type="text" name="member_name" value="{{ old('member_name') }}" required placeholder="Masukkan nama lengkap anggota..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Nama Lengkap & Gelar *</label>
+                <input type="text" name="member_name" value="{{ old('member_name') }}" required placeholder="Masukkan nama lengkap (sertakan gelar untuk Dosen/Peneliti, misal: Dr. Budi, M.Kom)..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-900 dark:text-white focus:outline-none">
+                <span class="text-[10px] text-slate-400 mt-1 block">Untuk Dosen: Nama lengkap dan gelar akan otomatis terhubung ke sistem pembimbing skripsi mahasiswa.</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

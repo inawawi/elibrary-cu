@@ -64,8 +64,8 @@
                     <span class="font-bold">{{ $member->expire_date ? \Carbon\Carbon::parse($member->expire_date)->format('d/m/Y') : 'Seumur Hidup' }}</span>
                 </div>
                 <div class="text-right">
-                    <span class="text-white/60 block text-[9px] uppercase tracking-wider">Perpustakaan Pusat</span>
-                    <span class="font-bold text-sky-200">perpustakaan.siber.ac.id</span>
+                    <span class="text-white/60 block text-[9px] uppercase tracking-wider">Kontak Surel Resmi</span>
+                    <span class="font-bold text-sky-200">perpustakaan@cyber-univ.ac.id</span>
                 </div>
             </div>
         </div>

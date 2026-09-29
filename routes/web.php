@@ -16,10 +16,12 @@ use Illuminate\Support\Facades\Route;
 | Public OPAC Routes
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', [OpacController::class, 'index'])->name('opac.index');
 Route::get('/search', [OpacController::class, 'search'])->name('opac.search');
 Route::get('/book/{id}', [OpacController::class, 'show'])->name('opac.show');
 Route::match(['get', 'post'], '/guestbook', [OpacController::class, 'guestbook'])->name('opac.guestbook');
+Route::get('/news', [OpacController::class, 'news'])->name('opac.news');
 
 /*
 |--------------------------------------------------------------------------
@@ -39,7 +41,7 @@ Route::middleware('auth:member')->group(function () {
 | Admin / Librarian Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/login', fn () => redirect()->route('admin.login'))->name('login');
+Route::get('/login', fn() => redirect()->route('admin.login'))->name('login');
 
 Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
@@ -53,6 +55,10 @@ Route::prefix('admin')->group(function () {
         Route::get('/biblio', [BiblioController::class, 'index'])->name('admin.biblio.index');
         Route::get('/biblio/create', [BiblioController::class, 'create'])->name('admin.biblio.create');
         Route::post('/biblio', [BiblioController::class, 'store'])->name('admin.biblio.store');
+        Route::get('/skripsi/create', [BiblioController::class, 'createSkripsi'])->name('admin.skripsi.create');
+        Route::post('/skripsi', [BiblioController::class, 'storeSkripsi'])->name('admin.skripsi.store');
+        Route::get('/ebook/create', [BiblioController::class, 'createEbook'])->name('admin.ebook.create');
+        Route::post('/ebook', [BiblioController::class, 'storeEbook'])->name('admin.ebook.store');
         Route::get('/biblio/{id}/edit', [BiblioController::class, 'edit'])->name('admin.biblio.edit');
         Route::put('/biblio/{id}', [BiblioController::class, 'update'])->name('admin.biblio.update');
         Route::delete('/biblio/{id}', [BiblioController::class, 'destroy'])->name('admin.biblio.destroy');

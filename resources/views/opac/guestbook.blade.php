@@ -23,46 +23,78 @@
                     Formulir Kunjungan
                 </h2>
 
-                <form action="{{ route('opac.guestbook') }}" method="POST" class="space-y-4">
+                <form action="{{ route('opac.guestbook') }}" method="POST" class="space-y-4" x-data="{ keperluan: '{{ old('keperluan', 'Membaca') }}' }">
                     @csrf
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">NIM / Nomor Anggota (Opsional)</label>
                         <input type="text"
-                               name="id_anggota"
-                               value="{{ old('id_anggota') }}"
-                               placeholder="Contoh: 12220001"
-                               class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                            name="id_anggota"
+                            value="{{ old('id_anggota') }}"
+                            placeholder="Contoh: 12220001"
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Nama Lengkap *</label>
                         <input type="text"
-                               name="nama"
-                               value="{{ old('nama') }}"
-                               required
-                               placeholder="Masukkan nama lengkap Anda..."
-                               class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                            name="nama"
+                            value="{{ old('nama') }}"
+                            required
+                            placeholder="Masukkan nama lengkap Anda..."
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Status Pengunjung *</label>
+                            <select name="status" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                                <option value="Anggota" {{ old('status') === 'Anggota' ? 'selected' : '' }}>Mahasiswa / Sivitas Anggota</option>
+                                <option value="Non Anggota" {{ old('status') === 'Non Anggota' ? 'selected' : '' }}>Pengunjung Umum / Tamu Luar</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Tujuan Kunjungan *</label>
+                            <select name="tujuan" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-brand-600 dark:text-sky-400">
+                                <option value="Library" {{ old('tujuan') === 'Library' ? 'selected' : '' }}>1. Library</option>
+                                <option value="Student Corner" {{ old('tujuan') === 'Student Corner' ? 'selected' : '' }}>2. Student Corner</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Status Pengunjung *</label>
-                        <select name="status" required class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
-                            <option value="Anggota" {{ old('status') === 'Anggota' ? 'selected' : '' }}>Mahasiswa / Sivitas Anggota</option>
-                            <option value="Non Anggota" {{ old('status') === 'Non Anggota' ? 'selected' : '' }}>Pengunjung Umum / Tamu Luar</option>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Program Studi *</label>
+                        <select name="prodi" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                            <option value="">-- Pilih Program Studi --</option>
+                            <option value="Bisnis Digital" {{ old('prodi') === 'Bisnis Digital' ? 'selected' : '' }}>S1 - Bisnis Digital</option>
+                            <option value="Kewirausahaan" {{ old('prodi') === 'Kewirausahaan' ? 'selected' : '' }}>S1 - Kewirausahaan</option>
+                            <option value="Sistem dan Teknologi Informasi" {{ old('prodi') === 'Sistem dan Teknologi Informasi' ? 'selected' : '' }}>S1 - Sistem dan Teknologi Informasi</option>
+                            <option value="Sistem Informasi" {{ old('prodi') === 'Sistem Informasi' ? 'selected' : '' }}>S1 - Sistem Informasi</option>
+                            <option value="Teknologi Informasi" {{ old('prodi') === 'Teknologi Informasi' ? 'selected' : '' }}>S1 - Teknologi Informasi</option>
+                            <option value="Dosen / Karyawan / Umum" {{ old('prodi') === 'Dosen / Karyawan / Umum' ? 'selected' : '' }}>Dosen / Karyawan / Umum</option>
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Keperluan Kunjungan *</label>
-                        <input type="text"
-                               name="keperluan"
-                               value="{{ old('keperluan') }}"
-                               required
-                               placeholder="Contoh: Membaca, Referensi Skripsi, Pinjam Buku..."
-                               class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                        <select name="keperluan" x-model="keperluan" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                            <option value="Membaca">Membaca</option>
+                            <option value="Referensi Skripsi">Referensi Skripsi</option>
+                            <option value="Podcast">Podcast</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
                     </div>
 
-                    <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white font-bold text-sm shadow-md shadow-brand-500/25 transition-all">
+                    <div x-show="keperluan === 'Lainnya'" x-cloak>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Keterangan Keperluan Lainnya *</label>
+                        <input type="text"
+                            name="keperluan_lainnya"
+                            value="{{ old('keperluan_lainnya') }}"
+                            placeholder="Tuliskan keperluan Anda..."
+                            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white font-bold text-xs shadow-md shadow-brand-500/25 transition-all">
                         Simpan Kunjungan Saya
                     </button>
                 </form>
@@ -82,25 +114,33 @@
 
                 <div class="space-y-3">
                     @forelse($recentGuests as $guest)
-                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-brand-100 dark:bg-sky-950 text-brand-700 dark:text-sky-300 flex items-center justify-center font-bold">
-                                    {{ strtoupper(substr($guest->nama, 0, 1)) }}
-                                </div>
-                                <div>
-                                    <div class="font-bold text-slate-900 dark:text-white text-sm">{{ $guest->nama }}</div>
-                                    <div class="text-slate-400">{{ $guest->keperluan }} • <span class="font-semibold text-brand-600 dark:text-sky-400">{{ $guest->status }}</span></div>
-                                </div>
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-brand-100 dark:bg-sky-950 text-brand-700 dark:text-sky-300 flex items-center justify-center font-bold">
+                                {{ strtoupper(substr($guest->nama, 0, 1)) }}
                             </div>
-                            <div class="text-right text-slate-400">
-                                <div>{{ \Carbon\Carbon::parse($guest->tgl)->format('d/m/Y') }}</div>
-                                <div class="font-mono text-[11px]">{{ substr($guest->jam, 0, 5) }} WIB</div>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white text-sm">{{ $guest->nama }}</div>
+                                <div class="text-slate-400 flex items-center gap-1.5 flex-wrap mt-0.5">
+                                    <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $guest->keperluan }}</span>
+                                    @if($guest->tujuan)
+                                    <span class="px-2 py-0.2 rounded-md bg-brand-50 dark:bg-sky-950/80 text-brand-600 dark:text-sky-300 text-[10px] font-bold">{{ $guest->tujuan }}</span>
+                                    @endif
+                                    @if($guest->prodi)
+                                    <span class="px-2 py-0.2 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px]">{{ $guest->prodi }}</span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
+                        <div class="text-right text-slate-400 flex-shrink-0">
+                            <div>{{ \Carbon\Carbon::parse($guest->tgl)->format('d/m/Y') }}</div>
+                            <div class="font-mono text-[11px]">{{ substr($guest->jam, 0, 5) }} WIB</div>
+                        </div>
+                    </div>
                     @empty
-                        <div class="p-6 text-center text-slate-400 text-sm">
-                            Belum ada riwayat pengunjung.
-                        </div>
+                    <div class="p-6 text-center text-slate-400 text-sm">
+                        Belum ada riwayat pengunjung.
+                    </div>
                     @endforelse
                 </div>
             </div>

@@ -52,6 +52,90 @@
             </div>
         </div>
 
+        <!-- Hero Visual Carousel Banner -->
+        <div x-data="{
+                active: 0,
+                slides: [
+                    {
+                        img: '{{ asset('images/slides/slide1_campus.jpg') }}',
+                        tag: 'Kampus Cyber University',
+                        title: 'The First Fintech University in Indonesia',
+                        desc: 'Kampus modern berorientasi digital dan keunggulan teknologi siber untuk mencetak generasi inovator masa depan.'
+                    },
+                    {
+                        img: '{{ asset('images/slides/slide2_library.jpg') }}',
+                        tag: 'Ruang Koleksi & Literasi',
+                        title: 'Koleksi Pustaka & Literatur Ilmiah Lengkap',
+                        desc: 'Akses ribuan judul buku teks, e-book, jurnal akademik, dan repositori skripsi untuk sivitas akademika.'
+                    },
+                    {
+                        img: '{{ asset('images/slides/slide3_student_corner.jpg') }}',
+                        tag: 'Student Corner & Diskusi',
+                        title: 'Ruang Belajar Kolaboratif & Kreatif Mahasiswa',
+                        desc: 'Fasilitas student lounge nyaman untuk bedah referensi riset, belajar bersama, dan penyusunan tugas akhir.'
+                    },
+                    {
+                        img: '{{ asset('images/slides/slide4_podcast.jpg') }}',
+                        tag: 'Podcast Studio & Media Hub',
+                        title: 'Pusat Literasi Digital & Podcast Edukasi',
+                        desc: 'Studio podcast modern untuk menyiarkan diskursus ilmu pengetahuan, review literatur, dan kreativitas mahasiswa.'
+                    }
+                ],
+                paused: false,
+                init() {
+                    setInterval(() => {
+                        if (!this.paused) {
+                            this.active = (this.active + 1) % this.slides.length;
+                        }
+                    }, 5000);
+                }
+            }"
+            @mouseenter="paused = true"
+            @mouseleave="paused = false"
+            class="max-w-5xl mx-auto my-8 relative group rounded-3xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-900 aspect-[16/8] sm:aspect-[16/7] md:aspect-[21/9]">
+            
+            <!-- Slides -->
+            <template x-for="(slide, index) in slides" :key="index">
+                <div x-show="active === index"
+                     x-transition:enter="transition ease-out duration-700"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-500"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-105"
+                     class="absolute inset-0 w-full h-full">
+                    <img :src="slide.img" :alt="slide.title" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent"></div>
+                    
+                    <!-- Text Overlay -->
+                    <div class="absolute bottom-0 inset-x-0 p-6 sm:p-8 md:p-10 text-white">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-600/90 backdrop-blur text-white text-[11px] font-bold uppercase tracking-wider mb-2" x-text="slide.tag"></span>
+                        <h3 class="text-xl sm:text-2xl md:text-3xl font-black text-white leading-tight drop-shadow-md" x-text="slide.title"></h3>
+                        <p class="text-xs sm:text-sm text-slate-200 max-w-2xl mt-1.5 line-clamp-2 drop-shadow-sm font-medium" x-text="slide.desc"></p>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Navigation Chevrons -->
+            <button @click="active = (active - 1 + slides.length) % slides.length"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 z-10 focus:outline-none">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            <button @click="active = (active + 1) % slides.length"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 z-10 focus:outline-none">
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+
+            <!-- Slide Indicators -->
+            <div class="absolute top-4 right-4 flex items-center gap-1.5 z-10 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full">
+                <template x-for="(slide, index) in slides" :key="index">
+                    <button @click="active = index"
+                            :class="active === index ? 'w-6 bg-brand-400' : 'w-2 bg-white/40 hover:bg-white/70'"
+                            class="h-2 rounded-full transition-all duration-300 focus:outline-none"></button>
+                </template>
+            </div>
+        </div>
+
         <!-- Key Metrics Cards -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-4">
             <div class="p-5 rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex items-center gap-4">
@@ -209,6 +293,61 @@
                 </div>
             @endforeach
         </div>
+    </div>
+</section>
+
+<!-- Warta & Berita Terkini Perpustakaan -->
+<section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <div class="flex items-center gap-2 text-brand-600 dark:text-sky-400 font-bold text-xs uppercase tracking-wider mb-1">
+                <i data-lucide="newspaper" class="w-4 h-4"></i>
+                <span>Warta & Berita Terkini</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Publikasi & Kabar Perpustakaan</h2>
+        </div>
+        <a href="{{ route('opac.news') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-brand-600 dark:text-sky-400 hover:underline">
+            <span>Lihat Semua Berita</span>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        @foreach(collect($newsArticles)->take(4) as $article)
+            <article class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden hover:border-brand-300 dark:hover:border-sky-700 transition-all duration-300 hover:-translate-y-1.5 shadow-sm hover:shadow-xl flex flex-col group">
+                <div class="relative aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-slate-800">
+                    <img src="{{ asset($article['image']) }}" alt="{{ $article['title'] }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    <div class="absolute top-3 left-3">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-brand-600/90 text-white backdrop-blur shadow-sm">
+                            {{ $article['category'] }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-5 flex flex-col flex-grow">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 mb-2">
+                        <span class="font-semibold text-brand-600 dark:text-sky-400">{{ $article['source'] }}</span>
+                        <span>{{ $article['date'] }}</span>
+                    </div>
+
+                    <h3 class="font-bold text-slate-900 dark:text-white text-sm line-clamp-2 leading-snug group-hover:text-brand-600 dark:group-hover:text-sky-400 transition-colors mb-2">
+                        {{ $article['title'] }}
+                    </h3>
+
+                    <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-3 mb-4 leading-relaxed font-normal">
+                        {{ $article['excerpt'] }}
+                    </p>
+
+                    <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <a href="{{ $article['url'] }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-sky-400 hover:text-brand-700 dark:hover:text-sky-300">
+                            <span>Baca Artikel</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Tautan Resmi</span>
+                    </div>
+                </div>
+            </article>
+        @endforeach
     </div>
 </section>
 

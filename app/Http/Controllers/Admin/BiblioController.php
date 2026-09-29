@@ -10,6 +10,7 @@ use App\Models\Gmd;
 use App\Models\Item;
 use App\Models\ItemStatus;
 use App\Models\Location;
+use App\Models\Member;
 use App\Models\Place;
 use App\Models\Publisher;
 use App\Models\Topic;
@@ -269,5 +270,249 @@ class BiblioController extends Controller
 
         $item->delete();
         return back()->with('success', 'Eksemplar berhasil dihapus.');
+    }
+
+    public function createSkripsi()
+    {
+        $dosenMembers = Member::where('member_type_id', 2)->orderBy('member_name')->get();
+        $authors = Author::orderBy('author_name')->get();
+        $topics = Topic::orderBy('topic')->get();
+
+        return view('admin.biblio.create_skripsi', compact('dosenMembers', 'authors', 'topics'));
+    }
+
+    public function storeSkripsi(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:500',
+            'student_name' => 'required|string|max:100',
+            'student_nim' => 'required|string|max:20',
+            'prodi' => 'required|string|max:60',
+            'pembimbing_1' => 'required|string|max:100',
+            'pembimbing_2' => 'nullable|string|max:100',
+            'publish_year' => 'required|string|max:4',
+            'abstract' => 'nullable|string',
+            'skripsi_file' => 'nullable|file|mimes:pdf,zip,rar,doc,docx|max:20480',
+            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'call_number' => 'nullable|string|max:50',
+            'topics' => 'nullable|array',
+        ]);
+
+        $gmdSkripsi = Gmd::where('gmd_code', 'SR')->orWhere('gmd_name', 'like', '%Skripsi%')->first();
+        $gmdId = $gmdSkripsi ? $gmdSkripsi->gmd_id : 262;
+
+        $publisher = Publisher::firstOrCreate(
+            ['publisher_name' => 'Universitas Siber Indonesia'],
+            ['input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+        );
+
+        $place = Place::firstOrCreate(
+            ['place_name' => 'Jakarta'],
+            ['input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+        );
+
+        // Upload file attachment
+        $fileName = null;
+        if ($request->hasFile('skripsi_file')) {
+            $file = $request->file('skripsi_file');
+            $fileName = 'skripsi_' . $validated['student_nim'] . '_' . time() . '.' . $file->getClientOriginalExtension();
+            if (!file_exists(public_path('files/skripsi'))) {
+                mkdir(public_path('files/skripsi'), 0755, true);
+            }
+            $file->move(public_path('files/skripsi'), $fileName);
+        }
+
+        // Upload cover
+        $imageName = null;
+        if ($request->hasFile('cover_image')) {
+            $cfile = $request->file('cover_image');
+            $imageName = 'cover_skripsi_' . time() . '.' . $cfile->getClientOriginalExtension();
+            $cfile->move(public_path('images/docs'), $imageName);
+        }
+
+        $prodiCode = match($validated['prodi']) {
+            'Teknologi Informasi' => 'TI',
+            'Sistem Informasi' => 'SI',
+            'Sistem dan Teknologi Informasi' => 'STI',
+            'Bisnis Digital' => 'BD',
+            'Kewirausahaan' => 'KW',
+            default => 'SKR'
+        };
+        $callNumber = $validated['call_number'] ?: ('SKR-' . $prodiCode . '-' . $validated['publish_year'] . '-' . substr($validated['student_nim'], -4));
+
+        $specDetail = json_encode([
+            'tipe' => 'Skripsi',
+            'nim' => $validated['student_nim'],
+            'prodi' => $validated['prodi'],
+            'pembimbing_1' => $validated['pembimbing_1'],
+            'pembimbing_2' => $validated['pembimbing_2'] ?? null,
+        ], JSON_UNESCAPED_UNICODE);
+
+        $biblio = Biblio::create([
+            'gmd_id' => $gmdId,
+            'title' => $validated['title'],
+            'sor' => $validated['student_name'] . ' (NIM: ' . $validated['student_nim'] . ') ; Pembimbing: ' . $validated['pembimbing_1'],
+            'edition' => 'Skripsi',
+            'publisher_id' => $publisher->publisher_id,
+            'publish_year' => $validated['publish_year'],
+            'collation' => 'xx, 120 hlm. : ilus. ; 30 cm',
+            'series_title' => 'Skripsi Program Studi ' . $validated['prodi'],
+            'call_number' => $callNumber,
+            'language_id' => 'id',
+            'publish_place_id' => $place->place_id,
+            'classification' => '004',
+            'notes' => $validated['abstract'] ?? null,
+            'image' => $imageName,
+            'file_att' => $fileName ? ('files/skripsi/' . $fileName) : null,
+            'spec_detail_info' => $specDetail,
+            'input_date' => Carbon::now(),
+            'last_update' => Carbon::now(),
+            'uid' => auth()->id() ?? 1,
+        ]);
+
+        // Register student as author
+        $studentAuthor = Author::firstOrCreate(
+            ['author_name' => $validated['student_name']],
+            ['authority_type' => 'p', 'input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+        );
+        $biblio->authors()->attach($studentAuthor->author_id, ['level' => 1]);
+
+        // Register advisor 1 as author
+        if (!empty($validated['pembimbing_1'])) {
+            $adv1 = Author::firstOrCreate(
+                ['author_name' => $validated['pembimbing_1']],
+                ['authority_type' => 'p', 'input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+            );
+            $biblio->authors()->attach($adv1->author_id, ['level' => 2]);
+        }
+
+        // Register advisor 2 if any
+        if (!empty($validated['pembimbing_2'])) {
+            $adv2 = Author::firstOrCreate(
+                ['author_name' => $validated['pembimbing_2']],
+                ['authority_type' => 'p', 'input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+            );
+            $biblio->authors()->attach($adv2->author_id, ['level' => 3]);
+        }
+
+        // Create Item physical archive copy
+        Item::create([
+            'biblio_id' => $biblio->biblio_id,
+            'item_code' => 'SKR' . str_pad($biblio->biblio_id, 5, '0', STR_PAD_LEFT),
+            'call_number' => $callNumber,
+            'coll_type_id' => 2, // Reference
+            'location_id' => '001',
+            'item_status_id' => '001',
+            'input_date' => Carbon::now(),
+            'last_update' => Carbon::now(),
+            'uid' => auth()->id() ?? 1,
+        ]);
+
+        if (!empty($validated['topics'])) {
+            $biblio->topics()->sync($validated['topics']);
+        }
+
+        return redirect()->route('admin.biblio.index')->with('success', 'Data Skripsi "' . $validated['title'] . '" karya ' . $validated['student_name'] . ' berhasil ditambahkan!');
+    }
+
+    public function createEbook()
+    {
+        $authors = Author::orderBy('author_name')->get();
+        $publishers = Publisher::orderBy('publisher_name')->get();
+        $topics = Topic::orderBy('topic')->get();
+
+        return view('admin.biblio.create_ebook', compact('authors', 'publishers', 'topics'));
+    }
+
+    public function storeEbook(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:500',
+            'author_name' => 'required|string|max:200',
+            'publisher_id' => 'nullable|integer',
+            'publisher_name' => 'nullable|string|max:100',
+            'publish_year' => 'nullable|string|max:4',
+            'isbn_issn' => 'nullable|string|max:32',
+            'ebook_file' => 'nullable|file|mimes:pdf,epub|max:51200',
+            'ebook_url' => 'nullable|url|max:500',
+            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'synopsis' => 'nullable|string',
+            'topics' => 'nullable|array',
+            'call_number' => 'nullable|string|max:50',
+        ]);
+
+        $gmdEbook = Gmd::where('gmd_name', 'like', '%e-Book%')
+            ->orWhere('gmd_name', 'like', '%Electronic%')
+            ->first();
+        $gmdId = $gmdEbook ? $gmdEbook->gmd_id : 30;
+
+        // Publisher
+        $pubId = $validated['publisher_id'] ?? null;
+        if (!$pubId && !empty($validated['publisher_name'])) {
+            $p = Publisher::firstOrCreate(
+                ['publisher_name' => $validated['publisher_name']],
+                ['input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+            );
+            $pubId = $p->publisher_id;
+        }
+
+        // Upload file
+        $fileName = null;
+        if ($request->hasFile('ebook_file')) {
+            $file = $request->file('ebook_file');
+            $fileName = 'ebook_' . time() . '_' . Str::slug(substr($validated['title'], 0, 30)) . '.' . $file->getClientOriginalExtension();
+            if (!file_exists(public_path('files/ebooks'))) {
+                mkdir(public_path('files/ebooks'), 0755, true);
+            }
+            $file->move(public_path('files/ebooks'), $fileName);
+        }
+
+        // Upload cover
+        $imageName = null;
+        if ($request->hasFile('cover_image')) {
+            $cfile = $request->file('cover_image');
+            $imageName = 'cover_ebook_' . time() . '.' . $cfile->getClientOriginalExtension();
+            $cfile->move(public_path('images/docs'), $imageName);
+        }
+
+        $specDetail = json_encode([
+            'tipe' => 'e-Book',
+            'url' => $validated['ebook_url'] ?? null,
+            'format' => $fileName ? pathinfo($fileName, PATHINFO_EXTENSION) : 'Online Link',
+        ], JSON_UNESCAPED_UNICODE);
+
+        $callNumber = $validated['call_number'] ?: ('EB-' . ($validated['publish_year'] ?? date('Y')) . '-' . rand(1000, 9999));
+
+        $biblio = Biblio::create([
+            'gmd_id' => $gmdId,
+            'title' => $validated['title'],
+            'sor' => $validated['author_name'],
+            'edition' => 'Edisi Digital (e-Book)',
+            'isbn_issn' => $validated['isbn_issn'] ?? null,
+            'publisher_id' => $pubId,
+            'publish_year' => $validated['publish_year'] ?? date('Y'),
+            'call_number' => $callNumber,
+            'language_id' => 'id',
+            'notes' => $validated['synopsis'] ?? null,
+            'image' => $imageName,
+            'file_att' => $fileName ? ('files/ebooks/' . $fileName) : ($validated['ebook_url'] ?? null),
+            'spec_detail_info' => $specDetail,
+            'input_date' => Carbon::now(),
+            'last_update' => Carbon::now(),
+            'uid' => auth()->id() ?? 1,
+        ]);
+
+        // Register author
+        $author = Author::firstOrCreate(
+            ['author_name' => $validated['author_name']],
+            ['authority_type' => 'p', 'input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+        );
+        $biblio->authors()->attach($author->author_id, ['level' => 1]);
+
+        if (!empty($validated['topics'])) {
+            $biblio->topics()->sync($validated['topics']);
+        }
+
+        return redirect()->route('admin.biblio.index')->with('success', 'Data e-Book "' . $validated['title'] . '" berhasil ditambahkan ke katalog digital!');
     }
 }

@@ -59,33 +59,47 @@
     <!-- Quick Actions Banner -->
     <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Aksi Cepat Pustakawan</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <a href="{{ route('admin.circulation.index') }}" class="p-4 rounded-2xl bg-brand-50 hover:bg-brand-100 dark:bg-sky-950/50 dark:hover:bg-sky-900/50 border border-brand-200 dark:border-sky-800 text-brand-700 dark:text-sky-300 font-bold text-xs flex items-center gap-3 transition-colors">
-                <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <a href="{{ route('admin.circulation.index') }}" class="p-3.5 rounded-2xl bg-brand-50 hover:bg-brand-100 dark:bg-sky-950/50 dark:hover:bg-sky-900/50 border border-brand-200 dark:border-sky-800 text-brand-700 dark:text-sky-300 font-bold text-xs flex flex-col sm:flex-row items-center gap-2.5 transition-colors">
+                <div class="w-8 h-8 rounded-xl bg-brand-600 text-white flex items-center justify-center flex-shrink-0">
                     <i data-lucide="repeat" class="w-4 h-4"></i>
                 </div>
-                <span>Transaksi Sirkulasi</span>
+                <span>Sirkulasi</span>
             </a>
 
-            <a href="{{ route('admin.biblio.create') }}" class="p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex items-center gap-3 transition-colors">
-                <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
+            <a href="{{ route('admin.biblio.create') }}" class="p-3.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-bold text-xs flex flex-col sm:flex-row items-center gap-2.5 transition-colors">
+                <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
                 </div>
-                <span>Katalog Buku Baru</span>
+                <span>Buku Baru</span>
             </a>
 
-            <a href="{{ route('admin.member.create') }}" class="p-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center gap-3 transition-colors">
-                <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
+            <a href="{{ route('admin.skripsi.create') }}" class="p-3.5 rounded-2xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/50 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-bold text-xs flex flex-col sm:flex-row items-center gap-2.5 transition-colors">
+                <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                </div>
+                <span>Data Skripsi</span>
+            </a>
+
+            <a href="{{ route('admin.ebook.create') }}" class="p-3.5 rounded-2xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/50 dark:hover:bg-teal-900/50 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 font-bold text-xs flex flex-col sm:flex-row items-center gap-2.5 transition-colors">
+                <div class="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="tablet" class="w-4 h-4"></i>
+                </div>
+                <span>Data e-Book</span>
+            </a>
+
+            <a href="{{ route('admin.member.create') }}" class="p-3.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex flex-col sm:flex-row items-center gap-2.5 transition-colors">
+                <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
                 </div>
-                <span>Daftar Anggota Baru</span>
+                <span>Anggota Baru</span>
             </a>
 
-            <a href="{{ route('admin.circulation.active', ['status' => 'overdue']) }}" class="p-4 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center gap-3 transition-colors">
-                <div class="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center">
+            <a href="{{ route('admin.circulation.active', ['status' => 'overdue']) }}" class="p-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 font-bold text-xs flex flex-col sm:flex-row items-center gap-2.5 transition-colors">
+                <div class="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center flex-shrink-0">
                     <i data-lucide="alert-circle" class="w-4 h-4"></i>
                 </div>
-                <span>Cek Denda & Terlambat</span>
+                <span>Cek Denda</span>
             </a>
         </div>
     </div>
