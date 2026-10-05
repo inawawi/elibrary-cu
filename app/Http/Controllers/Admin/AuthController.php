@@ -11,12 +11,42 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    public static function generateCaptcha(string $sessionKey = 'admin_captcha'): array
+    {
+        $num1 = rand(0, 9);
+        $num2 = rand(0, 9);
+        $operator = rand(0, 1) === 1 ? '+' : '-';
+        if ($operator === '-' && $num1 < $num2) {
+            $temp = $num1;
+            $num1 = $num2;
+            $num2 = $temp;
+        }
+        $answer = $operator === '+' ? ($num1 + $num2) : ($num1 - $num2);
+        session([$sessionKey => $answer]);
+
+        return [
+            'num1' => $num1,
+            'num2' => $num2,
+            'operator' => $operator,
+            'question' => "{$num1} {$operator} {$num2}",
+        ];
+    }
+
+    public function refreshCaptcha(Request $request)
+    {
+        $type = $request->query('type', 'admin');
+        $sessionKey = $type === 'member' ? 'member_captcha' : 'admin_captcha';
+        $captcha = self::generateCaptcha($sessionKey);
+        return response()->json($captcha);
+    }
+
     public function showLoginForm()
     {
         if (Auth::guard('web')->check()) {
             return redirect()->route('admin.dashboard');
         }
-        return view('admin.login');
+        $captcha = self::generateCaptcha('admin_captcha');
+        return view('admin.login', compact('captcha'));
     }
 
     public function login(Request $request)
@@ -24,7 +54,20 @@ class AuthController extends Controller
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
+            'captcha'  => 'required|numeric',
+        ], [
+            'username.required' => 'Username atau email wajib diisi.',
+            'password.required' => 'Kata sandi wajib diisi.',
+            'captcha.required'  => 'Kode verifikasi captcha perhitungan wajib diisi.',
+            'captcha.numeric'   => 'Jawaban captcha harus berupa angka.',
         ]);
+
+        $sessionCaptcha = session('admin_captcha');
+        if ($sessionCaptcha === null || intval($request->captcha) !== intval($sessionCaptcha)) {
+            self::generateCaptcha('admin_captcha');
+            return back()->withErrors(['captcha' => 'Jawaban verifikasi captcha tidak tepat. Silakan coba lagi.'])->withInput();
+        }
+        session()->forget('admin_captcha');
 
         $user = User::where('username', $request->username)
             ->orWhere('email', $request->username)

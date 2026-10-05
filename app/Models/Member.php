@@ -91,6 +91,17 @@ class Member extends Authenticatable
             || str_contains(strtolower($this->memberType?->member_type_name ?? ''), 'dosen');
     }
 
+    public function isStaff(): bool
+    {
+        return (int)$this->member_type_id === 3 
+            || str_contains(strtolower($this->memberType?->member_type_name ?? ''), 'staf');
+    }
+
+    public function isNonStudent(): bool
+    {
+        return $this->isLecturer() || $this->isStaff() || (int)$this->member_type_id !== 1;
+    }
+
     public function isStudent(): bool
     {
         return (int)$this->member_type_id === 1 
@@ -142,8 +153,8 @@ class Member extends Authenticatable
 
     public function isExpired(): bool
     {
-        // Dosen tidak ada masa aktif (berlaku selama masih menjadi dosen)
-        if ($this->isLecturer()) {
+        // Dosen dan Staf tidak ada masa aktif kedaluwarsa (berlaku selama masih bertugas)
+        if ($this->isNonStudent()) {
             return false;
         }
 
@@ -156,7 +167,7 @@ class Member extends Authenticatable
 
     public function getExpiryDisplayAttribute(): string
     {
-        if ($this->isLecturer()) {
+        if ($this->isNonStudent()) {
             return 'Aktif Selama Bertugas';
         }
 
@@ -187,4 +198,115 @@ class Member extends Authenticatable
         }
         return "https://ui-avatars.com/api/?name=" . urlencode($this->member_name) . "&background=0D8ABC&color=fff&size=200";
     }
+
+    /**
+     * Hitung semester mahasiswa berdasarkan tahun angkatan (digit ke 3 & 4 pada NIM)
+     */
+    public function getSemesterAttribute(): int
+    {
+        if (!$this->isStudent() || empty($this->member_id) || strlen($this->member_id) < 4) {
+            return 0;
+        }
+
+        $angkatan = $this->angkatan_year;
+        if (!$angkatan) {
+            return 0;
+        }
+
+        $now = Carbon::now();
+        $diffYears = $now->year - $angkatan;
+        $month = $now->month;
+
+        // Semester Ganjil: Bulan September s.d. Februari (9 s.d. 12 & 1 s.d. 2)
+        // Semester Genap: Bulan Maret s.d. Agustus (3 s.d. 8)
+        if ($month >= 9) {
+            $semester = ($diffYears * 2) + 1;
+        } elseif ($month <= 2) {
+            $semester = (($diffYears - 1) * 2) + 1;
+        } else {
+            $semester = ($diffYears * 2);
+        }
+
+        return max(1, $semester);
+    }
+
+    /**
+     * Cek apakah mahasiswa merupakan mahasiswa tingkat akhir (semester >= 7)
+     */
+    public function isSeniorStudent(): bool
+    {
+        return $this->isStudent() && $this->semester >= 7;
+    }
+
+    /**
+     * Nama Program Studi berdasarkan prefix NIM atau catatan profil
+     */
+    public function getProdiNameAttribute(): string
+    {
+        if (!empty($this->member_notes) && preg_match('/Prodi:\s*([^|]+)/i', $this->member_notes, $matches)) {
+            return trim($matches[1]);
+        }
+
+        $prefix = $this->prodi_code;
+        return match ($prefix) {
+            '11' => 'Sistem Informasi',
+            '12' => 'Teknologi Informasi',
+            '13' => 'Sistem dan Teknologi Informasi',
+            '21' => 'Bisnis Digital',
+            '22' => 'Akuntansi',
+            '24' => 'Manajemen',
+            '25' => 'Kewirausahaan',
+            default => 'Teknologi Informasi',
+        };
+    }
+
+    /**
+     * Riwayat / data pengajuan skripsi mahasiswa di bibliografi
+     */
+    public function thesisSubmission()
+    {
+        return Biblio::where('gmd_id', 262)
+            ->where(function ($query) {
+                $query->where('isbn_issn', $this->member_id)
+                      ->orWhere('spec_detail_info', 'like', '%"nim":"' . $this->member_id . '"%');
+            })
+            ->latest('input_date')
+            ->first();
+    }
+
+    /**
+     * Data surat bebas pustaka
+     */
+    public function bebasPustakaRecord()
+    {
+        return BebasPustaka::where('nim', $this->member_id)->latest('tgl_in')->first();
+    }
+
+    /**
+     * Cek apakah memenuhi syarat untuk mencetak surat bebas pustaka:
+     * 1. Skripsi telah disetujui pustakawan (status = approved / ada di tb_bebaspustaka)
+     * 2. Tidak ada tanggungan peminjaman buku yang aktif
+     */
+    public function isBebasPustakaEligible(): bool
+    {
+        $hasActiveLoans = $this->activeLoans()->exists();
+        if ($hasActiveLoans) {
+            return false;
+        }
+
+        if ($this->bebasPustakaRecord()) {
+            return true;
+        }
+
+        $thesis = $this->thesisSubmission();
+        if ($thesis) {
+            $spec = json_decode($thesis->spec_detail_info ?? '{}', true);
+            if (($spec['status'] ?? '') === 'approved') {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
+

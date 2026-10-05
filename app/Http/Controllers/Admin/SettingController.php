@@ -70,9 +70,17 @@ class SettingController extends Controller
         ];
 
         $heroSlides = Setting::get('hero_slides', self::getDefaultSlides());
-        $newsArticles = \App\Http\Controllers\OpacController::getNewsArticles();
+        $newsArticles = Setting::get('library_news', \App\Http\Controllers\OpacController::getDefaultLibraryNews());
+        $portalSources = \App\Services\NationalNewsService::PORTAL_SOURCES;
+        $nationalNewsEnabled = Setting::get('national_news_enabled', true);
+        $nationalNewsSource = Setting::get('national_news_source', 'all');
+        $latestNationalNews = \App\Services\NationalNewsService::getLatestNationalNews(false, 6);
 
-        return view('admin.settings.index', compact('memberTypes', 'announcement', 'libraryRules', 'generalSettings', 'heroSlides', 'newsArticles'));
+        return view('admin.settings.index', compact(
+            'memberTypes', 'announcement', 'libraryRules', 'generalSettings', 
+            'heroSlides', 'newsArticles', 'portalSources', 'nationalNewsEnabled', 
+            'nationalNewsSource', 'latestNationalNews'
+        ));
     }
 
     public function updateMemberType(Request $request, $id)
@@ -357,5 +365,32 @@ class SettingController extends Controller
         Setting::set('library_news', $filtered);
 
         return back()->with('success', 'Artikel berita berhasil dihapus.');
+    }
+
+    public function updateNationalNewsConfig(Request $request)
+    {
+        $enabled = $request->has('national_news_enabled');
+        $source = $request->input('national_news_source', 'all');
+
+        // Whitelist validation: pastikan sumber hanya berasal dari opsi yang terdaftar
+        if (!array_key_exists($source, \App\Services\NationalNewsService::PORTAL_SOURCES)) {
+            $source = 'all';
+        }
+
+        Setting::set('national_news_enabled', $enabled);
+        Setting::set('national_news_source', $source);
+
+        // Bersihkan cache dan muat ulang feed
+        \App\Services\NationalNewsService::getLatestNationalNews(true);
+
+        return back()->with('success', 'Pengaturan integrasi portal berita nasional berhasil diperbarui!');
+    }
+
+    public function syncNationalNews(Request $request)
+    {
+        $articles = \App\Services\NationalNewsService::getLatestNationalNews(true, 15);
+        $count = count($articles);
+
+        return back()->with('success', 'Berhasil menyinkronkan ' . $count . ' berita nasional terkini secara real-time!');
     }
 }

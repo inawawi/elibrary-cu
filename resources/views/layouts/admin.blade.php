@@ -163,9 +163,33 @@
                         <i data-lucide="graduation-cap" class="w-4 h-4 text-purple-500"></i>
                         <span>Tambah Data Skripsi</span>
                     </a>
+                    <a href="{{ route('admin.skripsi.verify') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.skripsi.verify*') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="file-check" class="w-4 h-4 text-purple-600 dark:text-purple-400"></i>
+                            <span>Verifikasi Skripsi</span>
+                        </div>
+                        @php
+                            $adminPendingCount = \App\Models\Biblio::where(function($q) {
+                                $q->where('gmd_id', 262)->orWhere('spec_detail_info', 'like', '%"tipe":"Skripsi"%');
+                            })->where('spec_detail_info', 'like', '%"status":"pending"%')->count();
+                        @endphp
+                        @if($adminPendingCount > 0)
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white">
+                                {{ $adminPendingCount }}
+                            </span>
+                        @endif
+                    </a>
                     <a href="{{ route('admin.ebook.create') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.ebook.create') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
                         <i data-lucide="tablet" class="w-4 h-4 text-emerald-500"></i>
                         <span>Tambah Data e-Book</span>
+                    </a>
+                    <a href="{{ route('admin.jurnal.create') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.jurnal.create') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <i data-lucide="book-open-check" class="w-4 h-4 text-purple-600"></i>
+                        <span>Tambah Data Jurnal</span>
+                    </a>
+                    <a href="{{ route('admin.biblio.print_labels') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.biblio.print_labels') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <i data-lucide="printer" class="w-4 h-4 text-sky-600"></i>
+                        <span>Cetak Label & Barcode</span>
                     </a>
                 </nav>
             </div>
@@ -186,6 +210,10 @@
                         <i data-lucide="history" class="w-4 h-4"></i>
                         <span>Riwayat Pengembalian</span>
                     </a>
+                    <a href="{{ route('admin.guestbook.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.guestbook*') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <i data-lucide="book-open-check" class="w-4 h-4 text-amber-500"></i>
+                        <span>Buku Tamu (Kunjungan)</span>
+                    </a>
                 </nav>
             </div>
 
@@ -200,6 +228,17 @@
                     <a href="{{ route('admin.member.create') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.member.create') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
                         <i data-lucide="user-plus" class="w-4 h-4"></i>
                         <span>Tambah Anggota</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Reports & Export Center -->
+            <div>
+                <span class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Laporan & Ekspor</span>
+                <nav class="space-y-1">
+                    <a href="{{ route('admin.export.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.export*') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <i data-lucide="download-cloud" class="w-4 h-4 text-emerald-500"></i>
+                        <span>Pusat Ekspor Data</span>
                     </a>
                 </nav>
             </div>

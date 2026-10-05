@@ -61,6 +61,11 @@ class Biblio extends Model
         return $this->belongsTo(Gmd::class, 'gmd_id');
     }
 
+    public function frequency()
+    {
+        return $this->belongsTo(Frequency::class, 'frequency_id');
+    }
+
     public function authors()
     {
         return $this->belongsToMany(Author::class, 'biblio_author', 'biblio_id', 'author_id')
@@ -104,5 +109,32 @@ class Biblio extends Model
     {
         // Items that are not in active loans
         return $this->items()->whereDoesntHave('activeLoan')->count();
+    }
+
+    public function getSpineLabelComponentsAttribute(): array
+    {
+        // Klasifikasi / DDC
+        $classification = !empty($this->classification) ? trim($this->classification) : (!empty($this->call_number) ? explode(' ', trim($this->call_number))[0] : '000');
+        
+        // 3 huruf pertama nama pengarang utama (uppercase)
+        $author = $this->authors->first();
+        $authorName = $author ? trim($author->author_name) : trim($this->sor ?? '');
+        $cleanAuthor = preg_replace('/^(dr\.|prof\.|drs\.|ir\.|h\.|hj\.)\s+/i', '', $authorName);
+        $authorCode = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $cleanAuthor), 0, 3));
+        if (empty($authorCode)) {
+            $authorCode = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $this->title), 0, 3));
+        }
+
+        // 1 huruf pertama judul buku (lowercase, ignore kata sandang)
+        $cleanTitle = preg_replace('/^(the|a|an)\s+/i', '', trim($this->title));
+        $titleCode = strtolower(substr(preg_replace('/[^a-zA-Z0-9]/', '', $cleanTitle), 0, 1));
+
+        return [
+            'header' => 'Elibrary Cyber University',
+            'classification' => $classification,
+            'author_code' => $authorCode,
+            'title_code' => $titleCode,
+            'full_call_number' => "{$classification} {$authorCode} {$titleCode}",
+        ];
     }
 }

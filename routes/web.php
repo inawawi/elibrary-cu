@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\BiblioController;
 use App\Http\Controllers\Admin\CirculationController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Admin\GuestBookController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\SettingController;
@@ -36,7 +38,13 @@ Route::post('/member/logout', [MemberAreaController::class, 'logout'])->name('me
 Route::middleware('auth:member')->group(function () {
     Route::get('/member/dashboard', [MemberAreaController::class, 'dashboard'])->name('member.dashboard');
     Route::post('/member/update-contact', [MemberAreaController::class, 'updateContact'])->name('member.update-contact');
+    Route::get('/member/skripsi', [MemberAreaController::class, 'showSkripsiForm'])->name('member.skripsi');
+    Route::post('/member/skripsi', [MemberAreaController::class, 'storeSkripsi'])->name('member.skripsi.store');
+    Route::get('/member/bebas-pustaka/print', [MemberAreaController::class, 'printBebasPustaka'])->name('member.bebas-pustaka.print');
 });
+
+Route::get('/member/watermark/Watermark_Universitas_Siber_Indonesia.png', [MemberAreaController::class, 'downloadWatermark'])->name('member.watermark.download');
+Route::get('/member/watermark/download', [MemberAreaController::class, 'downloadWatermark']);
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +52,7 @@ Route::middleware('auth:member')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::get('/login', fn() => redirect()->route('admin.login'))->name('login');
+Route::get('/captcha/refresh', [AdminAuthController::class, 'refreshCaptcha'])->name('captcha.refresh');
 
 Route::prefix('admin')->group(function () {
     Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
@@ -57,32 +66,50 @@ Route::prefix('admin')->group(function () {
         Route::get('/biblio', [BiblioController::class, 'index'])->name('admin.biblio.index');
         Route::get('/biblio/create', [BiblioController::class, 'create'])->name('admin.biblio.create');
         Route::post('/biblio', [BiblioController::class, 'store'])->name('admin.biblio.store');
+        Route::get('/jurnal/create', [BiblioController::class, 'createJurnal'])->name('admin.jurnal.create');
+        Route::post('/jurnal', [BiblioController::class, 'storeJurnal'])->name('admin.jurnal.store');
         Route::get('/skripsi/create', [BiblioController::class, 'createSkripsi'])->name('admin.skripsi.create');
         Route::post('/skripsi', [BiblioController::class, 'storeSkripsi'])->name('admin.skripsi.store');
+        Route::get('/skripsi/verifikasi', [BiblioController::class, 'verifySkripsiIndex'])->name('admin.skripsi.verify');
+        Route::get('/skripsi/verify', [BiblioController::class, 'verifySkripsiIndex']);
+        Route::post('/skripsi/{id}/approve', [BiblioController::class, 'approveSkripsi'])->name('admin.skripsi.approve');
+        Route::post('/skripsi/{id}/reject', [BiblioController::class, 'rejectSkripsi'])->name('admin.skripsi.reject');
         Route::get('/ebook/create', [BiblioController::class, 'createEbook'])->name('admin.ebook.create');
         Route::post('/ebook', [BiblioController::class, 'storeEbook'])->name('admin.ebook.store');
+        Route::get('/biblio/export', [BiblioController::class, 'export'])->name('admin.biblio.export');
+        Route::get('/biblio/print-labels', [BiblioController::class, 'printLabels'])->name('admin.biblio.print_labels');
+        Route::get('/biblio/{id}/print-label', [BiblioController::class, 'printSingleLabel'])->name('admin.biblio.print_single');
         Route::get('/biblio/{id}/edit', [BiblioController::class, 'edit'])->name('admin.biblio.edit');
         Route::put('/biblio/{id}', [BiblioController::class, 'update'])->name('admin.biblio.update');
         Route::delete('/biblio/{id}', [BiblioController::class, 'destroy'])->name('admin.biblio.destroy');
         Route::match(['get', 'post'], '/biblio/{id}/items', [BiblioController::class, 'manageItems'])->name('admin.biblio.items');
         Route::delete('/item/{id}', [BiblioController::class, 'deleteItem'])->name('admin.biblio.item.delete');
 
-        // Circulation Management
+        // Circulation Management & Guestbook
         Route::get('/circulation', [CirculationController::class, 'index'])->name('admin.circulation.index');
         Route::post('/circulation/loan', [CirculationController::class, 'loan'])->name('admin.circulation.loan');
         Route::post('/circulation/return', [CirculationController::class, 'returnItem'])->name('admin.circulation.return');
         Route::get('/circulation/active', [CirculationController::class, 'activeLoans'])->name('admin.circulation.active');
         Route::get('/circulation/history', [CirculationController::class, 'history'])->name('admin.circulation.history');
+        Route::get('/guestbook', [GuestBookController::class, 'index'])->name('admin.guestbook.index');
+        Route::get('/guestbook/export', [GuestBookController::class, 'export'])->name('admin.guestbook.export');
 
         // Membership Management
         Route::get('/member', [MemberController::class, 'index'])->name('admin.member.index');
         Route::get('/member/create', [MemberController::class, 'create'])->name('admin.member.create');
+        Route::post('/member/sync', [MemberController::class, 'syncExternal'])->name('admin.member.sync');
+        Route::post('/member/sync-student', [MemberController::class, 'syncStudentApi'])->name('admin.member.sync-student');
         Route::post('/member', [MemberController::class, 'store'])->name('admin.member.store');
+        Route::get('/member/export', [MemberController::class, 'export'])->name('admin.member.export');
         Route::get('/member/{id}/edit', [MemberController::class, 'edit'])->name('admin.member.edit');
         Route::put('/member/{id}', [MemberController::class, 'update'])->name('admin.member.update');
         Route::get('/member/{id}/card', [MemberController::class, 'showCard'])->name('admin.member.card');
         Route::patch('/member/{id}/toggle-status', [MemberController::class, 'toggleStatus'])->name('admin.member.toggle-status');
         Route::delete('/member/{id}', [MemberController::class, 'destroy'])->name('admin.member.destroy');
+
+        // Pusat Ekspor Data & Laporan
+        Route::get('/export', [ExportController::class, 'index'])->name('admin.export.index');
+        Route::post('/export/akreditasi/word', [ExportController::class, 'exportWordAkreditasi'])->name('admin.export.akreditasi.word');
 
         // Master Data
         Route::get('/master/authors', [MasterDataController::class, 'authors'])->name('admin.master.authors');
@@ -110,6 +137,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/settings/news', [SettingController::class, 'storeNews'])->name('admin.settings.news.store');
         Route::post('/settings/news/{id}/update', [SettingController::class, 'updateNews'])->name('admin.settings.news.update');
         Route::delete('/settings/news/{id}', [SettingController::class, 'deleteNews'])->name('admin.settings.news.delete');
+        Route::post('/settings/news/national-config', [SettingController::class, 'updateNationalNewsConfig'])->name('admin.settings.news.national-config');
+        Route::post('/settings/news/sync', [SettingController::class, 'syncNationalNews'])->name('admin.settings.news.sync');
 
         // Manajemen User Admin (Khusus Pengembang Sistem)
         Route::get('/users', [UserController::class, 'index'])->name('admin.users.index');

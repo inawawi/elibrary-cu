@@ -16,7 +16,7 @@
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
         <!-- Form -->
-        <div class="md:col-span-6">
+        <div class="md:col-span-12">
             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
                 <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-5 flex items-center gap-2">
                     <i data-lucide="user-check" class="w-5 h-5 text-brand-500"></i>
@@ -26,10 +26,11 @@
                 <form action="{{ route('opac.guestbook') }}" method="POST" class="space-y-4" x-data="{ keperluan: '{{ old('keperluan', 'Membaca') }}' }">
                     @csrf
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">NIM / Nomor Anggota (Opsional)</label>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">NIM / Nomor Anggota *</label>
                         <input type="text"
                             name="id_anggota"
                             value="{{ old('id_anggota') }}"
+                            required
                             placeholder="Contoh: 12220001"
                             class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
                     </div>
@@ -102,8 +103,8 @@
         </div>
 
         <!-- Recent Visitors (Balanced Height & Scrollable) -->
-        <div class="md:col-span-6 flex flex-col">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm flex flex-col h-full">
+        <!--<div class="md:col-span-6 flex flex-col">
+             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm flex flex-col h-full">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
                     <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <i data-lucide="clock" class="w-5 h-5 text-indigo-500"></i>
@@ -112,10 +113,10 @@
                     <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
                         {{ $recentGuests->count() }} Kunjungan Terbaru
                     </span>
-                </div>
+                </div> -->
 
-                <!-- Scrollable Visitor Stream (Matches height of left form) -->
-                <div class="space-y-3 overflow-y-auto max-h-[480px] pr-2 scrollbar-thin">
+        <!-- Scrollable Visitor Stream (Matches height of left form) -->
+        <!-- <div class="space-y-3 overflow-y-auto max-h-[480px] pr-2 scrollbar-thin">
                     @forelse($recentGuests as $guest)
                     <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
                         <div class="flex items-center gap-3 min-w-0">
@@ -147,7 +148,7 @@
                     @endforelse
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 </div>
 @endsection

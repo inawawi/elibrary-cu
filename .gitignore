@@ -28,3 +28,11 @@ Homestead.yaml
 Thumbs.db
 AGENTS.md
 CLAUDE.md
+
+# Database & server credentials
+.dbkon
+.db
+*.dbkon
+*.db
+.conset
+scratch/

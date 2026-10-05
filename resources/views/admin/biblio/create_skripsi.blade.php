@@ -104,6 +104,33 @@
                 </div>
             </div>
 
+            <!-- Kode Barcode Skripsi (Awalan S) & Subjek Reviewer Multi-select -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Kode Barcode Eksemplar Skripsi *</span>
+                        <span class="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-bold">Auto Awalan S: {{ $nextItemCode }}</span>
+                    </label>
+                    <input type="text" name="item_code" value="{{ old('item_code', $nextItemCode) }}" required placeholder="Contoh: {{ $nextItemCode }}"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <span class="text-[10px] text-slate-400 mt-1 block">Barcode skripsi dibedakan otomatis dengan kode depan S.</span>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Subjek / Bidang Ilmu (Bisa pilih > 1)</span>
+                        <span class="text-[10px] font-normal text-purple-600 dark:text-purple-400">Ctrl/Cmd + Klik</span>
+                    </label>
+                    <select name="subjects[]" multiple size="3" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        @foreach($reviewerTopics as $sub)
+                            <option value="{{ $sub }}" {{ (is_array(old('subjects')) && in_array($sub, old('subjects'))) ? 'selected' : '' }}>
+                                {{ $sub }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="text-[10px] text-slate-400 mt-1 block">Pilihan: Sistem Informasi, STI, TI, Bisnis Digital, Kewirausahaan, Metodologi Penelitian, Agama, Ekonomi & Keuangan, Pancasila.</span>
+                </div>
+            </div>
+
             <!-- Abstrak Skripsi -->
             <div>
                 <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Abstrak Skripsi</label>

@@ -13,15 +13,21 @@
     </div>
 
     <!-- Book Summary Card -->
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex items-center gap-5">
-        <div class="w-16 h-20 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 shadow">
-            <img src="{{ $biblio->cover_url }}" alt="Cover" class="w-full h-full object-cover">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div class="flex items-center gap-5">
+            <div class="w-16 h-20 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 shadow">
+                <img src="{{ $biblio->cover_url }}" alt="Cover" class="w-full h-full object-cover">
+            </div>
+            <div>
+                <span class="text-xs font-mono font-bold text-brand-600 dark:text-sky-400">NO. PANGGIL: {{ $biblio->call_number ?: '-' }}</span>
+                <h1 class="text-lg font-black text-slate-900 dark:text-white line-clamp-1">{{ $biblio->title }}</h1>
+                <p class="text-xs text-slate-400 mt-0.5">{{ $biblio->author_names }} • {{ $biblio->publisher?->publisher_name }} ({{ $biblio->publish_year }})</p>
+            </div>
         </div>
-        <div>
-            <span class="text-xs font-mono font-bold text-brand-600 dark:text-sky-400">NO. PANGGIL: {{ $biblio->call_number ?: '-' }}</span>
-            <h1 class="text-lg font-black text-slate-900 dark:text-white line-clamp-1">{{ $biblio->title }}</h1>
-            <p class="text-xs text-slate-400 mt-0.5">{{ $biblio->author_names }} • {{ $biblio->publisher?->publisher_name }} ({{ $biblio->publish_year }})</p>
-        </div>
+        <a href="{{ route('admin.biblio.print_single', $biblio->biblio_id) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md shadow-brand-500/25 transition-all flex-shrink-0">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Cetak Label & Barcode</span>
+        </a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -35,8 +41,14 @@
                 </h3>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Kode Barcode *</label>
-                    <input type="text" name="item_code" required placeholder="Contoh: B00123" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white font-bold focus:outline-none">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Kode Barcode *</label>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-50 dark:bg-sky-950/60 text-brand-700 dark:text-sky-300 text-[10px] font-mono font-bold">
+                            Prefix {{ $prefix }} ({{ $prefix === 'S' ? 'Skripsi' : ($prefix === 'R' ? 'Jurnal' : 'Buku') }})
+                        </span>
+                    </div>
+                    <input type="text" name="item_code" value="{{ old('item_code', $nextItemCode) }}" required placeholder="Contoh: {{ $nextItemCode }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <p class="text-[10px] text-slate-400 mt-1">Nomor urut barcode otomatis dibuatkan berdasar prefix kategori pustaka.</p>
                 </div>
 
                 <div>

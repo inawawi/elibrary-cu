@@ -167,6 +167,142 @@
 
         <!-- Right: Active Loans & History -->
         <div class="lg:col-span-7 space-y-8">
+            <!-- Khusus Mahasiswa Semester >= 7: Layanan Skripsi & Bebas Pustaka -->
+            @if($member->isStudent() && $isSenior)
+                @php
+                    $spec = $thesis ? (json_decode($thesis->spec_detail_info ?? '{}', true) ?: []) : [];
+                    $status = $spec['status'] ?? ($thesis ? ($thesis->opac_hide ? 'pending' : 'approved') : null);
+                    $hasActiveLoans = $activeLoans->isNotEmpty();
+                @endphp
+                <div class="rounded-3xl p-6 sm:p-8 border shadow-sm relative overflow-hidden bg-gradient-to-br from-purple-50 via-white to-sky-50 dark:from-purple-950/30 dark:via-slate-900 dark:to-sky-950/30 border-purple-200/80 dark:border-purple-900/50">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-purple-100 dark:border-purple-900/40">
+                        <div class="flex items-center gap-3">
+                            <span class="w-12 h-12 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/25 flex-shrink-0">
+                                <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                            </span>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-base font-black text-slate-900 dark:text-white">Layanan Skripsi & Bebas Pustaka</h3>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                        Semester {{ $member->semester }}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5">Persyaratan administrasi calon wisudawan Universitas Siber Indonesia</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            @if(!$thesis)
+                                <a href="{{ route('member.skripsi') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition-all">
+                                    <i data-lucide="upload" class="w-4 h-4"></i>
+                                    <span>Unggah Berkas Skripsi</span>
+                                </a>
+                            @elseif($status === 'approved' && !$hasActiveLoans)
+                                <a href="{{ route('member.bebas-pustaka.print') }}" target="_blank" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all">
+                                    <i data-lucide="printer" class="w-4 h-4"></i>
+                                    <span>Cetak Surat Bebas Pustaka</span>
+                                </a>
+                            @else
+                                <a href="{{ route('member.skripsi') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs transition-all">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    <span>Lihat Detail Pengajuan</span>
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Progress & Status Info -->
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        <div class="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Status Skripsi</span>
+                            @if(!$thesis)
+                                <span class="font-bold text-slate-500 flex items-center gap-1.5">
+                                    <i data-lucide="circle-dashed" class="w-4 h-4 text-slate-400"></i>
+                                    Belum Diunggah
+                                </span>
+                            @elseif($status === 'approved')
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                                    Terverifikasi & Disetujui
+                                </span>
+                            @elseif($status === 'revision')
+                                <span class="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                                    <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-500"></i>
+                                    Perlu Perbaikan
+                                </span>
+                            @else
+                                <span class="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                                    <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                                    Menunggu Verifikasi
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Tanggungan Pinjaman</span>
+                            @if($hasActiveLoans)
+                                <span class="font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>
+                                    Ada {{ $activeLoans->count() }} Buku Belum Kembali
+                                </span>
+                            @else
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                    <i data-lucide="check" class="w-4 h-4 text-emerald-500"></i>
+                                    Bebas Pinjaman (Nol)
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Status Bebas Pustaka</span>
+                            @if($isBebasPustakaEligible)
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                    <i data-lucide="award" class="w-4 h-4 text-emerald-500"></i>
+                                    Siap Dicetak
+                                </span>
+                            @else
+                                <span class="font-bold text-slate-500 flex items-center gap-1.5">
+                                    <i data-lucide="lock" class="w-4 h-4 text-slate-400"></i>
+                                    Belum Memenuhi Syarat
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Banner Informasi Ketentuan Watermark Skripsi -->
+                    <div class="mt-4 p-4 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-purple-200/90 dark:border-purple-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-300 flex-shrink-0">
+                                <i data-lucide="stamp" class="w-5 h-5"></i>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-extrabold text-xs text-slate-900 dark:text-white">Ketentuan Pemberian Watermark File Skripsi</h4>
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">Wajib Wisuda</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                                    File skripsi wajib memuat watermark logo resmi universitas (format PNG transparan, opacity 10-20%, 1 file PDF utuh max 10MB pada cover s.d. lampiran).
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <a href="{{ route('member.watermark.download') }}"
+                               download="Watermark_Universitas_Siber_Indonesia.png"
+                               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 font-bold text-xs transition-colors border border-emerald-200 dark:border-emerald-800 cursor-pointer"
+                               title="Unduh Logo Watermark Resmi (PNG)">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Unduh Logo PNG</span>
+                            </a>
+                            <a href="{{ route('member.skripsi') }}#ketentuan-watermark"
+                               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition-all">
+                                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                <span>Lihat Ketentuan Lengkap</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- Active Loans -->
             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
                 <div class="flex items-center justify-between mb-6">

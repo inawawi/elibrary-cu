@@ -106,6 +106,25 @@
                 </div>
             </div>
 
+            <!-- Subjek Dropdown (Reviewer Requirement: Multiple Select) -->
+            <div>
+                @php
+                    $existingTopics = $biblio->topics->pluck('topic')->toArray();
+                @endphp
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Subjek / Bidang Ilmu (Bisa pilih lebih dari 1)</span>
+                    <span class="text-[11px] font-normal text-brand-600 dark:text-sky-400">Tahan tombol Ctrl / Cmd untuk memilih lebih dari 1</span>
+                </label>
+                <select name="subjects[]" multiple size="4" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    @foreach($reviewerTopics as $sub)
+                        <option value="{{ $sub }}" {{ (is_array(old('subjects')) ? in_array($sub, old('subjects')) : in_array($sub, $existingTopics)) ? 'selected' : '' }}>
+                            {{ $sub }}
+                        </option>
+                    @endforeach
+                </select>
+                <p class="text-[11px] text-slate-400 mt-1">Pilihan rekomendasi kurikulum: Sistem Informasi, STI, TI, Bisnis Digital, Kewirausahaan, Metodologi Penelitian, Agama, Ekonomi & Keuangan, Pancasila & Kewarganegaraan.</p>
+            </div>
+
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Deskripsi Fisik / Kolasi</label>
                 <input type="text" name="collation" value="{{ old('collation', $biblio->collation) }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none">
@@ -130,6 +149,88 @@
                 </div>
             </div>
         </div>
+
+        <!-- Eksemplar Fisik & Tambah Eksemplar Baru Masuk (Reviewer Requirement) -->
+        <div class="border-t border-slate-100 dark:border-slate-800 pt-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Eksemplar Fisik & Tambah Koleksi Baru Masuk</h3>
+                    <p class="text-xs text-slate-400">Total saat ini: <b>{{ $biblio->items->count() }} eksemplar</b> terdaftar di perpustakaan.</p>
+                </div>
+                <a href="{{ route('admin.biblio.print_single', $biblio->biblio_id) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-xs font-bold hover:bg-sky-100 transition-colors">
+                    <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                    <span>Cetak Label & Barcode Buku Ini</span>
+                </a>
+            </div>
+
+            <!-- Daftar Eksemplar Lama yang Sudah Ada -->
+            <div class="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-slate-200 dark:border-slate-800">
+                <p class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2.5">Daftar Eksemplar Lama (Tetap Tersimpan & Tidak Berubah)</p>
+                @if($biblio->items->isEmpty())
+                    <p class="text-xs text-slate-400 italic">Belum ada eksemplar fisik yang terdaftar untuk judul ini.</p>
+                @else
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($biblio->items as $it)
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-mono">
+                                <span class="font-bold text-slate-800 dark:text-white">{{ $it->item_code }}</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded-md font-sans {{ $it->item_status_id === '001' ? 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400' }}">
+                                    {{ $it->item_status_id === '001' ? 'Tersedia' : 'Dipinjam' }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            <!-- Form Tambah Eksemplar Baru Masuk -->
+            <div class="bg-brand-50/50 dark:bg-brand-950/20 rounded-2xl p-4 border border-brand-100 dark:border-brand-900/40">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1">
+                            Tambah Jumlah Eksemplar Baru Masuk
+                        </label>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            Masukkan jumlah eksemplar tambahan yang baru masuk untuk judul ini. Eksemplar lama tidak akan diubah.
+                        </p>
+                    </div>
+                    <div>
+                        <input type="number" id="additional_copies_count" name="additional_copies_count" min="0" max="100" value="0" class="w-full px-4 py-2.5 rounded-xl border border-brand-300 dark:border-brand-700 bg-white dark:bg-slate-900 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <p id="additional-preview" class="text-[11px] text-brand-600 dark:text-sky-400 font-medium mt-1">
+                            (Isi dengan angka jika ada tambahan eksemplar baru masuk)
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const addInput = document.getElementById('additional_copies_count');
+                const addPreview = document.getElementById('additional-preview');
+                const nextCode = '{{ $nextItemCode }}';
+
+                if (addInput && addPreview) {
+                    addInput.addEventListener('input', function() {
+                        const count = parseInt(this.value) || 0;
+                        if (count > 0) {
+                            const match = nextCode.match(/^([A-Za-z]+)(\d+)$/);
+                            if (match && count > 1) {
+                                const prefix = match[1];
+                                const startNum = parseInt(match[2]);
+                                const padLen = match[2].length;
+                                const endNum = startNum + count - 1;
+                                const endCode = prefix + String(endNum).padStart(padLen, '0');
+                                addPreview.innerHTML = `Sistem akan otomatis membuat <b>${count} eksemplar baru</b>: <span class="font-mono font-bold text-slate-900 dark:text-white">${nextCode}</span> s/d <span class="font-mono font-bold text-slate-900 dark:text-white">${endCode}</span>`;
+                            } else {
+                                addPreview.innerHTML = `Sistem akan otomatis membuat <b>1 eksemplar baru</b>: <span class="font-mono font-bold text-slate-900 dark:text-white">${nextCode}</span>`;
+                            }
+                        } else {
+                            addPreview.innerHTML = '(Isi dengan angka jika ada tambahan eksemplar baru masuk)';
+                        }
+                    });
+                }
+            });
+        </script>
 
         <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
             <a href="{{ route('admin.biblio.index') }}" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 transition-colors">

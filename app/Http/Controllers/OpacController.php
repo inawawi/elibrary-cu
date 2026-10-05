@@ -49,11 +49,24 @@ class OpacController extends Controller
             ->take(8)
             ->get();
 
+        $gmdSkripsiIds = Gmd::where('gmd_name', 'like', '%skripsi%')->orWhere('gmd_name', 'like', '%tugas akhir%')->pluck('gmd_id')->toArray() ?: [262];
+        $gmdJurnalIds = Gmd::where('gmd_name', 'like', '%jurnal%')->pluck('gmd_id')->toArray() ?: [263];
+        $gmdEbookIds = Gmd::where('gmd_name', 'like', '%electronic%')->orWhere('gmd_name', 'like', '%ebook%')->pluck('gmd_id')->toArray() ?: [30];
+
         $stats = [
-            'total_books' => Biblio::count(),
+            'total_books' => Biblio::whereNotIn('gmd_id', array_merge($gmdSkripsiIds, $gmdJurnalIds, $gmdEbookIds))->count(),
+            'total_ebooks' => Biblio::whereIn('gmd_id', $gmdEbookIds)->count(),
+            'total_jurnals' => Biblio::whereIn('gmd_id', $gmdJurnalIds)->count(),
+            'total_skripsi' => Biblio::whereIn('gmd_id', $gmdSkripsiIds)->count(),
+            // Preserved for internal/admin usage
             'total_items' => Item::count(),
             'total_members' => Member::count(),
             'total_authors' => Author::count(),
+            'gmd_ids' => [
+                'skripsi' => $gmdSkripsiIds[0] ?? 262,
+                'jurnal' => $gmdJurnalIds[0] ?? 263,
+                'ebook' => $gmdEbookIds[0] ?? 30,
+            ],
         ];
 
         $newsArticles = self::getNewsArticles();
@@ -244,15 +257,37 @@ class OpacController extends Controller
         return view('opac.guestbook', compact('recentGuests'));
     }
 
-    public function news()
+    public function news(Request $request)
     {
         $newsArticles = self::getNewsArticles();
-        return view('opac.news', compact('newsArticles'));
+        $tab = $request->query('tab', 'all');
+
+        $nationalArticles = array_values(array_filter($newsArticles, fn($item) => !empty($item['is_national'])));
+        $internalArticles = array_values(array_filter($newsArticles, fn($item) => empty($item['is_national'])));
+
+        $filteredArticles = match($tab) {
+            'national' => $nationalArticles,
+            'internal' => $internalArticles,
+            default => $newsArticles
+        };
+
+        $counts = [
+            'all' => count($newsArticles),
+            'national' => count($nationalArticles),
+            'internal' => count($internalArticles),
+        ];
+
+        return view('opac.news', compact('newsArticles', 'filteredArticles', 'tab', 'counts'));
     }
 
-    public static function getNewsArticles()
+    public static function getNewsArticles(bool $forceRefresh = false): array
     {
-        $defaultNews = [
+        return \App\Services\NationalNewsService::getMergedNews($forceRefresh);
+    }
+
+    public static function getDefaultLibraryNews(): array
+    {
+        return [
             [
                 'id' => 1,
                 'title' => 'Perpustakaan Universitas Siber Indonesia Perluas Akses Koleksi Digital & Layanan Sirkulasi Modern',
@@ -294,7 +329,5 @@ class OpacController extends Controller
                 'category' => 'Aktivitas Mahasiswa',
             ],
         ];
-
-        return Setting::get('library_news', $defaultNews);
     }
 }

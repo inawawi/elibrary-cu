@@ -20,140 +20,128 @@
         }"
         @mouseenter="paused = true"
         @mouseleave="paused = false"
-        class="relative overflow-hidden min-h-[580px] lg:min-h-[640px] flex flex-col justify-end pb-8 lg:pb-10 pt-16 border-b border-slate-800 bg-slate-950 text-white">
+        class="relative overflow-hidden min-h-[calc(100vh-5rem)] lg:h-[calc(100vh-5rem)] flex flex-col justify-end pb-8 sm:pb-10 pt-16 border-b border-slate-800 bg-slate-950 text-white">
 
-    <!-- Background Image Slideshow Layer -->
+    <!-- Background Image Slideshow Layer (Full Lebar Penuh Kiri-Kanan, Tanpa Bagian Hitam Kosong, Tanpa Overlay) -->
     <div class="absolute inset-0 z-0">
         @foreach($heroSlides as $index => $slide)
             <div x-show="active === {{ $index }}"
                  @if($index !== 0) x-cloak @endif
-                 x-transition:enter="transition-opacity ease-in-out duration-1000"
-                 x-transition:enter-start="opacity-0 scale-105"
-                 x-transition:enter-end="opacity-100 scale-100"
-                 x-transition:leave="transition-opacity ease-in-out duration-1000"
-                 x-transition:leave-start="opacity-100 scale-100"
-                 x-transition:leave-end="opacity-0 scale-100"
+                 x-transition:enter="transition-opacity ease-in-out duration-700"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition-opacity ease-in-out duration-700"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
                  class="absolute inset-0 w-full h-full">
-                <img src="{{ $slide['img'] }}" alt="{{ $slide['title'] }}" class="w-full h-full object-cover object-center">
+                <img src="{{ $slide['img'] }}" alt="{{ $slide['title'] }}" class="w-full h-full object-cover object-top" style="object-position: top center !important;">
             </div>
         @endforeach
-
-        <!-- Soft Balanced Overlay: Makes photos bright & vibrant while text stays readable -->
-        <div class="absolute inset-0 bg-slate-950/25"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent"></div>
     </div>
 
-    <!-- Foreground Content: Sejajar 1 Baris Horizontal di Bagian Bawah -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-            
-            <!-- Sisi Kiri: Gambar 2 (Pencarian & Topik Populer) -->
-            <div class="lg:col-span-5 xl:col-span-5 space-y-2.5">
-                <form action="{{ route('opac.search') }}" method="GET" class="relative group">
-                    <div class="relative flex items-center bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl shadow-black/50 border border-white/30 dark:border-slate-700/80 p-1.5 focus-within:ring-2 focus-within:ring-sky-400 transition-all">
-                        <div class="pl-3.5 text-slate-400 dark:text-slate-500">
-                            <i data-lucide="search" class="w-5 h-5"></i>
-                        </div>
-                        <input type="text"
-                               name="q"
-                               placeholder="Cari judul buku, pengarang, subjek, ISBN..."
-                               class="w-full px-3 py-2.5 bg-transparent text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none text-sm font-medium"
-                               autofocus>
-                        <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-500 hover:to-sky-500 text-white font-bold rounded-xl shadow-lg shadow-sky-500/30 transition-all text-xs flex-shrink-0">
-                            <span>Cari</span>
-                            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Popular Quick Tags -->
-                <div class="flex items-center flex-wrap gap-1.5">
-                    <span class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mr-1">Topik Populer:</span>
-                    @foreach($popularTopics->take(4) as $top)
-                        <a href="{{ route('opac.search', ['topic' => $top->topic_id]) }}" class="px-2.5 py-0.5 rounded-lg bg-slate-900/70 hover:bg-slate-900/95 text-[11px] font-medium text-slate-200 hover:text-white backdrop-blur-sm border border-white/15 hover:border-white/40 transition-all">
-                            {{ $top->topic }} ({{ $top->biblios_count }})
-                        </a>
-                    @endforeach
-                </div>
+    <!-- Konten di Atas Slider (Search, Topik Populer, Card Information Diperkecil Ukurannya) -->
+    <div class="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+        <!-- 1. Slide Info Pill & Navigation (Minimalis Ramping) -->
+        <div class="flex items-center justify-between gap-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 text-xs shadow-lg max-w-sm sm:max-w-md truncate">
+                <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping flex-shrink-0"></span>
+                <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-bold uppercase tracking-wider flex-shrink-0" x-text="slides[active] ? slides[active].tag : 'Koleksi'"></span>
+                <span class="text-xs font-semibold text-white truncate" x-text="slides[active] ? slides[active].title : ''"></span>
             </div>
 
-            <!-- Sisi Kanan: Gambar 3 (Slide Info Badge & 4 Kartu Statistik dalam 1 Baris Horizontal) -->
-            <div class="lg:col-span-7 xl:col-span-7 space-y-2.5">
-                <!-- Slide Info & Indicator Badge -->
-                <div class="p-2.5 px-4 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 flex items-center justify-between gap-3 shadow-xl">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                        <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping flex-shrink-0"></span>
-                        <div class="truncate text-left flex items-center gap-2">
-                            <span class="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 text-[10px] font-bold uppercase tracking-wider border border-sky-400/30 flex-shrink-0" x-text="slides[active] ? slides[active].tag : 'Fasilitas Kampus'"></span>
-                            <span class="text-xs font-semibold text-white truncate" x-text="slides[active] ? slides[active].title : ''"></span>
-                        </div>
-                    </div>
-
-                    <!-- Slide Indicator Dots & Prev/Next -->
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <div class="text-[10px] font-bold text-sky-300 font-mono tracking-wider px-1">
-                            <span x-text="String(active + 1).padStart(2, '0')"></span>/<span x-text="String(slides.length).padStart(2, '0')" class="text-slate-400"></span>
-                        </div>
-                        <button @click="active = (active - 1 + slides.length) % slides.length" title="Sebelumnya" class="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
-                            <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <div class="flex items-center gap-1">
-                            <template x-for="(slide, index) in slides" :key="index">
-                                <button @click="active = index"
-                                        :class="active === index ? 'w-4 bg-sky-400' : 'w-1.5 bg-white/30 hover:bg-white/60'"
-                                        class="h-1.5 rounded-full transition-all duration-300"></button>
-                            </template>
-                        </div>
-                        <button @click="active = (active + 1) % slides.length" title="Berikutnya" class="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
-                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
+            <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900/85 backdrop-blur-md border border-white/20 shadow-lg flex-shrink-0">
+                <div class="text-[10px] font-bold text-sky-300 font-mono tracking-wider px-1">
+                    <span x-text="String(active + 1).padStart(2, '0')"></span>/<span x-text="String(slides.length).padStart(2, '0')" class="text-slate-400"></span>
                 </div>
-
-                <!-- 4 Kartu Statistik dalam 1 Baris Horizontal Proporsional -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    <div class="p-3 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-2.5 hover:border-sky-400/40 transition-colors">
-                        <div class="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center flex-shrink-0 border border-sky-400/30">
-                            <i data-lucide="book" class="w-4 h-4"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-base sm:text-lg font-black text-white leading-tight">{{ number_format($stats['total_books']) }}</div>
-                            <div class="text-[10px] text-slate-300 font-medium truncate">Judul Buku</div>
-                        </div>
-                    </div>
-
-                    <div class="p-3 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-2.5 hover:border-indigo-400/40 transition-colors">
-                        <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center flex-shrink-0 border border-indigo-400/30">
-                            <i data-lucide="copy" class="w-4 h-4"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-base sm:text-lg font-black text-white leading-tight">{{ number_format($stats['total_items']) }}</div>
-                            <div class="text-[10px] text-slate-300 font-medium truncate">Eksemplar</div>
-                        </div>
-                    </div>
-
-                    <div class="p-3 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-2.5 hover:border-emerald-400/40 transition-colors">
-                        <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-400/30">
-                            <i data-lucide="users" class="w-4 h-4"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-base sm:text-lg font-black text-white leading-tight">{{ number_format($stats['total_members']) }}</div>
-                            <div class="text-[10px] text-slate-300 font-medium truncate">Anggota</div>
-                        </div>
-                    </div>
-
-                    <div class="p-3 rounded-xl bg-slate-900/85 backdrop-blur-md border border-white/15 shadow-xl flex items-center gap-2.5 hover:border-amber-400/40 transition-colors">
-                        <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 border border-amber-400/30">
-                            <i data-lucide="feather" class="w-4 h-4"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="text-base sm:text-lg font-black text-white leading-tight">{{ number_format($stats['total_authors']) }}</div>
-                            <div class="text-[10px] text-slate-300 font-medium truncate">Penulis</div>
-                        </div>
-                    </div>
+                <button @click="active = (active - 1 + slides.length) % slides.length" title="Sebelumnya" class="w-5 h-5 rounded hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                    <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                </button>
+                <div class="hidden sm:flex items-center gap-1 px-1">
+                    <template x-for="(slide, index) in slides" :key="index">
+                        <button @click="active = index"
+                                :class="active === index ? 'w-3 bg-sky-400' : 'w-1.5 bg-white/30 hover:bg-white/60'"
+                                class="h-1.5 rounded-full transition-all duration-300"></button>
+                    </template>
                 </div>
+                <button @click="active = (active + 1) % slides.length" title="Berikutnya" class="w-5 h-5 rounded hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </button>
             </div>
+        </div>
 
+        <!-- 2. Form Pencarian Ramping (Compact Size) -->
+        <form action="{{ route('opac.search') }}" method="GET" class="relative group">
+            <div class="relative flex items-center bg-slate-950/85 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/25 p-1.5 focus-within:ring-2 focus-within:ring-sky-400 transition-all">
+                <div class="pl-3.5 text-slate-400">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </div>
+                <input type="text"
+                       name="q"
+                       placeholder="Cari judul buku, pengarang, subjek, ISBN..."
+                       class="w-full px-3 py-2 bg-transparent text-white placeholder-slate-400 focus:outline-none text-xs sm:text-sm font-medium"
+                       autofocus>
+                <button type="submit" class="inline-flex items-center gap-1.5 px-4 sm:px-6 py-2 bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-500 hover:to-sky-500 text-white font-bold rounded-xl shadow-md transition-all text-xs flex-shrink-0">
+                    <span>Cari</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+        </form>
+
+        <!-- 3. Topik Populer Ringkas (Compact Chips) -->
+        <div class="flex items-center flex-wrap gap-1.5">
+            <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider mr-1">Topik:</span>
+            @foreach($popularTopics->take(5) as $top)
+                <a href="{{ route('opac.search', ['topic' => $top->topic_id]) }}" class="px-2.5 py-0.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-[11px] font-medium text-slate-200 hover:text-white border border-white/15 hover:border-sky-400/50 backdrop-blur-md transition-all">
+                    {{ $top->topic }} ({{ $top->biblios_count }})
+                </a>
+            @endforeach
+        </div>
+
+        <!-- 4. Card Information 4 Koleksi (Mini / Compact Cards) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
+            <!-- 1. Judul Buku -->
+            <a href="{{ route('opac.search') }}" class="group p-2 sm:p-2.5 rounded-xl bg-slate-900/85 hover:bg-slate-900 backdrop-blur-md border border-white/15 shadow-md flex items-center gap-2.5 hover:border-sky-400/50 transition-all">
+                <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center flex-shrink-0 border border-sky-400/30 group-hover:scale-105 transition-transform">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs sm:text-sm font-black text-white leading-tight">{{ number_format($stats['total_books']) }}</div>
+                    <div class="text-[10px] text-slate-300 font-medium truncate">Judul Buku</div>
+                </div>
+            </a>
+
+            <!-- 2. E-Books -->
+            <a href="{{ route('opac.search', ['gmd' => $stats['gmd_ids']['ebook']]) }}" class="group p-2 sm:p-2.5 rounded-xl bg-slate-900/85 hover:bg-slate-900 backdrop-blur-md border border-white/15 shadow-md flex items-center gap-2.5 hover:border-cyan-400/50 transition-all">
+                <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center flex-shrink-0 border border-cyan-400/30 group-hover:scale-105 transition-transform">
+                    <i data-lucide="tablet" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs sm:text-sm font-black text-white leading-tight">{{ number_format($stats['total_ebooks']) }}</div>
+                    <div class="text-[10px] text-slate-300 font-medium truncate">E-Books</div>
+                </div>
+            </a>
+
+            <!-- 3. Jurnal -->
+            <a href="{{ route('opac.search', ['gmd' => $stats['gmd_ids']['jurnal']]) }}" class="group p-2 sm:p-2.5 rounded-xl bg-slate-900/85 hover:bg-slate-900 backdrop-blur-md border border-white/15 shadow-md flex items-center gap-2.5 hover:border-violet-400/50 transition-all">
+                <div class="w-8 h-8 rounded-lg bg-violet-500/20 text-violet-400 flex items-center justify-center flex-shrink-0 border border-violet-400/30 group-hover:scale-105 transition-transform">
+                    <i data-lucide="newspaper" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs sm:text-sm font-black text-white leading-tight">{{ number_format($stats['total_jurnals']) }}</div>
+                    <div class="text-[10px] text-slate-300 font-medium truncate">Jurnal</div>
+                </div>
+            </a>
+
+            <!-- 4. Skripsi -->
+            <a href="{{ route('opac.search', ['gmd' => $stats['gmd_ids']['skripsi']]) }}" class="group p-2 sm:p-2.5 rounded-xl bg-slate-900/85 hover:bg-slate-900 backdrop-blur-md border border-white/15 shadow-md flex items-center gap-2.5 hover:border-emerald-400/50 transition-all">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-400/30 group-hover:scale-105 transition-transform">
+                    <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs sm:text-sm font-black text-white leading-tight">{{ number_format($stats['total_skripsi']) }}</div>
+                    <div class="text-[10px] text-slate-300 font-medium truncate">Skripsi</div>
+                </div>
+            </a>
         </div>
     </div>
 </section>
@@ -293,18 +281,27 @@
         @foreach(collect($newsArticles)->take(4) as $article)
             <article class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden hover:border-brand-300 dark:hover:border-sky-700 transition-all duration-300 hover:-translate-y-1.5 shadow-sm hover:shadow-xl flex flex-col group">
                 <div class="relative aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    <img src="{{ asset($article['image']) }}" alt="{{ $article['title'] }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-                    <div class="absolute top-3 left-3">
+                    <img src="{{ str_starts_with($article['image'], 'http') ? $article['image'] : asset($article['image']) }}" alt="{{ $article['title'] }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='{{ asset('images/slides/slide1_campus.jpg') }}'">
+                    <div class="absolute top-3 left-3 flex items-center gap-1.5">
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-brand-600/90 text-white backdrop-blur shadow-sm">
                             {{ $article['category'] }}
                         </span>
+                        @if(!empty($article['is_national']))
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-600/90 text-white backdrop-blur shadow-sm flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                                <span>Portal Nasional</span>
+                            </span>
+                        @endif
                     </div>
                 </div>
 
                 <div class="p-5 flex flex-col flex-grow">
                     <div class="flex items-center justify-between text-[11px] text-slate-400 mb-2">
-                        <span class="font-semibold text-brand-600 dark:text-sky-400">{{ $article['source'] }}</span>
-                        <span>{{ $article['date'] }}</span>
+                        <span class="font-bold flex items-center gap-1 {{ !empty($article['is_national']) ? 'text-emerald-600 dark:text-emerald-400' : 'text-brand-600 dark:text-sky-400' }}">
+                            <i data-lucide="{{ !empty($article['is_national']) ? 'globe' : 'building-2' }}" class="w-3.5 h-3.5"></i>
+                            {{ $article['source'] }}
+                        </span>
+                        <span class="text-[10px]">{{ $article['date'] }}</span>
                     </div>
 
                     <h3 class="font-bold text-slate-900 dark:text-white text-sm line-clamp-2 leading-snug group-hover:text-brand-600 dark:group-hover:text-sky-400 transition-colors mb-2">
@@ -317,7 +314,7 @@
 
                     <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                         <a href="{{ $article['url'] }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 dark:text-sky-400 hover:text-brand-700 dark:hover:text-sky-300">
-                            <span>Baca Artikel</span>
+                            <span>Baca Berita Asli</span>
                             <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
                         </a>
                         <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Tautan Resmi</span>
