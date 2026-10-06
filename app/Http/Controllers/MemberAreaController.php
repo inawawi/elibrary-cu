@@ -42,12 +42,10 @@ class MemberAreaController extends Controller
             'captcha.numeric'    => 'Jawaban captcha harus berupa angka.',
         ]);
 
-        $sessionCaptcha = session('member_captcha');
-        if ($sessionCaptcha === null || intval($request->captcha) !== intval($sessionCaptcha)) {
+        if (!\App\Http\Controllers\Admin\AuthController::validateCaptcha($request, 'member_captcha')) {
             \App\Http\Controllers\Admin\AuthController::generateCaptcha('member_captcha');
             return back()->withErrors(['captcha' => 'Jawaban verifikasi captcha tidak tepat. Silakan coba lagi.'])->withInput();
         }
-        session()->forget('member_captcha');
 
         $member = Member::where('member_id', $request->member_id)->first();
 

@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Crypt;
 
 class AuthController extends Controller
 {
@@ -24,12 +25,53 @@ class AuthController extends Controller
         $answer = $operator === '+' ? ($num1 + $num2) : ($num1 - $num2);
         session([$sessionKey => $answer]);
 
+        // Enkripsi token agar sinkron dengan form dan kebal dari expired session/multi-tab/bfcache
+        $token = Crypt::encryptString("{$num1}|{$operator}|{$num2}|{$answer}|" . time());
+
         return [
             'num1' => $num1,
             'num2' => $num2,
             'operator' => $operator,
             'question' => "{$num1} {$operator} {$num2}",
+            'token' => $token,
         ];
+    }
+
+    public static function validateCaptcha(Request $request, string $sessionKey = 'admin_captcha'): bool
+    {
+        $inputAnswer = trim($request->input('captcha', ''));
+        if ($inputAnswer === '' || !is_numeric($inputAnswer)) {
+            return false;
+        }
+        $userVal = intval($inputAnswer);
+
+        // 1. Validasi via captcha_token terenkripsi (kebal multi-tab / bfcache / session race)
+        if ($request->filled('captcha_token')) {
+            try {
+                $decrypted = Crypt::decryptString($request->input('captcha_token'));
+                $parts = explode('|', $decrypted);
+                if (count($parts) >= 5) {
+                    $expected = intval($parts[3]);
+                    $timestamp = intval($parts[4]);
+                    // Berlaku maksimal 30 menit (1800 detik)
+                    if ((time() - $timestamp) <= 1800 && $userVal === $expected) {
+                        session()->forget($sessionKey);
+                        return true;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Token tidak valid atau dimanipulasi, lanjut fallback session
+            }
+        }
+
+        // 2. Fallback validasi via session
+        $sessionCaptcha = session($sessionKey);
+        if ($sessionCaptcha !== null && $userVal === intval($sessionCaptcha)) {
+            session()->forget($sessionKey);
+            return true;
+        }
+
+        return false;
     }
 
     public function refreshCaptcha(Request $request)
@@ -62,12 +104,10 @@ class AuthController extends Controller
             'captcha.numeric'   => 'Jawaban captcha harus berupa angka.',
         ]);
 
-        $sessionCaptcha = session('admin_captcha');
-        if ($sessionCaptcha === null || intval($request->captcha) !== intval($sessionCaptcha)) {
+        if (!self::validateCaptcha($request, 'admin_captcha')) {
             self::generateCaptcha('admin_captcha');
             return back()->withErrors(['captcha' => 'Jawaban verifikasi captcha tidak tepat. Silakan coba lagi.'])->withInput();
         }
-        session()->forget('admin_captcha');
 
         $user = User::where('username', $request->username)
             ->orWhere('email', $request->username)
