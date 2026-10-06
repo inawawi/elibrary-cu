@@ -128,13 +128,13 @@ class BiblioController extends Controller
             'sor' => 'nullable|string|max:200',
             'edition' => 'nullable|string|max:50',
             'isbn_issn' => 'nullable|string|max:32',
-            'publisher_id' => 'nullable|integer',
+            'publisher_id' => 'nullable|string|max:255',
             'publish_year' => 'nullable|string|max:20',
             'collation' => 'nullable|string|max:100',
             'series_title' => 'nullable|string|max:200',
             'call_number' => 'nullable|string|max:50',
             'language_id' => 'nullable|string|max:5',
-            'publish_place_id' => 'nullable|integer',
+            'publish_place_id' => 'nullable|string|max:255',
             'classification' => 'nullable|string|max:40',
             'notes' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -156,19 +156,22 @@ class BiblioController extends Controller
             $file->move(public_path('images/docs'), $imageName);
         }
 
+        $publisherId = $this->resolvePublisherId($request->publisher_id);
+        $publishPlaceId = $this->resolvePlaceId($request->publish_place_id);
+
         $biblio = Biblio::create([
             'gmd_id' => $validated['gmd_id'] ?? 1,
             'title' => $validated['title'],
             'sor' => $validated['sor'] ?? null,
             'edition' => $validated['edition'] ?? null,
             'isbn_issn' => $validated['isbn_issn'] ?? null,
-            'publisher_id' => $validated['publisher_id'] ?? null,
+            'publisher_id' => $publisherId,
             'publish_year' => $validated['publish_year'] ?? null,
             'collation' => $validated['collation'] ?? null,
             'series_title' => $validated['series_title'] ?? null,
             'call_number' => $validated['call_number'] ?? null,
             'language_id' => $validated['language_id'] ?? 'id',
-            'publish_place_id' => $validated['publish_place_id'] ?? null,
+            'publish_place_id' => $publishPlaceId,
             'classification' => $validated['classification'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'image' => $imageName,
@@ -229,6 +232,7 @@ class BiblioController extends Controller
                 'biblio_id' => $biblio->biblio_id,
                 'item_code' => $code,
                 'call_number' => $validated['call_number'] ?? null,
+                'edition' => $validated['edition'] ?? null,
                 'coll_type_id' => 1,
                 'location_id' => $validated['location_id'] ?? '001',
                 'item_status_id' => '001',
@@ -273,13 +277,13 @@ class BiblioController extends Controller
             'sor' => 'nullable|string|max:200',
             'edition' => 'nullable|string|max:50',
             'isbn_issn' => 'nullable|string|max:32',
-            'publisher_id' => 'nullable|integer',
+            'publisher_id' => 'nullable|string|max:255',
             'publish_year' => 'nullable|string|max:20',
             'collation' => 'nullable|string|max:100',
             'series_title' => 'nullable|string|max:200',
             'call_number' => 'nullable|string|max:50',
             'language_id' => 'nullable|string|max:5',
-            'publish_place_id' => 'nullable|integer',
+            'publish_place_id' => 'nullable|string|max:255',
             'classification' => 'nullable|string|max:40',
             'notes' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -297,6 +301,13 @@ class BiblioController extends Controller
             $imageName = time() . '_' . Str::slug(substr($validated['title'], 0, 30)) . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('images/docs'), $imageName);
             $validated['image'] = $imageName;
+        }
+
+        if ($request->has('publisher_id')) {
+            $validated['publisher_id'] = $this->resolvePublisherId($request->publisher_id);
+        }
+        if ($request->has('publish_place_id')) {
+            $validated['publish_place_id'] = $this->resolvePlaceId($request->publish_place_id);
         }
 
         $validated['last_update'] = Carbon::now();
@@ -340,6 +351,7 @@ class BiblioController extends Controller
                     'biblio_id' => $biblio->biblio_id,
                     'item_code' => $code,
                     'call_number' => $biblio->call_number,
+                    'edition' => $biblio->edition,
                     'coll_type_id' => 1,
                     'location_id' => '001',
                     'item_status_id' => '001',
@@ -398,6 +410,7 @@ class BiblioController extends Controller
         if ($request->isMethod('post')) {
             $validated = $request->validate([
                 'item_code' => 'nullable|string|max:20|unique:item,item_code',
+                'edition' => 'nullable|string|max:100',
                 'location_id' => 'required|string|max:3',
                 'coll_type_id' => 'required|integer',
                 'price' => 'nullable|integer',
@@ -409,6 +422,7 @@ class BiblioController extends Controller
                 'biblio_id' => $biblio->biblio_id,
                 'item_code' => $finalItemCode,
                 'call_number' => $biblio->call_number,
+                'edition' => !empty($validated['edition']) ? trim($validated['edition']) : $biblio->edition,
                 'location_id' => $validated['location_id'],
                 'coll_type_id' => $validated['coll_type_id'],
                 'item_status_id' => '001',
@@ -424,7 +438,7 @@ class BiblioController extends Controller
         $locations = Location::all();
         $collTypes = CollType::all();
 
-        return view('admin.biblio.items', compact('biblio', 'locations', 'collTypes', 'nextItemCode', 'prefix'));
+        return view('admin.biblio.items', compact('biblio', 'locations', 'collTypes', 'nextItemCode', 'prefix', 'isJurnal'));
     }
 
     public function deleteItem($itemId)
@@ -1080,7 +1094,8 @@ class BiblioController extends Controller
             'frequency_id' => 'required|integer', // Kolom kala terbit (annually, 3 times a year, quarterly, monthly)
             'spec_detail_info' => 'required|string|max:100', // Dropdown tingkat jurnal
             'isbn_issn' => 'nullable|string|max:32',
-            'publisher_id' => 'nullable|integer',
+            'publisher_id' => 'nullable|string|max:255',
+            'publish_place_id' => 'nullable|string|max:255',
             'publish_year' => 'nullable|string|max:20',
             'sor' => 'nullable|string|max:200',
             'call_number' => 'nullable|string|max:50',
@@ -1100,6 +1115,9 @@ class BiblioController extends Controller
             $file->move(public_path('images/docs'), $imageName);
         }
 
+        $publisherId = $this->resolvePublisherId($request->publisher_id);
+        $publishPlaceId = $this->resolvePlaceId($request->publish_place_id);
+
         $biblio = Biblio::create([
             'gmd_id' => 263, // Jurnal
             'title' => $validated['title'],
@@ -1107,7 +1125,8 @@ class BiblioController extends Controller
             'frequency_id' => $validated['frequency_id'],
             'spec_detail_info' => $validated['spec_detail_info'],
             'isbn_issn' => $validated['isbn_issn'] ?? null,
-            'publisher_id' => $validated['publisher_id'] ?? null,
+            'publisher_id' => $publisherId,
+            'publish_place_id' => $publishPlaceId,
             'publish_year' => $validated['publish_year'] ?? null,
             'sor' => $validated['sor'] ?? null,
             'call_number' => $validated['call_number'] ?? null,
@@ -1147,6 +1166,7 @@ class BiblioController extends Controller
                 'biblio_id' => $biblio->biblio_id,
                 'item_code' => $code,
                 'call_number' => $validated['call_number'] ?? null,
+                'edition' => $validated['edition'] ?? null,
                 'coll_type_id' => 1,
                 'location_id' => '001',
                 'item_status_id' => '001',
@@ -1163,6 +1183,8 @@ class BiblioController extends Controller
     public function printLabels(Request $request)
     {
         $search = $request->input('search');
+        $biblioId = $request->input('biblio_id');
+        $barcode = $request->input('barcode');
         $gmdId = $request->input('gmd_id');
         $selectedItems = $request->input('items', []);
         $printMode = $request->input('mode', 'both'); // 'both', 'spine', 'barcode'
@@ -1173,6 +1195,20 @@ class BiblioController extends Controller
         if (!empty($selectedItems)) {
             $query->whereIn('item_id', (array) $selectedItems);
         } else {
+            if (!empty($biblioId)) {
+                if (is_numeric($biblioId)) {
+                    $query->where('biblio_id', $biblioId);
+                } else {
+                    $query->whereHas('biblio', function($bq) use ($biblioId) {
+                        $bq->where('title', 'like', "%{$biblioId}%");
+                    });
+                }
+            }
+
+            if (!empty($barcode)) {
+                $query->where('item_code', 'like', "%{$barcode}%");
+            }
+
             if (!empty($search)) {
                 $query->where(function($q) use ($search) {
                     $q->where('item_code', 'like', "%{$search}%")
@@ -1193,8 +1229,12 @@ class BiblioController extends Controller
 
         $items = $query->orderBy('item_id', 'desc')->take(100)->get();
         $gmds = Gmd::curated()->get();
+        $biblioOptions = Biblio::select('biblio_id', 'title')->orderBy('title')->get();
+        $barcodeOptions = Item::select('item_code')->distinct()->orderBy('item_code')->pluck('item_code');
 
-        return view('admin.biblio.print_labels', compact('items', 'gmds', 'search', 'gmdId', 'selectedItems', 'printMode', 'columns'));
+        return view('admin.biblio.print_labels', compact(
+            'items', 'gmds', 'search', 'biblioId', 'barcode', 'gmdId', 'selectedItems', 'printMode', 'columns', 'biblioOptions', 'barcodeOptions'
+        ));
     }
 
     public function printSingleLabel($id, Request $request)
@@ -1204,17 +1244,55 @@ class BiblioController extends Controller
         $printMode = $request->input('mode', 'both');
         $columns = (int) $request->input('columns', 2);
         $gmds = Gmd::curated()->get();
+        $biblioOptions = Biblio::select('biblio_id', 'title')->orderBy('title')->get();
+        $barcodeOptions = Item::select('item_code')->distinct()->orderBy('item_code')->pluck('item_code');
 
         return view('admin.biblio.print_labels', [
             'items' => $items,
             'gmds' => $gmds,
             'search' => '',
+            'biblioId' => $biblio->biblio_id,
+            'barcode' => '',
             'gmdId' => '',
             'selectedItems' => $items->pluck('item_id')->toArray(),
             'printMode' => $printMode,
             'columns' => $columns,
             'singleBiblio' => $biblio,
+            'biblioOptions' => $biblioOptions,
+            'barcodeOptions' => $barcodeOptions,
         ]);
+    }
+
+    private function resolvePublisherId($input)
+    {
+        if (empty($input)) return null;
+        if (is_numeric($input) && Publisher::where('publisher_id', $input)->exists()) {
+            return (int) $input;
+        }
+        $pub = Publisher::firstOrCreate(
+            ['publisher_name' => trim($input)],
+            [
+                'input_date' => Carbon::today()->toDateString(),
+                'last_update' => Carbon::today()->toDateString(),
+            ]
+        );
+        return $pub->publisher_id;
+    }
+
+    private function resolvePlaceId($input)
+    {
+        if (empty($input)) return null;
+        if (is_numeric($input) && Place::where('place_id', $input)->exists()) {
+            return (int) $input;
+        }
+        $plc = Place::firstOrCreate(
+            ['place_name' => trim($input)],
+            [
+                'input_date' => Carbon::today()->toDateString(),
+                'last_update' => Carbon::today()->toDateString(),
+            ]
+        );
+        return $plc->place_id;
     }
 }
 

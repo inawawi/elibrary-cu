@@ -118,25 +118,33 @@
                 </div>
             </div>
 
-            <!-- Penerbit & Kota Terbit -->
+            <!-- Penerbit & Kota Terbit (Select2 Creatable / Tags) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Penerbit / Institusi Pengelola</label>
-                    <select name="publisher_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
-                        <option value="">Pilih Penerbit / Institusi</option>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Penerbit / Institusi Pengelola</span>
+                        <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Bisa ketik baru</span>
+                    </label>
+                    <select name="publisher_id" id="publisher_id" class="w-full">
+                        <option value="">-- Pilih atau Ketik Penerbit Baru --</option>
                         @foreach($publishers as $p)
                             <option value="{{ $p->publisher_id }}" {{ old('publisher_id') == $p->publisher_id ? 'selected' : '' }}>{{ $p->publisher_name }}</option>
                         @endforeach
                     </select>
+                    <p class="text-[10px] text-slate-400 mt-1">Pilih dari daftar atau ketik nama penerbit baru lalu tekan Enter.</p>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Kota Terbit</label>
-                    <select name="publish_place_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
-                        <option value="">Pilih Kota Terbit</option>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Kota Terbit</span>
+                        <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Bisa ketik baru</span>
+                    </label>
+                    <select name="publish_place_id" id="publish_place_id" class="w-full">
+                        <option value="">-- Pilih atau Ketik Kota Terbit Baru --</option>
                         @foreach($places as $pl)
                             <option value="{{ $pl->place_id }}" {{ old('publish_place_id') == $pl->place_id ? 'selected' : '' }}>{{ $pl->place_name }}</option>
                         @endforeach
                     </select>
+                    <p class="text-[10px] text-slate-400 mt-1">Pilih dari daftar atau ketik nama kota baru lalu tekan Enter.</p>
                 </div>
             </div>
 
@@ -237,7 +245,44 @@
                 <i data-lucide="check" class="w-4 h-4"></i>
                 <span>Simpan Jurnal</span>
             </button>
-        </div>
     </form>
 </div>
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        $('#publisher_id').select2({
+            placeholder: '-- Pilih atau Ketik Penerbit Baru --',
+            allowClear: true,
+            tags: true,
+            width: '100%',
+            createTag: function (params) {
+                var term = $.trim(params.term);
+                if (term === '') return null;
+                return {
+                    id: term,
+                    text: term + ' (Penerbit Baru)',
+                    newTag: true
+                };
+            }
+        });
+
+        $('#publish_place_id').select2({
+            placeholder: '-- Pilih atau Ketik Kota Terbit Baru --',
+            allowClear: true,
+            tags: true,
+            width: '100%',
+            createTag: function (params) {
+                var term = $.trim(params.term);
+                if (term === '') return null;
+                return {
+                    id: term,
+                    text: term + ' (Kota Baru)',
+                    newTag: true
+                };
+            }
+        });
+    });
+</script>
+@endpush
 @endsection

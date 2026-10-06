@@ -52,6 +52,17 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Edisi / Volume / Nomor</span>
+                        @if(!empty($isJurnal))
+                            <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Jurnal</span>
+                        @endif
+                    </label>
+                    <input type="text" name="edition" value="{{ old('edition', $biblio->edition) }}" placeholder="Contoh: Vol. 1 No. 2 (2024)" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <p class="text-[10px] text-slate-400 mt-1">Edisi atau nomor terbitan khusus untuk eksemplar ini.</p>
+                </div>
+
+                <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Lokasi Rak *</label>
                     <select name="location_id" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
                         @foreach($locations as $l)
@@ -97,6 +108,7 @@
                         <thead class="text-slate-400 font-bold uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">
                             <tr>
                                 <th class="py-2.5">Kode Eksemplar</th>
+                                <th class="py-2.5">Edisi</th>
                                 <th class="py-2.5">Lokasi Rak</th>
                                 <th class="py-2.5">Tipe Koleksi</th>
                                 <th class="py-2.5">Status Pinjam</th>
@@ -108,6 +120,11 @@
                                 <tr>
                                     <td class="py-3 font-mono font-bold text-slate-900 dark:text-white">
                                         {{ $item->item_code }}
+                                    </td>
+                                    <td class="py-3 text-slate-700 dark:text-slate-300">
+                                        <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 text-[11px] font-semibold">
+                                            {{ $item->edition ?: ($biblio->edition ?: '-') }}
+                                        </span>
                                     </td>
                                     <td class="py-3 text-slate-600 dark:text-slate-400">
                                         {{ $item->location?->location_name ?: '-' }}
@@ -127,13 +144,18 @@
                                         @endif
                                     </td>
                                     <td class="py-3 text-right">
-                                        <form action="{{ route('admin.biblio.item.delete', $item->item_id) }}" method="POST" onsubmit="return confirm('Hapus eksemplar ini?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60" title="Hapus">
-                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                            </button>
-                                        </form>
+                                        <div class="flex items-center justify-end gap-1">
+                                            <a href="{{ route('admin.biblio.print_labels', ['items' => [$item->item_id]]) }}" target="_blank" class="p-1.5 rounded-lg text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/60" title="Cetak Barcode Eksemplar Ini">
+                                                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                                            </a>
+                                            <form action="{{ route('admin.biblio.item.delete', $item->item_id) }}" method="POST" onsubmit="return confirm('Hapus eksemplar ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/60" title="Hapus">
+                                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach

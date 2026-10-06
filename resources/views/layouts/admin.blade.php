@@ -35,10 +35,89 @@
             }
         }
     </script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    @stack('styles')
     <style>
         [x-cloak] { display: none !important; }
+
+        /* Select2 Tailwind modern theme */
+        .select2-container--default .select2-selection--single {
+            height: 42px !important;
+            border-radius: 0.75rem !important;
+            border-color: #cbd5e1 !important;
+            background-color: #f8fafc !important;
+            display: flex !important;
+            align-items: center !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            transition: all 0.2s ease;
+        }
+        .select2-container--default.select2-container--focus .select2-selection--single,
+        .select2-container--default .select2-selection--single:focus {
+            border-color: #0284c7 !important;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+            outline: none !important;
+        }
+        .dark .select2-container--default .select2-selection--single {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: inherit !important;
+            font-size: 0.75rem !important;
+            font-weight: 500 !important;
+            line-height: 40px !important;
+            padding-left: 0.25rem !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px !important;
+            right: 8px !important;
+        }
+        .select2-dropdown {
+            border-radius: 0.75rem !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15) !important;
+            font-size: 0.75rem !important;
+            overflow: hidden !important;
+            z-index: 9999 !important;
+        }
+        .dark .select2-dropdown {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        .select2-search--dropdown {
+            padding: 8px !important;
+        }
+        .select2-search--dropdown .select2-search__field {
+            border-radius: 0.5rem !important;
+            border-color: #cbd5e1 !important;
+            padding: 6px 10px !important;
+            font-size: 0.75rem !important;
+        }
+        .dark .select2-search--dropdown .select2-search__field {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: #0284c7 !important;
+            color: white !important;
+        }
+        .select2-container--default .select2-results__option--selected {
+            background-color: #e0f2fe !important;
+            color: #0369a1 !important;
+            font-weight: bold !important;
+        }
+        .dark .select2-container--default .select2-results__option--selected {
+            background-color: #0369a1 !important;
+            color: #ffffff !important;
+        }
 
         @keyframes flashBounceIn {
             0% {
@@ -125,7 +204,7 @@
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo Universitas Siber Indonesia" class="w-10 h-10 object-contain">
                 <div>
-                    <span class="font-extrabold tracking-tight text-slate-900 dark:text-white text-base">ADMIN LIB</span>
+                    <span class="font-extrabold tracking-tight text-slate-900 dark:text-white text-base">{{ auth()->user()->realname ?? 'ADMIN LIB' }}</span>
                     <span class="block text-[10px] font-bold text-slate-400">Univ. Siber Indonesia</span>
                 </div>
             </a>

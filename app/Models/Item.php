@@ -13,6 +13,7 @@ class Item extends Model
     protected $fillable = [
         'biblio_id',
         'call_number',
+        'edition',
         'coll_type_id',
         'item_code',
         'inventory_code',
