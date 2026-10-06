@@ -228,23 +228,55 @@ class OpacController extends Controller
                 $finalKeperluan = 'Lainnya: ' . $validated['keperluan_lainnya'];
             }
 
-            $lastId = GuestBook::orderBy('id_bukutamu', 'desc')->value('id_bukutamu');
-            $newNum = $lastId ? (intval(substr($lastId, 2)) + 1) : 1;
-            $newId = 'BT' . str_pad($newNum, 6, '0', STR_PAD_LEFT);
+            // Ambil nomor urut tertinggi secara numerik agar tidak tertipu sorting alfabetis ('V' > 'B')
+            $maxNomorUrut = (int) (GuestBook::selectRaw('MAX(CAST(nomor_urut AS UNSIGNED)) as max_no')->value('max_no') ?? 0);
+            $maxBtNum = (int) (GuestBook::where('id_bukutamu', 'like', 'BT%')
+                ->selectRaw('MAX(CAST(SUBSTRING(id_bukutamu, 3) AS UNSIGNED)) as max_bt')
+                ->value('max_bt') ?? 0);
+            $maxVNum = (int) (GuestBook::where('id_bukutamu', 'like', 'V%')
+                ->selectRaw('MAX(CAST(SUBSTRING(id_bukutamu, 2) AS UNSIGNED)) as max_v')
+                ->value('max_v') ?? 0);
 
-            GuestBook::create([
-                'id_bukutamu' => $newId,
-                'id_kampus' => 'F1',
-                'id_anggota' => $validated['id_anggota'] ?? '-',
-                'nama' => $validated['nama'],
-                'tgl' => Carbon::today()->toDateString(),
-                'jam' => Carbon::now()->toTimeString(),
-                'status' => $validated['status'],
-                'prodi' => $validated['prodi'] ?? null,
-                'tujuan' => $validated['tujuan'],
-                'keperluan' => $finalKeperluan,
-                'nomor_urut' => $newNum,
-            ]);
+            $newNum = max($maxNomorUrut, $maxBtNum, $maxVNum) + 1;
+
+            $inserted = false;
+            for ($attempt = 0; $attempt < 10; $attempt++) {
+                $newId = 'BT' . str_pad($newNum, 6, '0', STR_PAD_LEFT);
+                if (GuestBook::where('id_bukutamu', $newId)->exists()) {
+                    $newNum++;
+                    continue;
+                }
+
+                try {
+                    GuestBook::create([
+                        'id_bukutamu' => $newId,
+                        'id_kampus' => 'F1',
+                        'id_anggota' => $validated['id_anggota'] ?? '-',
+                        'nama' => $validated['nama'],
+                        'tgl' => Carbon::today()->toDateString(),
+                        'jam' => Carbon::now()->toTimeString(),
+                        'status' => $validated['status'],
+                        'prodi' => $validated['prodi'] ?? null,
+                        'tujuan' => $validated['tujuan'],
+                        'keperluan' => $finalKeperluan,
+                        'nomor_urut' => $newNum,
+                    ]);
+                    $inserted = true;
+                    break;
+                } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                    $newNum++;
+                } catch (\Exception $e) {
+                    if (str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), '1062')) {
+                        $newNum++;
+                    } else {
+                        throw $e;
+                    }
+                }
+            }
+
+            if (!$inserted) {
+                return back()->with('error', 'Gagal menyimpan buku tamu, silakan coba lagi.');
+            }
 
             return back()->with('success', 'Terima kasih telah mengisi buku tamu kunjungan!');
         }
