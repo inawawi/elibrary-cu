@@ -87,8 +87,7 @@ class AuthController extends Controller
         if (Auth::guard('web')->check()) {
             return redirect()->route('admin.dashboard');
         }
-        $captcha = self::generateCaptcha('admin_captcha');
-        return view('admin.login', compact('captcha'));
+        return view('admin.login');
     }
 
     public function login(Request $request)
@@ -96,18 +95,10 @@ class AuthController extends Controller
         $request->validate([
             'username' => 'required|string',
             'password' => 'required|string',
-            'captcha'  => 'required|numeric',
         ], [
             'username.required' => 'Username atau email wajib diisi.',
             'password.required' => 'Kata sandi wajib diisi.',
-            'captcha.required'  => 'Kode verifikasi captcha perhitungan wajib diisi.',
-            'captcha.numeric'   => 'Jawaban captcha harus berupa angka.',
         ]);
-
-        if (!self::validateCaptcha($request, 'admin_captcha')) {
-            self::generateCaptcha('admin_captcha');
-            return back()->withErrors(['captcha' => 'Jawaban verifikasi captcha tidak tepat. Silakan coba lagi.'])->withInput();
-        }
 
         $user = User::where('username', $request->username)
             ->orWhere('email', $request->username)

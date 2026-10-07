@@ -62,66 +62,6 @@
                     </div>
                 </div>
 
-                <!-- Verifikasi Captcha Perhitungan (Operan 0 sampai 9) -->
-                <div x-data="{
-                    num1: {{ $captcha['num1'] ?? rand(0, 9) }},
-                    num2: {{ $captcha['num2'] ?? rand(0, 9) }},
-                    op: '{{ $captcha['operator'] ?? '+' }}',
-                    token: '{{ $captcha['token'] ?? '' }}',
-                    loading: false,
-                    refresh() {
-                        this.loading = true;
-                        fetch('{{ route('captcha.refresh', ['type' => 'member']) }}')
-                            .then(r => r.json())
-                            .then(d => {
-                                this.num1 = d.num1;
-                                this.num2 = d.num2;
-                                this.op = d.operator;
-                                this.token = d.token;
-                                this.loading = false;
-                            })
-                            .catch(() => this.loading = false);
-                    }
-                }" class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
-                    <input type="hidden" name="captcha_token" :value="token">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                            <i data-lucide="shield-check" class="w-4 h-4 text-brand-600 dark:text-sky-400"></i>
-                            Hitung Nilai Captcha *
-                        </label>
-                        <button type="button" @click="refresh()" title="Ganti soal captcha" class="text-[11px] font-semibold text-brand-600 hover:text-brand-700 dark:text-sky-400 dark:hover:text-sky-300 flex items-center gap-1 cursor-pointer">
-                            <i data-lucide="refresh-cw" class="w-3 h-3" :class="{ 'animate-spin': loading }"></i>
-                            <span>Ganti Soal</span>
-                        </button>
-                    </div>
-
-                    <div class="flex items-center gap-2.5">
-                        <!-- Kotak Soal Operan 0 - 9 -->
-                        <div class="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-mono font-black text-base select-none shadow-xs flex-shrink-0">
-                            <span class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 flex items-center justify-center border border-sky-200 dark:border-sky-800" x-text="num1"></span>
-                            <span class="text-slate-500 font-bold" x-text="op"></span>
-                            <span class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 flex items-center justify-center border border-sky-200 dark:border-sky-800" x-text="num2"></span>
-                            <span class="text-slate-400">=</span>
-                        </div>
-                        <!-- Input Jawaban -->
-                        <div class="relative flex-1">
-                            <input type="number"
-                                   name="captcha"
-                                   required
-                                   min="0"
-                                   max="18"
-                                   placeholder="Hasil?"
-                                   class="w-full px-3 py-2 rounded-xl border @error('captcha') border-rose-500 ring-1 ring-rose-500 @else border-slate-300 dark:border-slate-700 @enderror bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-base focus:outline-none focus:ring-2 focus:ring-brand-500 font-black text-center shadow-xs">
-                        </div>
-                    </div>
-                    @error('captcha')
-                        <p class="text-xs text-rose-500 font-semibold mt-1.5 flex items-center gap-1">
-                            <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
-                            {{ $message }}
-                        </p>
-                    @enderror
-                </div>
-
                 <button type="submit" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 transition-all">
                     Masuk ke Akun
                 </button>

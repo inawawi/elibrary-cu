@@ -25,8 +25,7 @@ class MemberAreaController extends Controller
         if (Auth::guard('member')->check()) {
             return redirect()->route('member.dashboard');
         }
-        $captcha = \App\Http\Controllers\Admin\AuthController::generateCaptcha('member_captcha');
-        return view('member.login', compact('captcha'));
+        return view('member.login');
     }
 
     public function login(Request $request)
@@ -34,18 +33,10 @@ class MemberAreaController extends Controller
         $request->validate([
             'member_id' => 'required|string',
             'password'  => 'required|string',
-            'captcha'   => 'required|numeric',
         ], [
             'member_id.required' => 'ID Anggota / NIM wajib diisi.',
             'password.required'  => 'Kata sandi wajib diisi.',
-            'captcha.required'   => 'Kode verifikasi captcha perhitungan wajib diisi.',
-            'captcha.numeric'    => 'Jawaban captcha harus berupa angka.',
         ]);
-
-        if (!\App\Http\Controllers\Admin\AuthController::validateCaptcha($request, 'member_captcha')) {
-            \App\Http\Controllers\Admin\AuthController::generateCaptcha('member_captcha');
-            return back()->withErrors(['captcha' => 'Jawaban verifikasi captcha tidak tepat. Silakan coba lagi.'])->withInput();
-        }
 
         $member = Member::where('member_id', $request->member_id)->first();
 
