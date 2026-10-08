@@ -25,7 +25,7 @@
     </div>
 
     <!-- Admin Chat Window Container -->
-    <div id="admin-chat-window" class="hidden fixed sm:absolute bottom-20 right-0 sm:right-0 w-[95vw] sm:w-[720px] max-w-[760px] h-[580px] max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
+    <div id="admin-chat-window" class="hidden fixed sm:absolute bottom-20 right-0 sm:right-0 w-[95vw] sm:w-[740px] max-w-[780px] h-[590px] max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
         <!-- Main Top Bar -->
         <div class="px-5 py-3.5 bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-900 text-white flex items-center justify-between shadow-md">
             <div class="flex items-center gap-3">
@@ -105,8 +105,41 @@
                     </div>
                 </div>
 
+                <!-- Attachment Preview Bar (hidden by default) -->
+                <div id="admin-chat-file-preview-bar" class="hidden px-3 py-2 bg-emerald-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <div id="admin-file-thumb-container" class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-slate-700 flex items-center justify-center shrink-0 overflow-hidden text-emerald-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                        </div>
+                        <div class="truncate">
+                            <p id="admin-preview-filename" class="font-semibold text-slate-800 dark:text-slate-100 truncate text-[11px]">filename.jpg</p>
+                            <p id="admin-preview-filesize" class="text-[10px] text-slate-400">0 KB</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="cancelAdminAttachment()" class="p-1 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
                 <!-- Input Footer -->
                 <form id="admin-chat-form" onsubmit="sendAdminMessage(event)" class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-end gap-2">
+                    <!-- Hidden File Input -->
+                    <input type="file" id="admin-chat-file"
+                           accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+                           onchange="handleAdminFileChange(this)"
+                           class="hidden">
+
+                    <!-- Attachment Button (Clip) -->
+                    <button id="admin-chat-clip-btn" type="button" disabled
+                            onclick="document.getElementById('admin-chat-file').click()"
+                            class="p-2.5 rounded-2xl text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:pointer-events-none shrink-0"
+                            title="Lampirkan Gambar atau File Dokumen">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                    </button>
+
+                    <!-- Textarea Input -->
                     <div class="flex-grow relative">
                         <textarea id="admin-chat-input"
                                   rows="1"
@@ -116,6 +149,8 @@
                                   onkeydown="handleAdminChatKeydown(event)"
                                   class="w-full resize-none max-h-24 px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none disabled:opacity-50 transition-all"></textarea>
                     </div>
+
+                    <!-- Send Button -->
                     <button id="admin-chat-send-btn" type="submit" disabled
                             class="p-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-500 hover:to-teal-500 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition-all flex items-center justify-center shrink-0">
                         <svg class="w-5 h-5 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,6 +173,7 @@
         let messagesPollingInterval = null;
         let heartbeatInterval = null;
         let searchTimeout = null;
+        let selectedAdminFile = null;
 
         const csrfToken = '{{ csrf_token() }}';
         const unreadCountUrl = '{{ route("admin.chat.unread_count") }}';
@@ -331,10 +367,14 @@
 
             const input = document.getElementById('admin-chat-input');
             const sendBtn = document.getElementById('admin-chat-send-btn');
+            const clipBtn = document.getElementById('admin-chat-clip-btn');
+
             input.disabled = false;
             input.placeholder = "Ketik balasan Anda...";
             sendBtn.disabled = false;
+            if (clipBtn) clipBtn.disabled = false;
 
+            cancelAdminAttachment();
             activeRoomMessagesCount = 0;
             loadAdminRoomMessages();
 
@@ -344,6 +384,48 @@
             // Re-render rooms to show active state
             loadAdminRooms();
             setTimeout(() => input.focus(), 150);
+        };
+
+        window.handleAdminFileChange = function(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Ukuran file maksimal adalah 10 MB.');
+                input.value = '';
+                return;
+            }
+
+            selectedAdminFile = file;
+            const previewBar = document.getElementById('admin-chat-file-preview-bar');
+            const filenameEl = document.getElementById('admin-preview-filename');
+            const filesizeEl = document.getElementById('admin-preview-filesize');
+            const thumbContainer = document.getElementById('admin-file-thumb-container');
+
+            filenameEl.innerText = file.name;
+            filesizeEl.innerText = (file.size / 1024 > 1024)
+                ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+                : Math.round(file.size / 1024) + ' KB';
+
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    thumbContainer.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                thumbContainer.innerHTML = `<svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>`;
+            }
+
+            previewBar.classList.remove('hidden');
+        };
+
+        window.cancelAdminAttachment = function() {
+            selectedAdminFile = null;
+            const input = document.getElementById('admin-chat-file');
+            if (input) input.value = '';
+            const previewBar = document.getElementById('admin-chat-file-preview-bar');
+            if (previewBar) previewBar.classList.add('hidden');
         };
 
         function loadAdminRoomMessages() {
@@ -381,6 +463,37 @@
             .catch(() => {});
         }
 
+        function renderAdminAttachmentHtml(msg, isAdmin) {
+            if (!msg.attachment_url) return '';
+
+            if (msg.attachment_type === 'image') {
+                return `
+                    <div class="mt-1.5 mb-1 overflow-hidden rounded-xl border border-white/20">
+                        <a href="${msg.attachment_url}" target="_blank" title="Klik untuk memperbesar foto">
+                            <img src="${msg.attachment_url}" alt="${escapeHtml(msg.attachment_name || 'Foto')}"
+                                 class="max-h-48 w-auto max-w-full rounded-xl object-contain hover:scale-105 transition-transform duration-200 bg-black/10">
+                        </a>
+                    </div>
+                `;
+            } else {
+                const bgBox = isAdmin ? 'bg-white/15 hover:bg-white/25 text-white' : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-650 text-slate-800 dark:text-slate-100';
+                return `
+                    <div class="mt-1.5 mb-1">
+                        <a href="${msg.attachment_url}" target="_blank" download
+                           class="flex items-center gap-2.5 p-2 rounded-xl ${bgBox} transition-all border border-black/5">
+                            <div class="p-2 rounded-lg bg-black/10 shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            </div>
+                            <div class="min-w-0 flex-grow">
+                                <p class="font-bold text-[11px] truncate">${escapeHtml(msg.attachment_name || 'Dokumen')}</p>
+                                <p class="text-[9px] opacity-75">Klik untuk mengunduh</p>
+                            </div>
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
         function renderAdminMessages(messages) {
             const container = document.getElementById('admin-chat-messages-container');
             if (!container) return;
@@ -389,7 +502,7 @@
                 container.innerHTML = `
                     <div class="text-center py-12 px-4 text-slate-400">
                         <p class="font-semibold text-slate-600 dark:text-slate-300">Belum ada percakapan</p>
-                        <p class="text-[11px] mt-1 text-slate-400">Tuliskan pesan pertama untuk menyapa mahasiswa/member ini.</p>
+                        <p class="text-[11px] mt-1 text-slate-400">Tuliskan pesan pertama atau kirimkan dokumen kepada member ini.</p>
                     </div>
                 `;
                 return;
@@ -398,14 +511,21 @@
             let html = '';
             messages.forEach(msg => {
                 const isAdmin = msg.sender_type === 'admin';
+                const hasAttachment = Boolean(msg.attachment_url);
+
+                let showText = true;
+                if (hasAttachment && (msg.message.startsWith('[Foto:') || msg.message.startsWith('[File:'))) {
+                    showText = false;
+                }
 
                 if (isAdmin) {
                     // Bubble Admin (Kanan)
                     html += `
                         <div class="flex flex-col items-end">
                             <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mb-0.5 mr-1">Anda (${escapeHtml(msg.sender_name)})</span>
-                            <div class="max-w-[80%] rounded-2xl rounded-br-none px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-sm break-words leading-relaxed text-xs">
-                                ${escapeHtml(msg.message).replace(/\\n/g, '<br>')}
+                            <div class="max-w-[85%] rounded-2xl rounded-br-none px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-sm break-words leading-relaxed text-xs">
+                                ${renderAdminAttachmentHtml(msg, true)}
+                                ${showText ? escapeHtml(msg.message).replace(/\\n/g, '<br>') : ''}
                             </div>
                             <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400 mr-1">
                                 <span>${msg.time}</span>
@@ -417,8 +537,9 @@
                     html += `
                         <div class="flex flex-col items-start">
                             <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 mb-0.5 ml-1">${escapeHtml(msg.sender_name)}</span>
-                            <div class="max-w-[80%] rounded-2xl rounded-bl-none px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-sm break-words leading-relaxed text-xs">
-                                ${escapeHtml(msg.message).replace(/\\n/g, '<br>')}
+                            <div class="max-w-[85%] rounded-2xl rounded-bl-none px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-sm break-words leading-relaxed text-xs">
+                                ${renderAdminAttachmentHtml(msg, false)}
+                                ${showText ? escapeHtml(msg.message).replace(/\\n/g, '<br>') : ''}
                             </div>
                             <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400 ml-1">
                                 <span>${msg.time}</span>
@@ -447,25 +568,29 @@
             const btn = document.getElementById('admin-chat-send-btn');
             const text = input.value.trim();
 
-            if (!text) return;
+            if (!text && !selectedAdminFile) return;
 
             btn.disabled = true;
             const sendUrl = '{{ url("admin/chat/room") }}/' + activeRoomId + '/send';
 
+            const formData = new FormData();
+            if (text) formData.append('message', text);
+            if (selectedAdminFile) formData.append('attachment', selectedAdminFile);
+
             fetch(sendUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ message: text })
+                body: formData
             })
             .then(res => res.json())
             .then(data => {
                 btn.disabled = false;
                 if (data.success) {
                     input.value = '';
+                    cancelAdminAttachment();
                     loadAdminRoomMessages();
                     loadAdminRooms();
                 } else {

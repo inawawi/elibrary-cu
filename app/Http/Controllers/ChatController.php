@@ -92,13 +92,18 @@ class ChatController extends Controller
             ->get()
             ->map(function ($msg) {
                 return [
-                    'id'          => $msg->id,
-                    'sender_type' => $msg->sender_type,
-                    'sender_name' => $msg->sender_name,
-                    'message'     => $msg->message,
-                    'is_read'     => (bool)$msg->is_read,
-                    'time'        => $msg->created_at ? $msg->created_at->format('H:i') : '',
-                    'date'        => $msg->created_at ? $msg->created_at->translatedFormat('d M Y') : '',
+                    'id'              => $msg->id,
+                    'sender_type'     => $msg->sender_type,
+                    'sender_name'     => $msg->sender_name,
+                    'message'         => $msg->message,
+                    'is_read'         => (bool)$msg->is_read,
+                    'attachment_path' => $msg->attachment_path,
+                    'attachment_name' => $msg->attachment_name,
+                    'attachment_type' => $msg->attachment_type,
+                    'attachment_size' => $msg->attachment_size,
+                    'attachment_url'  => $msg->attachment_url,
+                    'time'            => $msg->created_at ? $msg->created_at->format('H:i') : '',
+                    'date'            => $msg->created_at ? $msg->created_at->translatedFormat('d M Y') : '',
                 ];
             });
 
@@ -110,7 +115,7 @@ class ChatController extends Controller
     }
 
     /**
-     * Member sends message to library staff
+     * Member sends message or file/image to library staff
      */
     public function memberSendMessage(Request $request)
     {
@@ -120,12 +125,40 @@ class ChatController extends Controller
         }
 
         $request->validate([
-            'message' => 'required|string|max:3000',
+            'message'    => 'nullable|string|max:3000',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip',
         ]);
 
-        $messageText = trim($request->input('message'));
-        if ($messageText === '') {
-            return response()->json(['error' => 'Pesan tidak boleh kosong.'], 422);
+        $messageText = trim($request->input('message', ''));
+        $hasFile = $request->hasFile('attachment');
+
+        if ($messageText === '' && !$hasFile) {
+            return response()->json(['error' => 'Pesan atau file lampiran tidak boleh kosong.'], 422);
+        }
+
+        $attachmentPath = null;
+        $attachmentName = null;
+        $attachmentType = null;
+        $attachmentSize = null;
+
+        if ($hasFile) {
+            $file = $request->file('attachment');
+            $attachmentName = $file->getClientOriginalName();
+            $attachmentSize = $file->getSize();
+            $ext = strtolower($file->getClientOriginalExtension());
+            $attachmentType = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ? 'image' : 'file';
+
+            $uploadDir = public_path('uploads/chat');
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            $fileName = 'chat_m_' . time() . '_' . uniqid() . '.' . $ext;
+            $file->move($uploadDir, $fileName);
+            $attachmentPath = 'uploads/chat/' . $fileName;
+
+            if ($messageText === '') {
+                $messageText = $attachmentType === 'image' ? '[Foto: ' . $attachmentName . ']' : '[File: ' . $attachmentName . ']';
+            }
         }
 
         $room = ChatRoom::firstOrCreate(
@@ -134,12 +167,16 @@ class ChatController extends Controller
         );
 
         $chatMsg = ChatMessage::create([
-            'room_id'     => $room->id,
-            'sender_type' => 'member',
-            'sender_id'   => $member->member_id,
-            'sender_name' => $member->member_name ?? $member->member_id,
-            'message'     => $messageText,
-            'is_read'     => false,
+            'room_id'         => $room->id,
+            'sender_type'     => 'member',
+            'sender_id'       => $member->member_id,
+            'sender_name'     => $member->member_name ?? $member->member_id,
+            'message'         => $messageText,
+            'attachment_path' => $attachmentPath,
+            'attachment_name' => $attachmentName,
+            'attachment_type' => $attachmentType,
+            'attachment_size' => $attachmentSize,
+            'is_read'         => false,
         ]);
 
         $room->increment('unread_admin_count', 1, [
@@ -151,12 +188,17 @@ class ChatController extends Controller
         return response()->json([
             'success' => true,
             'message' => [
-                'id'          => $chatMsg->id,
-                'sender_type' => $chatMsg->sender_type,
-                'sender_name' => $chatMsg->sender_name,
-                'message'     => $chatMsg->message,
-                'time'        => $chatMsg->created_at->format('H:i'),
-                'date'        => $chatMsg->created_at->translatedFormat('d M Y'),
+                'id'              => $chatMsg->id,
+                'sender_type'     => $chatMsg->sender_type,
+                'sender_name'     => $chatMsg->sender_name,
+                'message'         => $chatMsg->message,
+                'attachment_path' => $chatMsg->attachment_path,
+                'attachment_name' => $chatMsg->attachment_name,
+                'attachment_type' => $chatMsg->attachment_type,
+                'attachment_size' => $chatMsg->attachment_size,
+                'attachment_url'  => $chatMsg->attachment_url,
+                'time'            => $chatMsg->created_at->format('H:i'),
+                'date'            => $chatMsg->created_at->translatedFormat('d M Y'),
             ],
         ]);
     }
@@ -245,13 +287,18 @@ class ChatController extends Controller
             ->get()
             ->map(function ($msg) {
                 return [
-                    'id'          => $msg->id,
-                    'sender_type' => $msg->sender_type,
-                    'sender_name' => $msg->sender_name,
-                    'message'     => $msg->message,
-                    'is_read'     => (bool)$msg->is_read,
-                    'time'        => $msg->created_at ? $msg->created_at->format('H:i') : '',
-                    'date'        => $msg->created_at ? $msg->created_at->translatedFormat('d M Y') : '',
+                    'id'              => $msg->id,
+                    'sender_type'     => $msg->sender_type,
+                    'sender_name'     => $msg->sender_name,
+                    'message'         => $msg->message,
+                    'is_read'         => (bool)$msg->is_read,
+                    'attachment_path' => $msg->attachment_path,
+                    'attachment_name' => $msg->attachment_name,
+                    'attachment_type' => $msg->attachment_type,
+                    'attachment_size' => $msg->attachment_size,
+                    'attachment_url'  => $msg->attachment_url,
+                    'time'            => $msg->created_at ? $msg->created_at->format('H:i') : '',
+                    'date'            => $msg->created_at ? $msg->created_at->translatedFormat('d M Y') : '',
                 ];
             });
 
@@ -280,12 +327,40 @@ class ChatController extends Controller
         }
 
         $request->validate([
-            'message' => 'required|string|max:3000',
+            'message'    => 'nullable|string|max:3000',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip',
         ]);
 
-        $messageText = trim($request->input('message'));
-        if ($messageText === '') {
-            return response()->json(['error' => 'Pesan tidak boleh kosong.'], 422);
+        $messageText = trim($request->input('message', ''));
+        $hasFile = $request->hasFile('attachment');
+
+        if ($messageText === '' && !$hasFile) {
+            return response()->json(['error' => 'Pesan atau file lampiran tidak boleh kosong.'], 422);
+        }
+
+        $attachmentPath = null;
+        $attachmentName = null;
+        $attachmentType = null;
+        $attachmentSize = null;
+
+        if ($hasFile) {
+            $file = $request->file('attachment');
+            $attachmentName = $file->getClientOriginalName();
+            $attachmentSize = $file->getSize();
+            $ext = strtolower($file->getClientOriginalExtension());
+            $attachmentType = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ? 'image' : 'file';
+
+            $uploadDir = public_path('uploads/chat');
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            $fileName = 'chat_a_' . time() . '_' . uniqid() . '.' . $ext;
+            $file->move($uploadDir, $fileName);
+            $attachmentPath = 'uploads/chat/' . $fileName;
+
+            if ($messageText === '') {
+                $messageText = $attachmentType === 'image' ? '[Foto: ' . $attachmentName . ']' : '[File: ' . $attachmentName . ']';
+            }
         }
 
         $room = ChatRoom::findOrFail($id);
@@ -293,12 +368,16 @@ class ChatController extends Controller
         $senderName = $admin->realname ?: ($admin->username ?: 'Pustakawan');
 
         $chatMsg = ChatMessage::create([
-            'room_id'     => $room->id,
-            'sender_type' => 'admin',
-            'sender_id'   => (string)$admin->user_id,
-            'sender_name' => 'Pustakawan (' . $senderName . ')',
-            'message'     => $messageText,
-            'is_read'     => false,
+            'room_id'         => $room->id,
+            'sender_type'     => 'admin',
+            'sender_id'       => (string)$admin->user_id,
+            'sender_name'     => 'Pustakawan (' . $senderName . ')',
+            'message'         => $messageText,
+            'attachment_path' => $attachmentPath,
+            'attachment_name' => $attachmentName,
+            'attachment_type' => $attachmentType,
+            'attachment_size' => $attachmentSize,
+            'is_read'         => false,
         ]);
 
         $room->increment('unread_member_count', 1, [
@@ -310,12 +389,17 @@ class ChatController extends Controller
         return response()->json([
             'success' => true,
             'message' => [
-                'id'          => $chatMsg->id,
-                'sender_type' => $chatMsg->sender_type,
-                'sender_name' => $chatMsg->sender_name,
-                'message'     => $chatMsg->message,
-                'time'        => $chatMsg->created_at->format('H:i'),
-                'date'        => $chatMsg->created_at->translatedFormat('d M Y'),
+                'id'              => $chatMsg->id,
+                'sender_type'     => $chatMsg->sender_type,
+                'sender_name'     => $chatMsg->sender_name,
+                'message'         => $chatMsg->message,
+                'attachment_path' => $chatMsg->attachment_path,
+                'attachment_name' => $chatMsg->attachment_name,
+                'attachment_type' => $chatMsg->attachment_type,
+                'attachment_size' => $chatMsg->attachment_size,
+                'attachment_url'  => $chatMsg->attachment_url,
+                'time'            => $chatMsg->created_at->format('H:i'),
+                'date'            => $chatMsg->created_at->translatedFormat('d M Y'),
             ],
         ]);
     }
