@@ -160,5 +160,6 @@ Route::prefix('admin')->group(function () {
         Route::get('/chat/rooms', [ChatController::class, 'adminRooms'])->name('admin.chat.rooms');
         Route::get('/chat/room/{id}/messages', [ChatController::class, 'adminGetMessages'])->name('admin.chat.room_messages');
         Route::post('/chat/room/{id}/send', [ChatController::class, 'adminSendMessage'])->name('admin.chat.room_send');
+        Route::post('/chat/room/{id}/toggle-block', [ChatController::class, 'adminToggleBlockRoom'])->name('admin.chat.room_toggle_block');
     });
 });

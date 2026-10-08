@@ -54,11 +54,13 @@ class ChatController extends Controller
 
         $room = ChatRoom::where('member_id', $member->member_id)->first();
         $isOnline = $this->isLibrarianOnline();
+        $isBlocked = $room ? ($room->status === 'blocked') : false;
 
         return response()->json([
             'librarian_online' => $isOnline,
             'status_label'     => $isOnline ? 'Pustakawan Online' : 'Pustakawan Sedang Offline',
             'unread_count'     => $room ? (int)$room->unread_member_count : 0,
+            'is_blocked'       => $isBlocked,
         ]);
     }
 
@@ -110,6 +112,7 @@ class ChatController extends Controller
         return response()->json([
             'room_id'          => $room->id,
             'librarian_online' => $this->isLibrarianOnline(),
+            'is_blocked'       => $room->status === 'blocked',
             'messages'         => $messages,
         ]);
     }
@@ -165,6 +168,12 @@ class ChatController extends Controller
             ['member_id' => $member->member_id],
             ['status' => 'active', 'unread_admin_count' => 0, 'unread_member_count' => 0]
         );
+
+        if ($room->status === 'blocked') {
+            return response()->json([
+                'error' => 'Akses chat Anda telah diblokir oleh petugas perpustakaan karena pengiriman pesan atau berkas yang tidak pantas.'
+            ], 403);
+        }
 
         $chatMsg = ChatMessage::create([
             'room_id'         => $room->id,
@@ -254,6 +263,8 @@ class ChatController extends Controller
                 'last_message'        => $room->last_message ?: 'Belum ada percakapan',
                 'last_message_at'     => $room->last_message_at ? $room->last_message_at->diffForHumans() : '',
                 'unread_admin_count'  => (int)$room->unread_admin_count,
+                'status'              => $room->status ?: 'active',
+                'is_blocked'          => $room->status === 'blocked',
             ];
         });
 
@@ -308,6 +319,8 @@ class ChatController extends Controller
                 'member_id'   => $room->member_id,
                 'member_name' => $room->member ? $room->member->member_name : $room->member_id,
                 'member_inst' => $room->member ? ($room->member->inst_name ?? '-') : '-',
+                'status'      => $room->status ?: 'active',
+                'is_blocked'  => $room->status === 'blocked',
             ],
             'messages'     => $messages,
             'unread_total' => (int)ChatRoom::sum('unread_admin_count'),
@@ -401,6 +414,52 @@ class ChatController extends Controller
                 'time'            => $chatMsg->created_at->format('H:i'),
                 'date'            => $chatMsg->created_at->translatedFormat('d M Y'),
             ],
+        ]);
+    }
+
+    /**
+     * Admin toggle block / unblock member chat room
+     */
+    public function adminToggleBlockRoom(Request $request, $id)
+    {
+        $this->touchLibrarianHeartbeat();
+
+        $admin = Auth::guard('web')->user();
+        if (!$admin) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $room = ChatRoom::with('member')->findOrFail($id);
+        $isBlocked = $room->status === 'blocked';
+        $newStatus = $isBlocked ? 'active' : 'blocked';
+        $room->update(['status' => $newStatus]);
+
+        $adminName = $admin->realname ?: ($admin->username ?: 'Pustakawan');
+        $systemText = $newStatus === 'blocked'
+            ? '⚠️ PEMBERITAHUAN: Akses chat anggota ini telah DIBLOKIR oleh petugas perpustakaan (' . $adminName . '). Anggota tidak dapat mengirimkan pesan atau berkas lagi.'
+            : '✅ PEMBERITAHUAN: Akses chat anggota ini telah DIBUKA KEMBALI (UNBLOCK) oleh petugas perpustakaan (' . $adminName . ').';
+
+        ChatMessage::create([
+            'room_id'     => $room->id,
+            'sender_type' => 'admin',
+            'sender_id'   => (string)$admin->user_id,
+            'sender_name' => 'Sistem Perpustakaan',
+            'message'     => $systemText,
+            'is_read'     => true,
+        ]);
+
+        $room->update([
+            'last_message'    => mb_substr($systemText, 0, 150),
+            'last_message_at' => now(),
+        ]);
+
+        return response()->json([
+            'success'    => true,
+            'new_status' => $newStatus,
+            'is_blocked' => $newStatus === 'blocked',
+            'message'    => $newStatus === 'blocked'
+                ? 'Member berhasil diblokir dari layanan chat.'
+                : 'Blokir member berhasil dibuka.',
         ]);
     }
 }

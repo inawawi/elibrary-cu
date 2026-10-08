@@ -267,6 +267,40 @@
             }
         }
 
+        function updateBlockedStateUI(isBlocked) {
+            const noticeBanner = document.getElementById('member-chat-notice-banner');
+            const noticeText = document.getElementById('member-chat-notice-text');
+            const input = document.getElementById('member-chat-input');
+            const sendBtn = document.getElementById('member-chat-send-btn');
+            const clipBtn = document.querySelector('#member-chat-form button[title="Lampirkan Gambar atau File"]');
+
+            if (isBlocked) {
+                if (noticeBanner) {
+                    noticeBanner.className = 'px-4 py-2.5 bg-rose-50 dark:bg-rose-950/80 border-b border-rose-200 dark:border-rose-800 text-[11px] text-rose-700 dark:text-rose-200 flex items-center gap-2 font-medium';
+                }
+                if (noticeText) {
+                    noticeText.innerText = '⚠️ Akses chat Anda telah DIBLOKIR oleh petugas perpustakaan karena pelanggaran ketentuan. Anda tidak dapat mengirim pesan atau berkas.';
+                }
+                if (input) {
+                    input.disabled = true;
+                    input.placeholder = 'Akses chat Anda sedang diblokir oleh petugas.';
+                }
+                if (sendBtn) sendBtn.disabled = true;
+                if (clipBtn) clipBtn.disabled = true;
+                cancelMemberAttachment();
+            } else {
+                if (noticeBanner && noticeBanner.classList.contains('bg-rose-50')) {
+                    noticeBanner.className = 'px-4 py-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2';
+                }
+                if (input && input.placeholder === 'Akses chat Anda sedang diblokir oleh petugas.') {
+                    input.disabled = false;
+                    input.placeholder = 'Ketik pesan untuk pustakawan...';
+                }
+                if (sendBtn && input && !input.disabled) sendBtn.disabled = false;
+                if (clipBtn) clipBtn.disabled = false;
+            }
+        }
+
         function checkMemberStatus() {
             fetch(statusUrl, {
                 headers: { 'Accept': 'application/json' }
@@ -274,6 +308,7 @@
             .then(res => res.json())
             .then(data => {
                 updateOnlineStatusUI(data.librarian_online);
+                updateBlockedStateUI(Boolean(data.is_blocked));
 
                 if (!isChatOpen && data.unread_count > 0) {
                     const badge = document.getElementById('member-chat-unread-badge');
@@ -386,6 +421,7 @@
             .then(res => res.json())
             .then(data => {
                 updateOnlineStatusUI(data.librarian_online);
+                updateBlockedStateUI(Boolean(data.is_blocked));
 
                 if (data.messages && data.messages.length > lastMessageCount) {
                     const lastMsg = data.messages[data.messages.length - 1];

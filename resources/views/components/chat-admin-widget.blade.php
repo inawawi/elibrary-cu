@@ -91,7 +91,10 @@
                             <p id="admin-chat-active-meta" class="text-[10px] text-slate-500 dark:text-slate-400">Pilih anggota di sebelah kiri untuk melihat pesan</p>
                         </div>
                     </div>
-                    <span id="admin-chat-active-tag" class="hidden px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">Terhubung</span>
+                    <div class="flex items-center gap-2">
+                        <span id="admin-chat-active-tag" class="hidden px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">Terhubung</span>
+                        <button id="admin-chat-block-btn" type="button" onclick="toggleBlockActiveRoom()" class="hidden px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all"></button>
+                    </div>
                 </div>
 
                 <!-- Messages Container -->
@@ -338,7 +341,10 @@
                         </div>
                         <div class="flex-grow min-w-0">
                             <div class="flex items-center justify-between gap-1">
-                                <h6 class="font-bold text-xs text-slate-900 dark:text-white truncate ${hasUnread ? 'text-emerald-700 dark:text-emerald-400 font-extrabold' : ''}">${escapeHtml(r.member_name)}</h6>
+                                <div class="flex items-center gap-1.5 truncate">
+                                    <h6 class="font-bold text-xs text-slate-900 dark:text-white truncate ${hasUnread ? 'text-emerald-700 dark:text-emerald-400 font-extrabold' : ''}">${escapeHtml(r.member_name)}</h6>
+                                    ${r.is_blocked ? `<span class="px-1.5 py-0.2 rounded text-[9px] bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 font-bold shrink-0">Diblokir</span>` : ''}
+                                </div>
                                 <span class="text-[9px] text-slate-400 shrink-0">${escapeHtml(r.last_message_at)}</span>
                             </div>
                             <p class="text-[10px] text-slate-400 truncate">${escapeHtml(r.member_id)} • ${escapeHtml(r.member_inst)}</p>
@@ -446,6 +452,26 @@
                     headerName.innerText = data.room.member_name;
                     headerMeta.innerText = data.room.member_id + ' • ' + data.room.member_inst;
                     headerTag.classList.remove('hidden');
+
+                    const blockBtn = document.getElementById('admin-chat-block-btn');
+                    if (blockBtn) {
+                        blockBtn.classList.remove('hidden');
+                        if (data.room.is_blocked) {
+                            blockBtn.className = 'px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-sm flex items-center gap-1 transition-all';
+                            blockBtn.innerHTML = `
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
+                                <span>Buka Blokir (Unblock)</span>
+                            `;
+                            blockBtn.title = 'Buka blokir agar member dapat kembali mengirim pesan';
+                        } else {
+                            blockBtn.className = 'px-2.5 py-1 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-[11px] font-bold flex items-center gap-1 transition-all';
+                            blockBtn.innerHTML = `
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                <span>Blokir Member</span>
+                            `;
+                            blockBtn.title = 'Blokir member ini agar tidak dapat mengirim pesan atau berkas';
+                        }
+                    }
                 }
 
                 if (data.messages && data.messages.length > activeRoomMessagesCount) {
@@ -609,6 +635,44 @@
             div.innerText = text;
             return div.innerHTML;
         }
+
+        window.toggleBlockActiveRoom = function() {
+            if (!activeRoomId) return;
+
+            const blockBtn = document.getElementById('admin-chat-block-btn');
+            const isCurrentlyBlocked = blockBtn && blockBtn.innerText.includes('Buka Blokir');
+
+            const confirmMsg = isCurrentlyBlocked
+                ? 'Apakah Anda yakin ingin MEMBUKA BLOKIR member ini? Member akan dapat kembali mengirim chat dan berkas.'
+                : 'Apakah Anda yakin ingin MEMBLOKIR member ini dari layanan chat? Member tidak akan dapat mengirim pesan atau lampiran lagi.';
+
+            if (!confirm(confirmMsg)) return;
+
+            blockBtn.disabled = true;
+            const toggleUrl = '{{ url("admin/chat/room") }}/' + activeRoomId + '/toggle-block';
+
+            fetch(toggleUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                blockBtn.disabled = false;
+                if (data.success) {
+                    loadAdminRoomMessages();
+                    loadAdminRooms();
+                } else {
+                    alert(data.error || 'Gagal mengubah status blokir.');
+                }
+            })
+            .catch(() => {
+                blockBtn.disabled = false;
+                alert('Terjadi kesalahan koneksi.');
+            });
+        };
 
         // Initialize heartbeat & unread counter polling
         pollAdminUnreadCount();
