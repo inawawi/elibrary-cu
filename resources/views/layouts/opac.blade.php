@@ -186,19 +186,6 @@
                         <span>Area Anggota</span>
                     </a>
                     @endif
-
-                    <!-- Staff/Admin Link -->
-                    @if(Auth::guard('web')->check())
-                    <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-sm font-semibold shadow-md shadow-brand-500/20 transition-all">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                        <span class="hidden sm:inline">Admin Panel</span>
-                    </a>
-                    @else
-                    <a href="{{ route('admin.login') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-md shadow-brand-500/20 transition-all">
-                        <i data-lucide="shield" class="w-4 h-4"></i>
-                        <span class="hidden sm:inline">Staff Perpustakaan</span>
-                    </a>
-                    @endif
                 </div>
             </div>
         </div>
@@ -399,7 +386,6 @@
                         <li><a href="{{ route('opac.guestbook') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Buku Tamu Pengunjung</a></li>
                         <li><a href="{{ route('opac.news') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Berita & Informasi</a></li>
                         <li><a href="{{ route('member.login') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Area Mandiri Anggota</a></li>
-                        <li><a href="{{ route('admin.login') }}" class="hover:text-brand-600 dark:hover:text-sky-400 transition-colors">Portal Pustakawan</a></li>
                     </ul>
                 </div>
 
