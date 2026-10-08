@@ -223,6 +223,15 @@ class MemberController extends Controller
     {
         $member = Member::findOrFail($id);
 
+        // Jika tanggal lahir mahasiswa masih kosong, otomatis cari dari master mhs_s1
+        if (empty($member->birth_date) && (int)$member->member_type_id === 1 && Schema::hasTable('mhs_s1')) {
+            $tgl = DB::table('mhs_s1')->where('nim', $member->member_id)->value('tgl_lhr');
+            if (!empty($tgl) && $tgl !== '0000-00-00' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl)) {
+                $member->birth_date = $tgl;
+                $member->save();
+            }
+        }
+
         if (!empty($member->birth_date)) {
             $defaultPassword = Carbon::parse($member->birth_date)->format('Y-m-d');
             $member->update([
@@ -264,6 +273,15 @@ class MemberController extends Controller
         $now = Carbon::now();
 
         foreach ($members as $member) {
+            // Lengkapi tanggal lahir jika masih kosong dari master mhs_s1
+            if (empty($member->birth_date) && (int)$member->member_type_id === 1 && Schema::hasTable('mhs_s1')) {
+                $tgl = DB::table('mhs_s1')->where('nim', $member->member_id)->value('tgl_lhr');
+                if (!empty($tgl) && $tgl !== '0000-00-00' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl)) {
+                    $member->birth_date = $tgl;
+                    $member->save();
+                }
+            }
+
             if (!empty($member->birth_date)) {
                 $pwd = Carbon::parse($member->birth_date)->format('Y-m-d');
                 $resetWithBirthCount++;
