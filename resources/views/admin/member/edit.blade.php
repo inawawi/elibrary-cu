@@ -94,8 +94,8 @@
                         <p class="text-[11px] text-slate-400 mt-0.5">Ketik kata sandi manual baru di bawah, atau klik tombol reset ke tanggal lahir.</p>
                     </div>
                     @if((int)$member->member_type_id === 1)
-                        <button type="button" onclick="if(confirm('Reset kata sandi mahasiswa ini kembali ke tanggal lahir ({{ $member->birth_date ?: 'NIM' }})?')) { document.getElementById('form-direct-reset-pwd').submit(); }" class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold hover:bg-purple-100 transition-colors flex items-center gap-1.5 shadow-sm self-start sm:self-auto">
-                            <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                        <button type="button" id="btn-edit-reset-pwd" class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold hover:bg-purple-100 transition-colors flex items-center gap-1.5 shadow-sm self-start sm:self-auto cursor-pointer">
+                            <i data-lucide="key-round" class="w-3.5 h-3.5 pointer-events-none"></i>
                             <span>Reset ke Tanggal Lahir ({{ $member->birth_date ?: 'NIM' }})</span>
                         </button>
                     @endif
@@ -121,11 +121,28 @@
             <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md shadow-brand-500/25 transition-all">
                 Simpan Perubahan
             </button>
+        </div>
     </form>
     @if((int)$member->member_type_id === 1)
         <form id="form-direct-reset-pwd" action="{{ route('admin.member.reset-password', $member->member_id) }}" method="POST" class="hidden">
             @csrf
         </form>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnReset = document.getElementById('btn-edit-reset-pwd');
+            const formReset = document.getElementById('form-direct-reset-pwd');
+            if (btnReset && formReset) {
+                btnReset.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = "{{ !empty($member->birth_date) ? \Carbon\Carbon::parse($member->birth_date)->format('Y-m-d') : 'NIM (' . $member->member_id . ')' }}";
+                    if (confirm(`Reset kata sandi mahasiswa ini kembali ke ${target}?`)) {
+                        btnReset.disabled = true;
+                        formReset.submit();
+                    }
+                });
+            }
+        });
+        </script>
     @endif
 </div>
 @endsection

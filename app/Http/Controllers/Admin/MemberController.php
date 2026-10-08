@@ -240,6 +240,57 @@ class MemberController extends Controller
         }
     }
 
+    public function bulkResetPassword(Request $request)
+    {
+        $raw = $request->input('selected_members', []);
+        if (is_string($raw)) {
+            $memberIds = explode(',', $raw);
+        } else {
+            $memberIds = (array) $raw;
+        }
+        $memberIds = array_filter(array_map('trim', $memberIds));
+
+        if (empty($memberIds)) {
+            return back()->with('error', 'Silakan centang/checklist minimal 1 mahasiswa yang ingin direset kata sandinya.');
+        }
+
+        $members = Member::whereIn('member_id', $memberIds)->get();
+        if ($members->isEmpty()) {
+            return back()->with('error', 'Data mahasiswa yang dipilih tidak ditemukan.');
+        }
+
+        $resetWithBirthCount = 0;
+        $resetWithNimCount = 0;
+        $now = Carbon::now();
+
+        foreach ($members as $member) {
+            if (!empty($member->birth_date)) {
+                $pwd = Carbon::parse($member->birth_date)->format('Y-m-d');
+                $resetWithBirthCount++;
+            } else {
+                $pwd = $member->member_id;
+                $resetWithNimCount++;
+            }
+
+            $member->update([
+                'mpasswd' => Hash::make($pwd),
+                'last_update' => $now,
+            ]);
+        }
+
+        $total = count($members);
+        $detail = [];
+        if ($resetWithBirthCount > 0) {
+            $detail[] = "{$resetWithBirthCount} mahasiswa direset ke tanggal lahir (format: YYYY-MM-DD)";
+        }
+        if ($resetWithNimCount > 0) {
+            $detail[] = "{$resetWithNimCount} mahasiswa tanpa tanggal lahir direset ke NIM";
+        }
+        $detailText = !empty($detail) ? ' (' . implode(', ', $detail) . ')' : '';
+
+        return back()->with('success', "Berhasil mereset kata sandi {$total} mahasiswa terpilih{$detailText}!");
+    }
+
     public function destroy($id)
     {
         $member = Member::with('activeLoans')->findOrFail($id);

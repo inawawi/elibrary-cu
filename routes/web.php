@@ -102,6 +102,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/member/sync-student', [MemberController::class, 'syncStudentApi'])->name('admin.member.sync-student');
         Route::post('/member', [MemberController::class, 'store'])->name('admin.member.store');
         Route::get('/member/export', [MemberController::class, 'export'])->name('admin.member.export');
+        Route::post('/member/bulk-reset-password', [MemberController::class, 'bulkResetPassword'])->name('admin.member.bulk-reset-password');
         Route::get('/member/{id}/edit', [MemberController::class, 'edit'])->name('admin.member.edit');
         Route::put('/member/{id}', [MemberController::class, 'update'])->name('admin.member.update');
         Route::get('/member/{id}/card', [MemberController::class, 'showCard'])->name('admin.member.card');

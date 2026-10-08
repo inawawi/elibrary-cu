@@ -165,12 +165,54 @@
         </form>
     </div>
 
+    @if($activeTab === 'mahasiswa')
+        <!-- Bulk Action Bar Mahasiswa (Checklist Reset Sandi ke Tanggal Lahir) -->
+        <div id="bulk-action-bar" class="hidden mb-4 p-4 rounded-2xl bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-800 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 border border-purple-400/30 transition-all">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 text-purple-300">
+                    <i data-lucide="check-square" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="selected-count" class="font-black text-sm text-purple-200 bg-white/20 px-2 py-0.5 rounded-md">0</span>
+                        <span class="text-xs font-bold text-white">Mahasiswa Dichecklist</span>
+                    </div>
+                    <p class="text-[11px] text-purple-200/80 mt-0.5">Reset kata sandi mahasiswa yang dipilih kembali ke tanggal lahir (format: YYYY-MM-DD).</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                <button type="button" id="btn-uncheck-all" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white/90 transition-colors cursor-pointer">
+                    Batal Pilih
+                </button>
+                <button type="button" id="btn-bulk-reset" class="px-4 py-2 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-xs shadow-md shadow-purple-900/50 flex items-center gap-1.5 transition-all cursor-pointer">
+                    <i data-lucide="key-round" class="w-4 h-4 pointer-events-none"></i>
+                    <span>Reset Sandi yang Dichecklist</span>
+                </button>
+            </div>
+        </div>
+
+        <form id="bulk-reset-form" action="{{ route('admin.member.bulk-reset-password') }}" method="POST" class="hidden">
+            @csrf
+            <input type="hidden" name="selected_members" id="bulk-selected-members-input">
+        </form>
+    @endif
+
+    <!-- Single Reset Password Form (Shared for reliability) -->
+    <form id="form-single-reset" method="POST" class="hidden">
+        @csrf
+    </form>
+
     <!-- Members Table -->
     <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                     <tr>
+                        @if($activeTab === 'mahasiswa')
+                            <th class="py-4 px-3 w-10 text-center">
+                                <input type="checkbox" id="check-all" class="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer" title="Pilih Semua di Halaman Ini">
+                            </th>
+                        @endif
                         <th class="py-4 px-6 w-14">Foto</th>
                         <th class="py-4 px-6">{{ $activeTab === 'mahasiswa' ? 'Identitas Mahasiswa' : 'Identitas Dosen / Staf' }}</th>
                         <th class="py-4 px-6">Tipe Keanggotaan</th>
@@ -182,6 +224,11 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
                     @forelse($members as $m)
                         <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                            @if($activeTab === 'mahasiswa')
+                                <td class="py-3 px-3 text-center">
+                                    <input type="checkbox" value="{{ $m->member_id }}" class="member-checkbox w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer">
+                                </td>
+                            @endif
                             <td class="py-3 px-6">
                                 <img src="{{ $m->avatar_url }}" alt="{{ $m->member_name }}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm">
                             </td>
@@ -291,12 +338,14 @@
                                         <i data-lucide="id-card" class="w-4 h-4"></i>
                                     </a>
                                     @if((int)$m->member_type_id === 1)
-                                        <form action="{{ route('admin.member.reset-password', $m->member_id) }}" method="POST" onsubmit="return confirm('Reset kata sandi mahasiswa {{ addslashes($m->member_name) }} ({{ $m->member_id }}) kembali ke tanggal lahir ({{ $m->birth_date ?: 'NIM' }})?')">
-                                            @csrf
-                                            <button type="submit" class="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 hover:bg-purple-100 transition-colors" title="Reset Sandi ke Tanggal Lahir ({{ $m->birth_date ?: 'NIM' }})">
-                                                <i data-lucide="key-round" class="w-4 h-4"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" 
+                                                class="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors btn-reset-single cursor-pointer" 
+                                                data-id="{{ $m->member_id }}"
+                                                data-name="{{ htmlspecialchars($m->member_name, ENT_QUOTES) }}"
+                                                data-target="{{ !empty($m->birth_date) ? \Carbon\Carbon::parse($m->birth_date)->format('Y-m-d') : 'NIM (' . $m->member_id . ')' }}"
+                                                title="Reset Sandi ke Tanggal Lahir ({{ $m->birth_date ?: 'NIM' }})">
+                                            <i data-lucide="key-round" class="w-4 h-4 pointer-events-none"></i>
+                                        </button>
                                     @endif
                                     <a href="{{ route('admin.member.edit', $m->member_id) }}" class="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 hover:bg-amber-100 transition-colors" title="Ubah">
                                         <i data-lucide="pencil" class="w-4 h-4"></i>
@@ -313,7 +362,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-12 text-center text-slate-400">
+                            <td colspan="{{ $activeTab === 'mahasiswa' ? 7 : 6 }}" class="p-12 text-center text-slate-400">
                                 <div class="flex flex-col items-center justify-center space-y-3">
                                     <i data-lucide="users" class="w-10 h-10 text-slate-300 dark:text-slate-600"></i>
                                     <p class="font-medium">Tidak ada data {{ $activeTab === 'mahasiswa' ? 'mahasiswa' : 'dosen & staf' }} yang sesuai.</p>
@@ -337,6 +386,100 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Checklist / Bulk Reset Password Handler
+    const checkAll = document.getElementById('check-all');
+    const memberCheckboxes = document.querySelectorAll('.member-checkbox');
+    const bulkBar = document.getElementById('bulk-action-bar');
+    const selectedCountEl = document.getElementById('selected-count');
+    const btnUncheckAll = document.getElementById('btn-uncheck-all');
+    const btnBulkReset = document.getElementById('btn-bulk-reset');
+    const bulkResetForm = document.getElementById('bulk-reset-form');
+    const bulkSelectedInput = document.getElementById('bulk-selected-members-input');
+
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.member-checkbox:checked');
+        const count = checked.length;
+        if (selectedCountEl) selectedCountEl.innerText = count;
+
+        if (bulkBar) {
+            if (count > 0) {
+                bulkBar.classList.remove('hidden');
+            } else {
+                bulkBar.classList.add('hidden');
+            }
+        }
+
+        if (checkAll && memberCheckboxes.length > 0) {
+            checkAll.checked = (count === memberCheckboxes.length);
+        }
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            memberCheckboxes.forEach(cb => {
+                cb.checked = checkAll.checked;
+            });
+            updateBulkBar();
+        });
+    }
+
+    memberCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkBar);
+    });
+
+    if (btnUncheckAll) {
+        btnUncheckAll.addEventListener('click', function() {
+            if (checkAll) checkAll.checked = false;
+            memberCheckboxes.forEach(cb => { cb.checked = false; });
+            updateBulkBar();
+        });
+    }
+
+    if (btnBulkReset) {
+        btnBulkReset.addEventListener('click', function() {
+            const checked = document.querySelectorAll('.member-checkbox:checked');
+            if (checked.length === 0) {
+                alert('Silakan centang / checklist minimal satu mahasiswa terlebih dahulu.');
+                return;
+            }
+
+            const ids = Array.from(checked).map(cb => cb.value);
+            const count = ids.length;
+
+            if (confirm(`Reset kata sandi ${count} mahasiswa yang dichecklist kembali ke tanggal lahir masing-masing (format: YYYY-MM-DD)?\n\n*Mahasiswa yang tanggal lahirnya belum terisi di database akan direset ke NIM.`)) {
+                if (bulkSelectedInput && bulkResetForm) {
+                    bulkSelectedInput.value = ids.join(',');
+                    btnBulkReset.disabled = true;
+                    btnBulkReset.innerHTML = 'Memproses...';
+                    bulkResetForm.submit();
+                }
+            }
+        });
+    }
+
+    // 2. Single Reset Password Handler (Aman dari kutip & responsif)
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-reset-single');
+        if (!btn) return;
+        e.preventDefault();
+
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name') || id;
+        const target = btn.getAttribute('data-target') || 'tanggal lahir';
+
+        if (confirm(`Reset kata sandi mahasiswa "${name}" (${id}) kembali ke ${target}?`)) {
+            const singleForm = document.getElementById('form-single-reset');
+            if (singleForm) {
+                singleForm.action = `/admin/member/${id}/reset-password`;
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+                singleForm.submit();
+            }
+        }
+    });
+});
+
 function confirmSync(e) {
     const confirmed = confirm('Mulai sinkronisasi data Dosen dan Staf dari database kepegawaian (karyawanbs1)?\n\nData di e-library akan diperbarui/ditambahkan secara otomatis tanpa mengubah database sumber.');
     if (!confirmed) {
