@@ -9,10 +9,12 @@ use App\Models\GuestBook;
 use App\Models\Item;
 use App\Models\Member;
 use App\Models\Publisher;
+use App\Models\Reserve;
 use App\Models\Setting;
 use App\Models\Topic;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OpacController extends Controller
 {
@@ -183,7 +185,20 @@ class OpacController extends Controller
             'items.collType',
             'items.itemStatus',
             'items.activeLoan.member',
+            'items.reserve.member',
         ])->findOrFail($id);
+
+        $member = Auth::guard('member')->user();
+        $userReserve = null;
+        if ($member) {
+            $userReserve = Reserve::where('member_id', $member->member_id)
+                ->where('biblio_id', $book->biblio_id)
+                ->first();
+        }
+
+        $availableItems = $book->items->filter(function ($item) {
+            return !$item->activeLoan && !$item->reserve;
+        });
 
         // Related books (same author or same topic)
         $topicIds = $book->topics->pluck('topic_id')->toArray();
@@ -207,7 +222,7 @@ class OpacController extends Controller
             ->take(4)
             ->get();
 
-        return view('opac.show', compact('book', 'relatedBooks'));
+        return view('opac.show', compact('book', 'relatedBooks', 'userReserve', 'availableItems'));
     }
 
     public function guestbook(Request $request)

@@ -102,6 +102,56 @@
         <!-- Right: Loan Form & Member Active Loans -->
         <div class="lg:col-span-7 space-y-6">
             @if($member)
+                <!-- Reserved Books for this Member -->
+                @if(isset($reserves) && $reserves->isNotEmpty())
+                    <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-3xl p-6 shadow-lg relative overflow-hidden">
+                        <div class="flex items-center justify-between gap-4 mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                                    <i data-lucide="bookmark-check" class="w-5 h-5 text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-extrabold text-white">Ada {{ $reserves->count() }} Buku Direservasi (Booking)</h3>
+                                    <p class="text-xs text-amber-100">Anggota ini telah memesan/booking buku melalui katalog online</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3">
+                            @foreach($reserves as $reserve)
+                                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-white/15">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 mb-0.5">
+                                            <span class="font-mono text-xs font-black bg-white text-amber-900 px-2 py-0.5 rounded">
+                                                {{ $reserve->item_code }}
+                                            </span>
+                                            <span class="text-[11px] text-amber-100">
+                                                Lokasi: {{ $reserve->item?->location?->location_name ?: 'Rak Umum' }}
+                                            </span>
+                                        </div>
+                                        <h4 class="font-bold text-xs text-white truncate max-w-md">
+                                            {{ $reserve->biblio?->title ?: 'Judul Buku' }}
+                                        </h4>
+                                        <div class="text-[10px] text-amber-200">
+                                            Dipesan: {{ $reserve->reserve_date ? \Carbon\Carbon::parse($reserve->reserve_date)->translatedFormat('d M Y, H:i') : '-' }} WIB
+                                        </div>
+                                    </div>
+
+                                    <form action="{{ route('admin.circulation.loan') }}" method="POST" class="flex-shrink-0">
+                                        @csrf
+                                        <input type="hidden" name="member_id" value="{{ $member->member_id }}">
+                                        <input type="hidden" name="item_code" value="{{ $reserve->item_code }}">
+                                        <button type="submit" {{ !$canBorrow ? 'disabled' : '' }} class="px-4 py-2 rounded-xl bg-white text-amber-900 hover:bg-amber-50 disabled:opacity-50 text-xs font-black shadow transition-all flex items-center gap-1.5 cursor-pointer">
+                                            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i>
+                                            <span>Pinjamkan Sekarang</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Form Borrow Item -->
                 <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
                     <h3 class="font-bold text-base text-slate-900 dark:text-white mb-2 flex items-center gap-2">

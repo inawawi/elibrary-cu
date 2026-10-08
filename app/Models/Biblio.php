@@ -46,6 +46,11 @@ class Biblio extends Model
         return $this->hasMany(Item::class, 'biblio_id');
     }
 
+    public function reserves()
+    {
+        return $this->hasMany(Reserve::class, 'biblio_id');
+    }
+
     public function publisher()
     {
         return $this->belongsTo(Publisher::class, 'publisher_id');
@@ -107,8 +112,8 @@ class Biblio extends Model
 
     public function getAvailableCopiesAttribute(): int
     {
-        // Items that are not in active loans
-        return $this->items()->whereDoesntHave('activeLoan')->count();
+        // Items that are not in active loans and not reserved
+        return $this->items()->whereDoesntHave('activeLoan')->whereDoesntHave('reserve')->count();
     }
 
     public function setFrequencyIdAttribute($value)

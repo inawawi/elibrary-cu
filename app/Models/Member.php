@@ -85,6 +85,11 @@ class Member extends Authenticatable
         return $this->hasMany(LoanHistory::class, 'member_id', 'member_id');
     }
 
+    public function reserves()
+    {
+        return $this->hasMany(Reserve::class, 'member_id', 'member_id');
+    }
+
     public function isLecturer(): bool
     {
         return (int)$this->member_type_id === 2 

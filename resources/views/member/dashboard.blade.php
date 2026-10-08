@@ -403,6 +403,70 @@
                 </div>
             @endif
 
+            <!-- Reserved Books (Buku Direservasi) -->
+            @if(isset($reserves) && $reserves->isNotEmpty())
+                <div class="bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 dark:from-amber-950/30 dark:via-slate-900 dark:to-amber-950/10 rounded-3xl border border-amber-200 dark:border-amber-800/80 p-6 sm:p-8 shadow-sm">
+                    <div class="flex items-center justify-between mb-5 pb-3 border-b border-amber-100 dark:border-amber-900/50">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i data-lucide="bookmark-check" class="w-5 h-5 text-amber-500"></i>
+                                Buku Direservasi (Booking)
+                            </h2>
+                            <p class="text-xs text-slate-500">Buku yang telah Anda booking dan siap diambil di perpustakaan</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                            {{ $reserves->count() }} Buku Menunggu Diambil
+                        </span>
+                    </div>
+
+                    <div class="space-y-4">
+                        @foreach($reserves as $reserve)
+                            @php
+                                $biblio = $reserve->biblio;
+                                $item = $reserve->item;
+                            @endphp
+                            <div class="p-4 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 bg-white/80 dark:bg-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-14 h-20 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 flex-shrink-0 shadow">
+                                        <img src="{{ $biblio?->cover_url ?: asset('images/default_cover.svg') }}" class="w-full h-full object-cover">
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="text-[10px] font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded">
+                                                KODE: {{ $reserve->item_code }}
+                                            </span>
+                                            <span class="text-[10px] text-slate-400">
+                                                Lokasi: {{ $item?->location?->location_name ?: 'Rak Umum' }}
+                                            </span>
+                                        </div>
+                                        <h4 class="font-bold text-sm text-slate-900 dark:text-white line-clamp-1">
+                                            <a href="{{ route('opac.show', $reserve->biblio_id) }}" class="hover:text-brand-600 transition-colors">
+                                                {{ $biblio?->title ?: 'Judul Buku' }}
+                                            </a>
+                                        </h4>
+                                        <div class="text-[11px] text-slate-500 mt-0.5">
+                                            Direservasi pada: {{ $reserve->reserve_date ? \Carbon\Carbon::parse($reserve->reserve_date)->translatedFormat('d M Y, H:i') : '-' }} WIB
+                                        </div>
+                                        <div class="text-[10px] text-amber-700 dark:text-amber-400 font-semibold mt-1 flex items-center gap-1">
+                                            <i data-lucide="map-pin" class="w-3 h-3"></i>
+                                            <span>Ambil di Meja Sirkulasi Perpustakaan (Tunjukkan NIM Anda)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <form action="{{ route('member.reserve.cancel', $reserve->reserve_id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan reservasi buku ini?');">
+                                    @csrf
+                                    <button type="submit" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 dark:bg-slate-700 dark:hover:bg-rose-950/60 dark:text-slate-300 dark:hover:text-rose-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer" title="Batalkan reservasi buku ini">
+                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                        <span>Batal Booking</span>
+                                    </button>
+                                </form>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <!-- Active Loans -->
             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
                 <div class="flex items-center justify-between mb-6">

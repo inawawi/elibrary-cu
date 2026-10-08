@@ -7,6 +7,7 @@ use App\Models\Item;
 use App\Models\Loan;
 use App\Models\LoanHistory;
 use App\Models\Member;
+use App\Models\Reserve;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -17,6 +18,7 @@ class CirculationController extends Controller
         $memberId = $request->input('member_id');
         $member = null;
         $activeLoans = collect();
+        $reserves = collect();
         $canBorrow = true;
         $borrowBlockReason = null;
 
@@ -25,6 +27,10 @@ class CirculationController extends Controller
 
             if ($member) {
                 $activeLoans = $member->activeLoans;
+                $reserves = Reserve::where('member_id', $member->member_id)
+                    ->with(['biblio.authors', 'item.location'])
+                    ->orderBy('reserve_date', 'desc')
+                    ->get();
 
                 if ($member->is_pending == 1) {
                     $canBorrow = false;
@@ -42,7 +48,7 @@ class CirculationController extends Controller
             }
         }
 
-        return view('admin.circulation.index', compact('member', 'activeLoans', 'memberId', 'canBorrow', 'borrowBlockReason'));
+        return view('admin.circulation.index', compact('member', 'activeLoans', 'reserves', 'memberId', 'canBorrow', 'borrowBlockReason'));
     }
 
     public function loan(Request $request)
@@ -84,6 +90,9 @@ class CirculationController extends Controller
             'last_update' => Carbon::now(),
             'uid' => auth()->id() ?? 1,
         ]);
+
+        // Hapus reservasi jika eksemplar ini sebelumnya direservasi
+        Reserve::where('item_code', $item->item_code)->delete();
 
         return redirect()->route('admin.circulation.index', ['member_id' => $member->member_id])
             ->with('success', 'Buku "' . $item->biblio->title . '" (' . $item->item_code . ') berhasil dipinjam hingga ' . $dueDate->format('d/m/Y') . '!');

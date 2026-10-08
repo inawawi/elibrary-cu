@@ -10,6 +10,7 @@ use App\Models\Item;
 use App\Models\Member;
 use App\Models\Place;
 use App\Models\Publisher;
+use App\Models\Reserve;
 use App\Models\Setting;
 use App\Models\Topic;
 use Carbon\Carbon;
@@ -20,9 +21,16 @@ use Illuminate\Support\Facades\Hash;
 
 class MemberAreaController extends Controller
 {
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
+        if ($request->has('redirect')) {
+            session(['url.intended' => $request->redirect]);
+        }
+
         if (Auth::guard('member')->check()) {
+            if ($request->has('redirect')) {
+                return redirect($request->redirect);
+            }
             return redirect()->route('member.dashboard');
         }
         return view('member.login');
@@ -102,7 +110,7 @@ class MemberAreaController extends Controller
         Auth::guard('member')->login($member);
         $request->session()->regenerate();
 
-        return redirect()->route('member.dashboard')->with('success', 'Selamat datang kembali, ' . $member->member_name . '!');
+        return redirect()->intended(route('member.dashboard'))->with('success', 'Selamat datang kembali, ' . $member->member_name . '!');
     }
 
     public function dashboard()
@@ -136,6 +144,11 @@ class MemberAreaController extends Controller
         $libraryRules = Setting::get('library_rules');
         $isContactIncomplete = empty(trim($member->member_phone ?? '')) || empty(trim($member->member_email ?? ''));
 
+        $reserves = $member->reserves()
+            ->with(['biblio.authors', 'item.location'])
+            ->orderBy('reserve_date', 'desc')
+            ->get();
+
         $thesis = $member->isStudent() ? $member->thesisSubmission() : null;
         $bebasPustaka = $member->isStudent() ? $member->bebasPustakaRecord() : null;
         $isSenior = $member->isSeniorStudent();
@@ -145,6 +158,7 @@ class MemberAreaController extends Controller
             'member', 
             'activeLoans', 
             'loanHistories', 
+            'reserves',
             'announcement', 
             'libraryRules', 
             'isContactIncomplete',
@@ -538,6 +552,107 @@ class MemberAreaController extends Controller
         return response()->download($path, 'Watermark_Universitas_Siber_Indonesia.png', [
             'Content-Type' => 'image/png',
         ]);
+    }
+
+    /**
+     * Reservasi / Booking buku oleh member
+     */
+    public function reserveBook(Request $request)
+    {
+        /** @var Member $member */
+        $member = Auth::guard('member')->user();
+        if (!$member) {
+            return redirect()->route('member.login');
+        }
+
+        $request->validate([
+            'biblio_id' => 'required|integer|exists:biblio,biblio_id',
+            'item_code' => 'required|string|exists:item,item_code',
+        ]);
+
+        if ($member->is_pending == 1) {
+            return back()->with('error', 'Status keanggotaan Anda sedang dinonaktifkan (Suspen). Silakan hubungi petugas perpustakaan.');
+        }
+
+        if ($member->isExpired()) {
+            return back()->with('error', 'Masa berlaku keanggotaan Anda telah habis (' . $member->expire_date . '). Silakan lakukan perpanjangan keanggotaan.');
+        }
+
+        $isContactIncomplete = empty(trim($member->member_phone ?? '')) || empty(trim($member->member_email ?? ''));
+        if ($isContactIncomplete) {
+            return redirect()->route('member.dashboard')->with('error', 'Silakan lengkapi nomor WhatsApp dan email Anda terlebih dahulu sebelum melakukan peminjaman/reservasi buku.');
+        }
+
+        $loanLimit = $member->memberType?->loan_limit ?? 3;
+        $activeLoansCount = $member->activeLoans()->count();
+        if ($activeLoansCount >= $loanLimit) {
+            return back()->with('error', 'Peminjaman ditolak: Anda telah mencapai batas maksimal peminjaman (' . $loanLimit . ' buku). Harap kembalikan buku yang sedang dipinjam terlebih dahulu.');
+        }
+
+        $reserveLimit = $member->memberType?->reserve_limit ?? 3;
+        $currentReservesCount = $member->reserves()->count();
+        if ($currentReservesCount >= $reserveLimit) {
+            return back()->with('error', 'Batas maksimal reservasi (' . $reserveLimit . ' buku) telah tercapai.');
+        }
+
+        // Cek apakah member sudah mereservasi judul buku ini
+        $existingReserve = Reserve::where('member_id', $member->member_id)
+            ->where('biblio_id', $request->biblio_id)
+            ->first();
+        if ($existingReserve) {
+            return back()->with('error', 'Anda sudah melakukan reservasi untuk buku ini (Kode: ' . $existingReserve->item_code . '). Silakan ambil di meja sirkulasi perpustakaan.');
+        }
+
+        // Cek ketersediaan eksemplar
+        $item = Item::with(['biblio', 'activeLoan', 'reserve'])
+            ->where('item_code', $request->item_code)
+            ->where('biblio_id', $request->biblio_id)
+            ->first();
+
+        if (!$item) {
+            return back()->with('error', 'Eksemplar buku tidak valid untuk judul ini.');
+        }
+
+        if ($item->activeLoan) {
+            return back()->with('error', 'Eksemplar buku ini sedang dipinjam oleh anggota lain.');
+        }
+
+        if ($item->reserve) {
+            return back()->with('error', 'Eksemplar buku ini telah direservasi oleh peminjam lain.');
+        }
+
+        Reserve::create([
+            'member_id'    => $member->member_id,
+            'biblio_id'    => $item->biblio_id,
+            'item_code'    => $item->item_code,
+            'reserve_date' => Carbon::now(),
+        ]);
+
+        return back()->with('success', 'Reservasi buku "' . ($item->biblio?->title ?: 'Buku') . '" (Kode: ' . $item->item_code . ') berhasil! Silakan datang ke perpustakaan dalam 2x24 jam dan tunjukkan kartu anggota atau sebutkan NIM Anda kepada petugas untuk mengambil buku.');
+    }
+
+    /**
+     * Batalkan reservasi buku oleh member
+     */
+    public function cancelReserve(Request $request, $id)
+    {
+        /** @var Member $member */
+        $member = Auth::guard('member')->user();
+        if (!$member) {
+            return redirect()->route('member.login');
+        }
+
+        $reserve = Reserve::where('reserve_id', $id)
+            ->where('member_id', $member->member_id)
+            ->first();
+
+        if (!$reserve) {
+            return back()->with('error', 'Data reservasi tidak ditemukan.');
+        }
+
+        $reserve->delete();
+
+        return back()->with('success', 'Reservasi buku berhasil dibatalkan.');
     }
 }
 

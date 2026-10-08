@@ -59,9 +59,14 @@ class Item extends Model
         return $this->hasOne(Loan::class, 'item_code', 'item_code')->where('is_return', 0);
     }
 
+    public function reserve()
+    {
+        return $this->hasOne(Reserve::class, 'item_code', 'item_code');
+    }
+
     public function isAvailable(): bool
     {
-        return !$this->activeLoan()->exists();
+        return !$this->activeLoan()->exists() && !$this->reserve()->exists();
     }
 
     public function getBarcodeSvgAttribute(): string

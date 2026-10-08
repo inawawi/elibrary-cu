@@ -44,6 +44,10 @@ Route::middleware('auth:member')->group(function () {
     Route::post('/member/skripsi', [MemberAreaController::class, 'storeSkripsi'])->name('member.skripsi.store');
     Route::get('/member/bebas-pustaka/print', [MemberAreaController::class, 'printBebasPustaka'])->name('member.bebas-pustaka.print');
 
+    // Reservasi / Pinjam Buku
+    Route::post('/member/reserve', [MemberAreaController::class, 'reserveBook'])->name('member.reserve');
+    Route::post('/member/reserve/{id}/cancel', [MemberAreaController::class, 'cancelReserve'])->name('member.reserve.cancel');
+
     // Live Chat Member
     Route::get('/member/chat/status', [ChatController::class, 'memberStatus'])->name('member.chat.status');
     Route::get('/member/chat/messages', [ChatController::class, 'memberGetMessages'])->name('member.chat.messages');

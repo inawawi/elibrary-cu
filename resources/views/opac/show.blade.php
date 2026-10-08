@@ -16,7 +16,7 @@
     </div>
 </div>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="{ openReserveModal: false, selectedItemCode: '{{ $availableItems->first()?->item_code ?? '' }}' }">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <!-- Left: Book Cover & Quick Meta -->
         <div class="lg:col-span-4">
@@ -63,10 +63,39 @@
                         </a>
                     @endif
 
-                    <a href="{{ route('member.login') }}" class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm text-center shadow-md flex items-center justify-center gap-2 transition-all">
-                        <i data-lucide="bookmark" class="w-4 h-4"></i>
-                        <span>Pinjam / Reservasi Buku</span>
-                    </a>
+                    @auth('member')
+                        @if($userReserve)
+                            <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs shadow-sm">
+                                <div class="flex items-center gap-2 font-bold mb-1">
+                                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600 flex-shrink-0"></i>
+                                    <span>Sudah Anda Reservasi</span>
+                                </div>
+                                <p class="text-[11px] text-emerald-700 dark:text-emerald-400 mb-2 leading-relaxed">
+                                    Kode Eksemplar: <strong class="font-mono">{{ $userReserve->item_code }}</strong><br>
+                                    Silakan ambil di meja sirkulasi perpustakaan dalam 2x24 jam.
+                                </p>
+                                <a href="{{ route('member.dashboard') }}" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-200 hover:underline">
+                                    <span>Lihat di Area Anggota</span>
+                                    <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                                </a>
+                            </div>
+                        @elseif($availableItems->isNotEmpty())
+                            <button type="button" @click="openReserveModal = true; selectedItemCode = '{{ $availableItems->first()->item_code }}'" class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm text-center shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer">
+                                <i data-lucide="bookmark" class="w-4 h-4"></i>
+                                <span>Pinjam / Reservasi Buku</span>
+                            </button>
+                        @else
+                            <button type="button" disabled class="w-full py-3 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-sm text-center flex items-center justify-center gap-2 cursor-not-allowed">
+                                <i data-lucide="bookmark-x" class="w-4 h-4"></i>
+                                <span>Semua Eksemplar Sedang Dipinjam</span>
+                            </button>
+                        @endif
+                    @else
+                        <a href="{{ route('member.login', ['redirect' => url()->current()]) }}" class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm text-center shadow-md flex items-center justify-center gap-2 transition-all">
+                            <i data-lucide="bookmark" class="w-4 h-4"></i>
+                            <span>Pinjam / Reservasi Buku</span>
+                        </a>
+                    @endauth
 
                     <button onclick="window.print()" class="w-full py-3 px-4 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-sm flex items-center justify-center gap-2 transition-colors">
                         <i data-lucide="printer" class="w-4 h-4"></i>
@@ -219,11 +248,28 @@
                                                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                                                     Dipinjam (Kembali: {{ \Carbon\Carbon::parse($item->activeLoan->due_date)->format('d/m/Y') }})
                                                 </span>
-                                            @else
-                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                                    Tersedia di Rak
+                                            @elseif($item->reserve)
+                                                @php
+                                                    $isMyReserve = Auth::guard('member')->check() && $item->reserve->member_id === Auth::guard('member')->user()->member_id;
+                                                @endphp
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold {{ $isMyReserve ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' }}">
+                                                    <span class="w-1.5 h-1.5 rounded-full {{ $isMyReserve ? 'bg-amber-500' : 'bg-slate-400' }}"></span>
+                                                    {{ $isMyReserve ? 'Direservasi Anda' : 'Direservasi Peminjam Lain' }}
                                                 </span>
+                                            @else
+                                                <div class="flex items-center gap-2">
+                                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                        Tersedia di Rak
+                                                    </span>
+                                                    @auth('member')
+                                                        @if(!$userReserve)
+                                                            <button type="button" @click="openReserveModal = true; selectedItemCode = '{{ $item->item_code }}'" class="px-2.5 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/60 text-brand-600 dark:text-sky-400 font-bold text-[11px] transition-colors cursor-pointer" title="Reservasi eksemplar ini">
+                                                                Reservasi
+                                                            </button>
+                                                        @endif
+                                                    @endauth
+                                                </div>
                                             @endif
                                         </td>
                                     </tr>
@@ -254,5 +300,95 @@
             @endif
         </div>
     </div>
+
+    <!-- Modal Konfirmasi Reservasi / Pinjam Buku -->
+    @auth('member')
+    <div x-show="openReserveModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" @keydown.escape.window="openReserveModal = false">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 sm:p-8 shadow-2xl relative" @click.outside="openReserveModal = false">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-brand-50 dark:bg-sky-950/60 text-brand-600 dark:text-sky-400 flex items-center justify-center">
+                        <i data-lucide="bookmark-plus" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white">Pinjam / Reservasi Buku</h3>
+                        <p class="text-xs text-slate-400">Konfirmasi booking peminjaman buku perpustakaan</p>
+                    </div>
+                </div>
+                <button type="button" @click="openReserveModal = false" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form action="{{ route('member.reserve') }}" method="POST" class="space-y-4">
+                @csrf
+                <input type="hidden" name="biblio_id" value="{{ $book->biblio_id }}">
+
+                <!-- Book Preview -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex items-center gap-3.5">
+                    <div class="w-12 h-16 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 flex-shrink-0 shadow">
+                        <img src="{{ $book->cover_url }}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="font-bold text-xs text-slate-900 dark:text-white line-clamp-2">{{ $book->title }}</h4>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {{ $book->author_names }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Member Identity -->
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
+                        <span class="text-slate-400 block text-[10px] uppercase font-bold">Nama Peminjam</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate block">{{ Auth::guard('member')->user()->member_name }}</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
+                        <span class="text-slate-400 block text-[10px] uppercase font-bold">NIM / ID Anggota</span>
+                        <span class="font-mono font-bold text-brand-600 dark:text-sky-400 block">{{ Auth::guard('member')->user()->member_id }}</span>
+                    </div>
+                </div>
+
+                <!-- Select Available Item -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Pilih Kode Barcode / Eksemplar Tersedia *
+                    </label>
+                    <select name="item_code" x-model="selectedItemCode" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-mono font-bold focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        @foreach($availableItems as $availItem)
+                            <option value="{{ $availItem->item_code }}">
+                                {{ $availItem->item_code }} ({{ $availItem->location?->location_name ?: 'Rak Umum' }} - {{ $availItem->call_number ?: $book->call_number }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Terms Info -->
+                <div class="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed flex items-start gap-2.5">
+                    <i data-lucide="info" class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <strong>Ketentuan Reservasi:</strong>
+                        <ul class="list-disc list-inside mt-0.5 space-y-0.5">
+                            <li>Buku yang direservasi akan disiapkan di meja sirkulasi selama <strong>2 x 24 jam</strong>.</li>
+                            <li>Tunjukkan kartu anggota digital atau sebutkan NIM Anda ke staf perpustakaan untuk pengambilan buku fisik.</li>
+                            <li>Maksimal durasi pinjam: {{ Auth::guard('member')->user()->memberType?->loan_periode ?? 7 }} hari setelah serah terima buku.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" @click="openReserveModal = false" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Konfirmasi Booking Buku</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endauth
 </div>
 @endsection
