@@ -419,6 +419,9 @@
         </div>
     </footer>
 
+    <!-- Live Chat Widget for Logged In Members -->
+    @include('components.chat-member-widget')
+
     <script>
         lucide.createIcons();
     </script>

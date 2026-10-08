@@ -1,0 +1,344 @@
+@if(Auth::guard('member')->check())
+<!-- Floating Live Chat Widget for Member -->
+<div id="member-chat-root" class="fixed bottom-6 right-6 z-[9999] font-sans antialiased text-slate-800">
+    <!-- Floating Trigger Button -->
+    <div class="relative">
+        <button id="member-chat-toggle-btn" type="button"
+                onclick="toggleMemberChat()"
+                class="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-white/40 focus:outline-none">
+            <div class="relative flex items-center justify-center">
+                <!-- Chat Icon -->
+                <svg id="member-chat-icon-msg" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <!-- Close Icon (when open) -->
+                <svg id="member-chat-icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <!-- Online Status Dot on Button -->
+                <span id="member-btn-online-dot" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-slate-400 border-2 border-white"></span>
+            </div>
+            <span class="text-xs font-bold tracking-wide pr-1 hidden sm:inline-block">Tanya Pustakawan</span>
+            <!-- Unread Badge -->
+            <span id="member-chat-unread-badge" class="hidden absolute -top-2 -right-2 px-2 py-0.5 min-w-[20px] text-[11px] font-black text-white bg-rose-500 rounded-full border-2 border-white shadow animate-bounce text-center">0</span>
+        </button>
+    </div>
+
+    <!-- Chat Window Container -->
+    <div id="member-chat-window" class="hidden fixed sm:absolute bottom-20 right-0 sm:right-0 w-[95vw] sm:w-[380px] max-w-[420px] h-[520px] max-h-[82vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
+        <!-- Header -->
+        <div class="px-5 py-4 bg-gradient-to-r from-sky-600 via-brand-600 to-indigo-600 text-white flex items-center justify-between shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-white shadow-inner">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <span id="member-header-status-dot" class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-slate-400 border-2 border-white"></span>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm tracking-tight leading-tight">Layanan Chat Pustaka</h4>
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span id="member-header-status-pulse" class="inline-block w-2 h-2 rounded-full bg-slate-400"></span>
+                        <span id="member-header-status-text" class="text-[11px] font-medium text-sky-100">Memeriksa status...</span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="toggleMemberChat()" class="p-1.5 rounded-xl hover:bg-white/20 text-white/90 hover:text-white transition-colors" title="Tutup Chat">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Status Notice Banner -->
+        <div id="member-chat-notice-banner" class="px-4 py-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2">
+            <svg class="w-4 h-4 text-sky-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span id="member-chat-notice-text">Silakan tanyakan info skripsi, buku, atau bebas pustaka kepada petugas.</span>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div id="member-chat-messages-container" class="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-50/70 dark:bg-slate-950/60 text-xs">
+            <div id="member-chat-loading" class="text-center py-8 text-slate-400">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-sky-500 border-t-transparent"></div>
+                <p class="mt-2 text-xs">Memuat pesan...</p>
+            </div>
+        </div>
+
+        <!-- Chat Input Footer -->
+        <form id="member-chat-form" onsubmit="sendMemberMessage(event)" class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-end gap-2">
+            <div class="flex-grow relative">
+                <textarea id="member-chat-input"
+                          rows="1"
+                          maxlength="2000"
+                          placeholder="Ketik pesan untuk pustakawan..."
+                          onkeydown="handleMemberChatKeydown(event)"
+                          class="w-full resize-none max-h-24 px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-sky-500 focus:outline-none transition-all"></textarea>
+            </div>
+            <button id="member-chat-send-btn" type="submit"
+                    class="p-2.5 rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 text-white hover:from-sky-500 hover:to-indigo-500 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let isChatOpen = false;
+        let lastMessageCount = 0;
+        let pollingInterval = null;
+        let statusPollingInterval = null;
+
+        const csrfToken = '{{ csrf_token() }}';
+        const statusUrl = '{{ route("member.chat.status") }}';
+        const messagesUrl = '{{ route("member.chat.messages") }}';
+        const sendUrl = '{{ route("member.chat.send") }}';
+
+        // Web Audio API Beep
+        function playChimeSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.35);
+            } catch (e) {}
+        }
+
+        window.toggleMemberChat = function() {
+            const win = document.getElementById('member-chat-window');
+            const iconMsg = document.getElementById('member-chat-icon-msg');
+            const iconClose = document.getElementById('member-chat-icon-close');
+            const unreadBadge = document.getElementById('member-chat-unread-badge');
+
+            isChatOpen = !isChatOpen;
+
+            if (isChatOpen) {
+                win.classList.remove('hidden');
+                setTimeout(() => {
+                    win.classList.remove('scale-95', 'opacity-0');
+                    win.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                iconMsg.classList.add('hidden');
+                iconClose.classList.remove('hidden');
+                unreadBadge.classList.add('hidden');
+                unreadBadge.innerText = '0';
+
+                loadMemberMessages();
+                // Start quick polling while open
+                if (pollingInterval) clearInterval(pollingInterval);
+                pollingInterval = setInterval(loadMemberMessages, 3000);
+
+                setTimeout(() => {
+                    const input = document.getElementById('member-chat-input');
+                    if (input) input.focus();
+                }, 150);
+            } else {
+                win.classList.remove('scale-100', 'opacity-100');
+                win.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    win.classList.add('hidden');
+                }, 200);
+                iconMsg.classList.remove('hidden');
+                iconClose.classList.add('hidden');
+
+                if (pollingInterval) {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                }
+            }
+        };
+
+        function updateOnlineStatusUI(isOnline) {
+            const btnDot = document.getElementById('member-btn-online-dot');
+            const headerDot = document.getElementById('member-header-status-dot');
+            const headerPulse = document.getElementById('member-header-status-pulse');
+            const headerText = document.getElementById('member-header-status-text');
+            const noticeText = document.getElementById('member-chat-notice-text');
+
+            if (isOnline) {
+                btnDot.className = 'absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white ring-2 ring-emerald-400/50';
+                headerDot.className = 'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white';
+                headerPulse.className = 'inline-block w-2 h-2 rounded-full bg-emerald-300 animate-ping';
+                headerText.innerText = 'Pustakawan Online (Siap Membantu)';
+                headerText.className = 'text-[11px] font-semibold text-emerald-200';
+                noticeText.innerText = 'Pustakawan sedang bertugas dan siap merespons pertanyaan Anda.';
+            } else {
+                btnDot.className = 'absolute -top-1 -right-1 w-3 h-3 rounded-full bg-slate-400 border-2 border-white';
+                headerDot.className = 'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-slate-400 border-2 border-white';
+                headerPulse.className = 'inline-block w-2 h-2 rounded-full bg-slate-400';
+                headerText.innerText = 'Pustakawan Sedang Offline';
+                headerText.className = 'text-[11px] font-medium text-sky-200/80';
+                noticeText.innerText = 'Pustakawan sedang offline. Anda tetap dapat mengirimkan pesan, pesan akan dibalas saat online.';
+            }
+        }
+
+        function checkMemberStatus() {
+            fetch(statusUrl, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                updateOnlineStatusUI(data.librarian_online);
+
+                if (!isChatOpen && data.unread_count > 0) {
+                    const badge = document.getElementById('member-chat-unread-badge');
+                    badge.innerText = data.unread_count;
+                    badge.classList.remove('hidden');
+                }
+            })
+            .catch(() => {});
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('member-chat-messages-container');
+            const loading = document.getElementById('member-chat-loading');
+            if (loading) loading.remove();
+
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 px-4 text-slate-400 dark:text-slate-500">
+                        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-sky-50 dark:bg-slate-800 flex items-center justify-center text-sky-500">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+                        </div>
+                        <p class="font-semibold text-slate-600 dark:text-slate-300">Belum ada percakapan</p>
+                        <p class="text-[11px] mt-1 text-slate-400">Silakan kirim pesan untuk memulai chat dengan pustakawan.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            messages.forEach(msg => {
+                const isMember = msg.sender_type === 'member';
+
+                if (isMember) {
+                    // Bubble Member (Kanan)
+                    html += `
+                        <div class="flex flex-col items-end">
+                            <div class="max-w-[80%] rounded-2xl rounded-br-none px-4 py-2.5 bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-sm break-words leading-relaxed text-xs">
+                                ${escapeHtml(msg.message).replace(/\\n/g, '<br>')}
+                            </div>
+                            <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
+                                <span>${msg.time}</span>
+                                <span>•</span>
+                                <span>${msg.is_read ? 'Dibaca' : 'Terkirim'}</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Bubble Pustakawan / Admin (Kiri)
+                    html += `
+                        <div class="flex flex-col items-start">
+                            <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 mb-0.5 ml-1">${escapeHtml(msg.sender_name)}</span>
+                            <div class="max-w-[80%] rounded-2xl rounded-bl-none px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700 shadow-sm break-words leading-relaxed text-xs">
+                                ${escapeHtml(msg.message).replace(/\\n/g, '<br>')}
+                            </div>
+                            <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400 ml-1">
+                                <span>${msg.time}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function loadMemberMessages() {
+            fetch(messagesUrl, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                updateOnlineStatusUI(data.librarian_online);
+
+                if (data.messages && data.messages.length > lastMessageCount) {
+                    // If new message from admin received while window is open
+                    const lastMsg = data.messages[data.messages.length - 1];
+                    if (lastMessageCount > 0 && lastMsg.sender_type === 'admin') {
+                        playChimeSound();
+                    }
+                    lastMessageCount = data.messages.length;
+                    renderMessages(data.messages);
+                } else if (lastMessageCount === 0 && data.messages) {
+                    lastMessageCount = data.messages.length;
+                    renderMessages(data.messages);
+                }
+            })
+            .catch(() => {});
+        }
+
+        window.handleMemberChatKeydown = function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('member-chat-form').requestSubmit();
+            }
+        };
+
+        window.sendMemberMessage = function(e) {
+            e.preventDefault();
+            const input = document.getElementById('member-chat-input');
+            const btn = document.getElementById('member-chat-send-btn');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            btn.disabled = true;
+
+            fetch(sendUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ message: text })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                if (data.success) {
+                    input.value = '';
+                    loadMemberMessages();
+                } else {
+                    alert(data.error || 'Gagal mengirim pesan.');
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                alert('Terjadi kendala koneksi ke server.');
+            });
+        };
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        // Initialize status polling
+        checkMemberStatus();
+        statusPollingInterval = setInterval(checkMemberStatus, 20000);
+    })();
+</script>
+@endif

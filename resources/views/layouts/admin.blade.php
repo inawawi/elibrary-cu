@@ -589,6 +589,9 @@
         </main>
     </div>
 
+    <!-- Live Chat Widget for Admin / Pustakawan -->
+    @include('components.chat-admin-widget')
+
     <script>
         lucide.createIcons();
     </script>

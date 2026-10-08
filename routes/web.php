@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\MemberController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\MemberAreaController;
 use App\Http\Controllers\OpacController;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +43,11 @@ Route::middleware('auth:member')->group(function () {
     Route::get('/member/skripsi', [MemberAreaController::class, 'showSkripsiForm'])->name('member.skripsi');
     Route::post('/member/skripsi', [MemberAreaController::class, 'storeSkripsi'])->name('member.skripsi.store');
     Route::get('/member/bebas-pustaka/print', [MemberAreaController::class, 'printBebasPustaka'])->name('member.bebas-pustaka.print');
+
+    // Live Chat Member
+    Route::get('/member/chat/status', [ChatController::class, 'memberStatus'])->name('member.chat.status');
+    Route::get('/member/chat/messages', [ChatController::class, 'memberGetMessages'])->name('member.chat.messages');
+    Route::post('/member/chat/send', [ChatController::class, 'memberSendMessage'])->name('member.chat.send');
 });
 
 Route::get('/member/watermark/Watermark_Universitas_Siber_Indonesia.png', [MemberAreaController::class, 'downloadWatermark'])->name('member.watermark.download');
@@ -148,5 +154,11 @@ Route::prefix('admin')->group(function () {
         Route::post('/users', [UserController::class, 'store'])->name('admin.users.store');
         Route::put('/users/{id}', [UserController::class, 'update'])->name('admin.users.update');
         Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('admin.users.destroy');
+
+        // Live Chat Admin & Pustakawan
+        Route::get('/chat/unread-count', [ChatController::class, 'adminUnreadCount'])->name('admin.chat.unread_count');
+        Route::get('/chat/rooms', [ChatController::class, 'adminRooms'])->name('admin.chat.rooms');
+        Route::get('/chat/room/{id}/messages', [ChatController::class, 'adminGetMessages'])->name('admin.chat.room_messages');
+        Route::post('/chat/room/{id}/send', [ChatController::class, 'adminSendMessage'])->name('admin.chat.room_send');
     });
 });
