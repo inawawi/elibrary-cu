@@ -48,6 +48,7 @@ Route::middleware('auth:member')->group(function () {
     Route::get('/member/chat/status', [ChatController::class, 'memberStatus'])->name('member.chat.status');
     Route::get('/member/chat/messages', [ChatController::class, 'memberGetMessages'])->name('member.chat.messages');
     Route::post('/member/chat/send', [ChatController::class, 'memberSendMessage'])->name('member.chat.send');
+    Route::post('/member/chat/message/{id}/delete', [ChatController::class, 'memberDeleteMessage'])->name('member.chat.message_delete');
 });
 
 Route::get('/member/watermark/Watermark_Universitas_Siber_Indonesia.png', [MemberAreaController::class, 'downloadWatermark'])->name('member.watermark.download');
@@ -161,5 +162,6 @@ Route::prefix('admin')->group(function () {
         Route::get('/chat/room/{id}/messages', [ChatController::class, 'adminGetMessages'])->name('admin.chat.room_messages');
         Route::post('/chat/room/{id}/send', [ChatController::class, 'adminSendMessage'])->name('admin.chat.room_send');
         Route::post('/chat/room/{id}/toggle-block', [ChatController::class, 'adminToggleBlockRoom'])->name('admin.chat.room_toggle_block');
+        Route::post('/chat/message/{id}/delete', [ChatController::class, 'adminDeleteMessage'])->name('admin.chat.message_delete');
     });
 });

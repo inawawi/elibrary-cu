@@ -89,21 +89,38 @@ class ChatController extends Controller
             $room->update(['unread_member_count' => 0]);
         }
 
-        $messages = ChatMessage::where('room_id', $room->id)
+        $messages = ChatMessage::with('replyTo')
+            ->where('room_id', $room->id)
             ->orderBy('id', 'asc')
             ->get()
             ->map(function ($msg) {
+                $isDeleted = (bool)$msg->is_deleted;
+                $replyData = null;
+                if ($msg->replyTo) {
+                    $replyData = [
+                        'id'              => $msg->replyTo->id,
+                        'sender_type'     => $msg->replyTo->sender_type,
+                        'sender_name'     => $msg->replyTo->sender_name,
+                        'message'         => $msg->replyTo->is_deleted ? 'Pesan telah dihapus' : mb_substr($msg->replyTo->message, 0, 100),
+                        'attachment_type' => $msg->replyTo->is_deleted ? null : $msg->replyTo->attachment_type,
+                        'attachment_name' => $msg->replyTo->is_deleted ? null : $msg->replyTo->attachment_name,
+                    ];
+                }
+
                 return [
                     'id'              => $msg->id,
                     'sender_type'     => $msg->sender_type,
                     'sender_name'     => $msg->sender_name,
-                    'message'         => $msg->message,
+                    'message'         => $isDeleted ? '🚫 Pesan ini telah dihapus' : $msg->message,
                     'is_read'         => (bool)$msg->is_read,
-                    'attachment_path' => $msg->attachment_path,
-                    'attachment_name' => $msg->attachment_name,
-                    'attachment_type' => $msg->attachment_type,
-                    'attachment_size' => $msg->attachment_size,
-                    'attachment_url'  => $msg->attachment_url,
+                    'is_deleted'      => $isDeleted,
+                    'deleted_by'      => $msg->deleted_by,
+                    'reply_to'        => $replyData,
+                    'attachment_path' => $isDeleted ? null : $msg->attachment_path,
+                    'attachment_name' => $isDeleted ? null : $msg->attachment_name,
+                    'attachment_type' => $isDeleted ? null : $msg->attachment_type,
+                    'attachment_size' => $isDeleted ? null : $msg->attachment_size,
+                    'attachment_url'  => $isDeleted ? null : $msg->attachment_url,
                     'time'            => $msg->created_at ? $msg->created_at->format('H:i') : '',
                     'date'            => $msg->created_at ? $msg->created_at->translatedFormat('d M Y') : '',
                 ];
@@ -128,8 +145,9 @@ class ChatController extends Controller
         }
 
         $request->validate([
-            'message'    => 'nullable|string|max:3000',
-            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip',
+            'message'     => 'nullable|string|max:3000',
+            'reply_to_id' => 'nullable|integer',
+            'attachment'  => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip',
         ]);
 
         $messageText = trim($request->input('message', ''));
@@ -177,6 +195,7 @@ class ChatController extends Controller
 
         $chatMsg = ChatMessage::create([
             'room_id'         => $room->id,
+            'reply_to_id'     => $request->input('reply_to_id'),
             'sender_type'     => 'member',
             'sender_id'       => $member->member_id,
             'sender_name'     => $member->member_name ?? $member->member_id,
@@ -293,21 +312,38 @@ class ChatController extends Controller
             $room->update(['unread_admin_count' => 0]);
         }
 
-        $messages = ChatMessage::where('room_id', $room->id)
+        $messages = ChatMessage::with('replyTo')
+            ->where('room_id', $room->id)
             ->orderBy('id', 'asc')
             ->get()
             ->map(function ($msg) {
+                $isDeleted = (bool)$msg->is_deleted;
+                $replyData = null;
+                if ($msg->replyTo) {
+                    $replyData = [
+                        'id'              => $msg->replyTo->id,
+                        'sender_type'     => $msg->replyTo->sender_type,
+                        'sender_name'     => $msg->replyTo->sender_name,
+                        'message'         => $msg->replyTo->is_deleted ? 'Pesan telah dihapus' : mb_substr($msg->replyTo->message, 0, 100),
+                        'attachment_type' => $msg->replyTo->is_deleted ? null : $msg->replyTo->attachment_type,
+                        'attachment_name' => $msg->replyTo->is_deleted ? null : $msg->replyTo->attachment_name,
+                    ];
+                }
+
                 return [
                     'id'              => $msg->id,
                     'sender_type'     => $msg->sender_type,
                     'sender_name'     => $msg->sender_name,
-                    'message'         => $msg->message,
+                    'message'         => $isDeleted ? '🚫 Pesan ini telah dihapus' : $msg->message,
                     'is_read'         => (bool)$msg->is_read,
-                    'attachment_path' => $msg->attachment_path,
-                    'attachment_name' => $msg->attachment_name,
-                    'attachment_type' => $msg->attachment_type,
-                    'attachment_size' => $msg->attachment_size,
-                    'attachment_url'  => $msg->attachment_url,
+                    'is_deleted'      => $isDeleted,
+                    'deleted_by'      => $msg->deleted_by,
+                    'reply_to'        => $replyData,
+                    'attachment_path' => $isDeleted ? null : $msg->attachment_path,
+                    'attachment_name' => $isDeleted ? null : $msg->attachment_name,
+                    'attachment_type' => $isDeleted ? null : $msg->attachment_type,
+                    'attachment_size' => $isDeleted ? null : $msg->attachment_size,
+                    'attachment_url'  => $isDeleted ? null : $msg->attachment_url,
                     'time'            => $msg->created_at ? $msg->created_at->format('H:i') : '',
                     'date'            => $msg->created_at ? $msg->created_at->translatedFormat('d M Y') : '',
                 ];
@@ -340,8 +376,9 @@ class ChatController extends Controller
         }
 
         $request->validate([
-            'message'    => 'nullable|string|max:3000',
-            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip',
+            'message'     => 'nullable|string|max:3000',
+            'reply_to_id' => 'nullable|integer',
+            'attachment'  => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip',
         ]);
 
         $messageText = trim($request->input('message', ''));
@@ -382,6 +419,7 @@ class ChatController extends Controller
 
         $chatMsg = ChatMessage::create([
             'room_id'         => $room->id,
+            'reply_to_id'     => $request->input('reply_to_id'),
             'sender_type'     => 'admin',
             'sender_id'       => (string)$admin->user_id,
             'sender_name'     => 'Pustakawan (' . $senderName . ')',
@@ -460,6 +498,67 @@ class ChatController extends Controller
             'message'    => $newStatus === 'blocked'
                 ? 'Member berhasil diblokir dari layanan chat.'
                 : 'Blokir member berhasil dibuka.',
+        ]);
+    }
+
+    /**
+     * Member deletes their own message (WhatsApp style: 'Pesan ini telah dihapus')
+     */
+    public function memberDeleteMessage(Request $request, $id)
+    {
+        $member = Auth::guard('member')->user();
+        if (!$member) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $msg = ChatMessage::findOrFail($id);
+
+        if ($msg->sender_type !== 'member' || $msg->sender_id !== $member->member_id) {
+            return response()->json(['error' => 'Anda hanya dapat menghapus pesan Anda sendiri.'], 403);
+        }
+
+        $msg->update([
+            'is_deleted' => true,
+            'deleted_by' => 'member',
+            'deleted_at' => now(),
+        ]);
+
+        if ($msg->attachment_path && file_exists(public_path($msg->attachment_path))) {
+            @unlink(public_path($msg->attachment_path));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pesan berhasil dihapus.',
+        ]);
+    }
+
+    /**
+     * Admin deletes any chat message (WhatsApp style: 'Pesan ini telah dihapus')
+     */
+    public function adminDeleteMessage(Request $request, $id)
+    {
+        $this->touchLibrarianHeartbeat();
+        $admin = Auth::guard('web')->user();
+        if (!$admin) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $msg = ChatMessage::findOrFail($id);
+
+        $msg->update([
+            'is_deleted' => true,
+            'deleted_by' => 'admin',
+            'deleted_at' => now(),
+        ]);
+
+        if ($msg->attachment_path && file_exists(public_path($msg->attachment_path))) {
+            @unlink(public_path($msg->attachment_path));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pesan berhasil dihapus.',
         ]);
     }
 }

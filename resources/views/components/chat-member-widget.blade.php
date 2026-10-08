@@ -25,7 +25,7 @@
     </div>
 
     <!-- Chat Window Container -->
-    <div id="member-chat-window" class="hidden fixed sm:absolute bottom-20 right-0 sm:right-0 w-[95vw] sm:w-[400px] max-w-[440px] h-[550px] max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
+    <div id="member-chat-window" class="hidden fixed sm:absolute bottom-20 right-0 sm:right-0 w-[95vw] sm:w-[410px] max-w-[450px] h-[560px] max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
         <!-- Header -->
         <div class="px-5 py-4 bg-gradient-to-r from-sky-600 via-brand-600 to-indigo-600 text-white flex items-center justify-between shadow-md">
             <div class="flex items-center gap-3">
@@ -66,6 +66,17 @@
                 <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-sky-500 border-t-transparent"></div>
                 <p class="mt-2 text-xs">Memuat pesan...</p>
             </div>
+        </div>
+
+        <!-- Reply Preview Bar (WhatsApp-style, hidden by default) -->
+        <div id="member-chat-reply-bar" class="hidden px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+            <div class="border-l-4 border-sky-500 pl-2.5 min-w-0">
+                <p id="member-reply-to-name" class="font-bold text-[11px] text-sky-600 dark:text-sky-400 truncate">Membalas Pustakawan</p>
+                <p id="member-reply-to-text" class="text-[10px] text-slate-600 dark:text-slate-300 truncate">Cuplikan pesan...</p>
+            </div>
+            <button type="button" onclick="cancelMemberReply()" class="p-1 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-slate-700 transition-colors" title="Batal Balas">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
         </div>
 
         <!-- Attachment Preview Bar (hidden by default) -->
@@ -129,6 +140,7 @@
         let pollingInterval = null;
         let statusPollingInterval = null;
         let selectedFile = null;
+        let activeReplyId = null;
 
         const csrfToken = '{{ csrf_token() }}';
         const statusUrl = '{{ route("member.chat.status") }}';
@@ -183,7 +195,7 @@
 
                 setTimeout(() => {
                     const input = document.getElementById('member-chat-input');
-                    if (input) input.focus();
+                    if (input && !input.disabled) input.focus();
                 }, 150);
             } else {
                 win.classList.remove('scale-100', 'opacity-100');
@@ -243,6 +255,53 @@
             if (previewBar) previewBar.classList.add('hidden');
         };
 
+        // Reply Logic (WhatsApp-style)
+        window.setMemberReply = function(id, senderName, text) {
+            activeReplyId = id;
+            const replyBar = document.getElementById('member-chat-reply-bar');
+            const replyName = document.getElementById('member-reply-to-name');
+            const replyText = document.getElementById('member-reply-to-text');
+
+            replyName.innerText = 'Membalas ' + senderName;
+            replyText.innerText = text || '[Lampiran]';
+            replyBar.classList.remove('hidden');
+
+            const input = document.getElementById('member-chat-input');
+            if (input && !input.disabled) input.focus();
+        };
+
+        window.cancelMemberReply = function() {
+            activeReplyId = null;
+            const replyBar = document.getElementById('member-chat-reply-bar');
+            if (replyBar) replyBar.classList.add('hidden');
+        };
+
+        // Delete Message Logic (WhatsApp-style)
+        window.deleteMemberMsg = function(msgId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus pesan ini?')) return;
+
+            const delUrl = '{{ url("member/chat/message") }}/' + msgId + '/delete';
+
+            fetch(delUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    loadMemberMessages();
+                } else {
+                    alert(data.error || 'Gagal menghapus pesan.');
+                }
+            })
+            .catch(() => {
+                alert('Terjadi kesalahan koneksi.');
+            });
+        };
+
         function updateOnlineStatusUI(isOnline) {
             const btnDot = document.getElementById('member-btn-online-dot');
             const headerDot = document.getElementById('member-header-status-dot');
@@ -288,6 +347,7 @@
                 if (sendBtn) sendBtn.disabled = true;
                 if (clipBtn) clipBtn.disabled = true;
                 cancelMemberAttachment();
+                cancelMemberReply();
             } else {
                 if (noticeBanner && noticeBanner.classList.contains('bg-rose-50')) {
                     noticeBanner.className = 'px-4 py-2 bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 flex items-center gap-2';
@@ -372,35 +432,85 @@
             messages.forEach(msg => {
                 const isMember = msg.sender_type === 'member';
                 const hasAttachment = Boolean(msg.attachment_url);
+                const isDeleted = Boolean(msg.is_deleted);
 
                 let showText = true;
                 if (hasAttachment && (msg.message.startsWith('[Foto:') || msg.message.startsWith('[File:'))) {
                     showText = false;
                 }
 
+                // WhatsApp Quoted Message Box
+                let replyQuoteHtml = '';
+                if (!isDeleted && msg.reply_to) {
+                    const quoteBorder = isMember ? 'border-sky-300 bg-white/20 text-white' : 'border-sky-500 bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200';
+                    replyQuoteHtml = `
+                        <div class="mb-1.5 p-1.5 rounded-lg border-l-4 ${quoteBorder} text-[11px] select-none text-left">
+                            <p class="font-bold text-[10px] opacity-90">${escapeHtml(msg.reply_to.sender_name)}</p>
+                            <p class="text-[10px] truncate opacity-85">${escapeHtml(msg.reply_to.message)}</p>
+                        </div>
+                    `;
+                }
+
+                // Action buttons on hover (Reply / Delete)
+                const safeSenderName = escapeHtml(msg.sender_name).replace(/'/g, "\\'");
+                const safeMessage = escapeHtml(msg.message).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                const actionsHtml = isDeleted ? '' : `
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 ${isMember ? 'order-first mr-1.5' : 'order-last ml-1.5'}">
+                        <button type="button" onclick="setMemberReply(${msg.id}, '${safeSenderName}', '${safeMessage}')"
+                                class="p-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-sky-500 hover:text-white transition-colors" title="Balas pesan ini">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                        </button>
+                        ${isMember ? `
+                        <button type="button" onclick="deleteMemberMsg(${msg.id})"
+                                class="p-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-rose-500 hover:text-white transition-colors" title="Hapus pesan">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                        ` : ''}
+                    </div>
+                `;
+
                 if (isMember) {
                     // Bubble Member (Kanan)
                     html += `
-                        <div class="flex flex-col items-end">
-                            <div class="max-w-[85%] rounded-2xl rounded-br-none px-4 py-2.5 bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-sm break-words leading-relaxed text-xs">
-                                ${renderAttachmentHtml(msg, true)}
-                                ${showText ? escapeHtml(msg.message).replace(/\\n/g, '<br>') : ''}
+                        <div class="flex flex-col items-end group">
+                            <div class="flex items-center max-w-full justify-end">
+                                ${actionsHtml}
+                                <div class="max-w-[85%] rounded-2xl rounded-br-none px-4 py-2.5 ${isDeleted ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 italic' : 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white'} shadow-sm break-words leading-relaxed text-xs">
+                                    ${replyQuoteHtml}
+                                    ${!isDeleted ? renderAttachmentHtml(msg, true) : ''}
+                                    ${isDeleted ? `
+                                        <div class="flex items-center gap-1.5 py-0.5 text-[11px]">
+                                            <svg class="w-3.5 h-3.5 opacity-60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                            <span>Pesan ini telah dihapus</span>
+                                        </div>
+                                    ` : (showText ? escapeHtml(msg.message).replace(/\\n/g, '<br>') : '')}
+                                </div>
                             </div>
                             <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400">
                                 <span>${msg.time}</span>
                                 <span>•</span>
-                                <span>${msg.is_read ? 'Dibaca' : 'Terkirim'}</span>
+                                <span>${isDeleted ? 'Dihapus' : (msg.is_read ? 'Dibaca' : 'Terkirim')}</span>
                             </div>
                         </div>
                     `;
                 } else {
                     // Bubble Pustakawan / Admin (Kiri)
                     html += `
-                        <div class="flex flex-col items-start">
+                        <div class="flex flex-col items-start group">
                             <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 mb-0.5 ml-1">${escapeHtml(msg.sender_name)}</span>
-                            <div class="max-w-[85%] rounded-2xl rounded-bl-none px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700 shadow-sm break-words leading-relaxed text-xs">
-                                ${renderAttachmentHtml(msg, false)}
-                                ${showText ? escapeHtml(msg.message).replace(/\\n/g, '<br>') : ''}
+                            <div class="flex items-center max-w-full justify-start">
+                                <div class="max-w-[85%] rounded-2xl rounded-bl-none px-4 py-2.5 ${isDeleted ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 italic border border-slate-200/80 dark:border-slate-700' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-700'} shadow-sm break-words leading-relaxed text-xs">
+                                    ${replyQuoteHtml}
+                                    ${!isDeleted ? renderAttachmentHtml(msg, false) : ''}
+                                    ${isDeleted ? `
+                                        <div class="flex items-center gap-1.5 py-0.5 text-[11px]">
+                                            <svg class="w-3.5 h-3.5 opacity-60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                            <span>Pesan ini telah dihapus</span>
+                                        </div>
+                                    ` : (showText ? escapeHtml(msg.message).replace(/\\n/g, '<br>') : '')}
+                                </div>
+                                ${actionsHtml}
                             </div>
                             <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400 ml-1">
                                 <span>${msg.time}</span>
@@ -433,6 +543,9 @@
                 } else if (lastMessageCount === 0 && data.messages) {
                     lastMessageCount = data.messages.length;
                     renderMessages(data.messages);
+                } else if (data.messages) {
+                    // Check if any message status changed (e.g. was deleted)
+                    renderMessages(data.messages);
                 }
             })
             .catch(() => {});
@@ -458,6 +571,7 @@
             const formData = new FormData();
             if (text) formData.append('message', text);
             if (selectedFile) formData.append('attachment', selectedFile);
+            if (activeReplyId) formData.append('reply_to_id', activeReplyId);
 
             fetch(sendUrl, {
                 method: 'POST',
@@ -473,6 +587,7 @@
                 if (data.success) {
                     input.value = '';
                     cancelMemberAttachment();
+                    cancelMemberReply();
                     loadMemberMessages();
                 } else {
                     alert(data.error || 'Gagal mengirim pesan.');
