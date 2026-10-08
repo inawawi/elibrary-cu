@@ -201,6 +201,20 @@
                                         &bull; {{ $m->member_phone }}
                                     @endif
                                 </div>
+                                @if((int)$m->member_type_id === 1)
+                                    <div class="mt-1 flex items-center gap-1.5 text-[11px] flex-wrap">
+                                        <span class="text-slate-500 font-semibold text-[10px]">Tgl Lahir (Sandi Default):</span>
+                                        @if(!empty($m->birth_date))
+                                            <span class="font-mono font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-200/50 dark:border-purple-800/40 text-[10px]">
+                                                {{ \Carbon\Carbon::parse($m->birth_date)->format('Y-m-d') }}
+                                            </span>
+                                        @else
+                                            <span class="font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200/60 dark:border-amber-800/40 text-[10px]" title="Tanggal lahir belum ada di database, login menggunakan NIM">
+                                                Belum Ada (Sandi: NIM)
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endif
                             </td>
                             <td class="py-3 px-6">
                                 @if($m->isLecturer())
@@ -225,6 +239,7 @@
                                     </div>
                                 @else
                                     <div class="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                        <span class="text-[9px] text-slate-400 block uppercase font-bold tracking-wider">Masa Aktif Kartu s/d</span>
                                         {{ $m->expire_date ? \Carbon\Carbon::parse($m->expire_date)->translatedFormat('d F Y') : '-' }}
                                     </div>
                                 @endif

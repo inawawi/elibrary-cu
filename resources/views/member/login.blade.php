@@ -64,6 +64,7 @@
                         <i data-lucide="info" class="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0"></i>
                         <span>
                             <b>Petunjuk Sandi:</b> Sandi default mahasiswa adalah <b>tanggal lahir</b> format <code class="font-mono font-bold bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800">YYYY-MM-DD</code> (contoh: <code class="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-purple-200 dark:border-purple-800">2004-05-18</code>).
+                            <span class="block mt-1 text-[10px] text-purple-700/80 dark:text-purple-300/80">*Jika tanggal lahir belum terdata di sistem, gunakan <b>NIM</b> sebagai kata sandi untuk masuk.</span>
                         </span>
                     </div>
                 </div>

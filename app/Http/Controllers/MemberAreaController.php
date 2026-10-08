@@ -83,9 +83,15 @@ class MemberAreaController extends Controller
         }
 
         if (!$passwordValid) {
-            $hintMsg = $isMahasiswa 
-                ? 'Kata sandi salah. Sandi default mahasiswa adalah tanggal lahir Anda (format: YYYY-MM-DD, contoh: 2004-05-18) atau sandi baru jika pernah diubah.'
-                : 'Kata sandi salah. Silakan periksa kembali kata sandi atau ID Anggota Anda.';
+            if ($isMahasiswa) {
+                if (empty($member->birth_date)) {
+                    $hintMsg = 'Kata sandi salah. Tanggal lahir Anda belum tercatat di data anggota, silakan gunakan NIM (' . $member->member_id . ') sebagai kata sandi atau hubungi admin perpustakaan.';
+                } else {
+                    $hintMsg = 'Kata sandi salah. Sandi default mahasiswa adalah tanggal lahir Anda (format: YYYY-MM-DD, contoh: 2004-05-18) atau kata sandi baru jika pernah diubah.';
+                }
+            } else {
+                $hintMsg = 'Kata sandi salah. Silakan periksa kembali kata sandi atau ID Anggota Anda.';
+            }
             return back()->withErrors(['password' => $hintMsg])->withInput();
         }
 
