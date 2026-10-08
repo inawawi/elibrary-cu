@@ -87,9 +87,20 @@
                 <textarea name="member_address" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">{{ old('member_address', $member->member_address) }}</textarea>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Reset Kata Sandi (Opsional)</label>
-                <input type="password" name="password" placeholder="Kosongkan jika tidak ingin mengubah sandi..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Ubah / Reset Kata Sandi</label>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Ketik kata sandi manual baru di bawah, atau klik tombol reset ke tanggal lahir.</p>
+                    </div>
+                    @if((int)$member->member_type_id === 1)
+                        <button type="button" onclick="if(confirm('Reset kata sandi mahasiswa ini kembali ke tanggal lahir ({{ $member->birth_date ?: 'NIM' }})?')) { document.getElementById('form-direct-reset-pwd').submit(); }" class="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold hover:bg-purple-100 transition-colors flex items-center gap-1.5 shadow-sm self-start sm:self-auto">
+                            <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                            <span>Reset ke Tanggal Lahir ({{ $member->birth_date ?: 'NIM' }})</span>
+                        </button>
+                    @endif
+                </div>
+                <input type="password" name="password" placeholder="Kosongkan jika tidak ingin mengubah sandi..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
             </div>
 
             <div>
@@ -110,7 +121,11 @@
             <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md shadow-brand-500/25 transition-all">
                 Simpan Perubahan
             </button>
-        </div>
     </form>
+    @if((int)$member->member_type_id === 1)
+        <form id="form-direct-reset-pwd" action="{{ route('admin.member.reset-password', $member->member_id) }}" method="POST" class="hidden">
+            @csrf
+        </form>
+    @endif
 </div>
 @endsection

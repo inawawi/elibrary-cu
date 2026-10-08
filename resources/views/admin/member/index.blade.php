@@ -275,6 +275,14 @@
                                     <a href="{{ route('admin.member.card', $m->member_id) }}" target="_blank" class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition-colors" title="Cetak Kartu">
                                         <i data-lucide="id-card" class="w-4 h-4"></i>
                                     </a>
+                                    @if((int)$m->member_type_id === 1)
+                                        <form action="{{ route('admin.member.reset-password', $m->member_id) }}" method="POST" onsubmit="return confirm('Reset kata sandi mahasiswa {{ addslashes($m->member_name) }} ({{ $m->member_id }}) kembali ke tanggal lahir ({{ $m->birth_date ?: 'NIM' }})?')">
+                                            @csrf
+                                            <button type="submit" class="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 hover:bg-purple-100 transition-colors" title="Reset Sandi ke Tanggal Lahir ({{ $m->birth_date ?: 'NIM' }})">
+                                                <i data-lucide="key-round" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                     <a href="{{ route('admin.member.edit', $m->member_id) }}" class="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 hover:bg-amber-100 transition-colors" title="Ubah">
                                         <i data-lucide="pencil" class="w-4 h-4"></i>
                                     </a>

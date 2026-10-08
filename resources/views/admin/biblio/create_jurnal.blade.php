@@ -163,6 +163,16 @@
                 </select>
             </div>
 
+            <!-- Link URL Jurnal / OJS -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Link URL Jurnal / OJS Online</span>
+                    <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Tautan Akses Daring</span>
+                </label>
+                <input type="url" name="url" value="{{ old('url') }}" placeholder="Contoh: https://journal.cyber-univ.ac.id/index.php/..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <p class="text-[10px] text-slate-400 mt-1">Tautan langsung ke web jurnal atau OJS untuk akses naskah publikasi secara online.</p>
+            </div>
+
             <!-- Deskripsi Fisik & Catatan / Abstrak -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -177,7 +187,7 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Catatan / Abstrak / URL Indeksasi</label>
-                <textarea name="notes" rows="3" placeholder="Tuliskan fokus & ruang lingkup (scope) jurnal, pengindeks (SINTA/Scopus), atau tautan OJS jurnal..." class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none">{{ old('notes') }}</textarea>
+                <textarea name="notes" rows="3" placeholder="Tuliskan fokus & ruang lingkup (scope) jurnal, pengindeks (SINTA/Scopus), atau catatan lainnya..." class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none">{{ old('notes') }}</textarea>
             </div>
         </div>
 

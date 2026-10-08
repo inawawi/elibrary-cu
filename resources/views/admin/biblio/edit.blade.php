@@ -135,6 +135,16 @@
                 <textarea name="notes" rows="4" class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none">{{ old('notes', $biblio->notes) }}</textarea>
             </div>
 
+            <!-- Link URL Jurnal / Sumber Digital Online -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Link URL Jurnal / OJS / Sumber Daring Online</span>
+                    <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Akses Daring / OJS</span>
+                </label>
+                <input type="url" name="file_att" value="{{ old('file_att', $biblio->file_att) }}" placeholder="Contoh: https://journal.cyber-univ.ac.id/index.php/..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <p class="text-[10px] text-slate-400 mt-1">Tautan langsung ke web jurnal atau OJS untuk akses naskah publikasi secara daring (online).</p>
+            </div>
+
             <!-- Cover Preview & Upload -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Gambar Sampul</label>
@@ -183,7 +193,7 @@
             </div>
 
             <!-- Form Tambah Eksemplar Baru Masuk -->
-            <div class="bg-brand-50/50 dark:bg-brand-950/20 rounded-2xl p-4 border border-brand-100 dark:border-brand-900/40">
+            <div class="bg-brand-50/50 dark:bg-brand-950/20 rounded-2xl p-4 border border-brand-100 dark:border-brand-900/40 space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                     <div>
                         <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1">
@@ -198,6 +208,21 @@
                         <p id="additional-preview" class="text-[11px] text-brand-600 dark:text-sky-400 font-medium mt-1">
                             (Isi dengan angka jika ada tambahan eksemplar baru masuk)
                         </p>
+                    </div>
+                </div>
+
+                <!-- Input Tambahan Edisi Baru untuk Eksemplar Baru -->
+                <div class="pt-3 border-t border-brand-200/60 dark:border-brand-900/40 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1">
+                            Edisi Eksemplar Baru (Opsional)
+                        </label>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            Bisa diisi jika eksemplar yang baru masuk memiliki edisi berbeda/terbaru (misal: Cetakan ke-2 / Vol. 2 No. 1). Jika dikosongkan, akan mengikuti edisi katalog ({{ $biblio->edition ?: '-' }}).
+                        </p>
+                    </div>
+                    <div>
+                        <input type="text" name="additional_edition" value="{{ old('additional_edition') }}" placeholder="Contoh: Cetakan ke-2 / Vol. 2 No. 1 (2025)" class="w-full px-4 py-2.5 rounded-xl border border-brand-300 dark:border-brand-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                     </div>
                 </div>
             </div>

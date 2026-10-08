@@ -219,6 +219,27 @@ class MemberController extends Controller
         return back()->with('success', "Status keanggotaan {$member->member_name} ({$member->member_id}) berhasil {$statusLabel}.");
     }
 
+    public function resetPassword($id)
+    {
+        $member = Member::findOrFail($id);
+
+        if (!empty($member->birth_date)) {
+            $defaultPassword = Carbon::parse($member->birth_date)->format('Y-m-d');
+            $member->update([
+                'mpasswd' => Hash::make($defaultPassword),
+                'last_update' => Carbon::now(),
+            ]);
+            return back()->with('success', "Kata sandi member {$member->member_name} ({$member->member_id}) berhasil direset kembali ke tanggal lahir: {$defaultPassword}");
+        } else {
+            $defaultPassword = $member->member_id;
+            $member->update([
+                'mpasswd' => Hash::make($defaultPassword),
+                'last_update' => Carbon::now(),
+            ]);
+            return back()->with('warning', "Tanggal lahir member belum tercatat di data. Kata sandi direset ke NIM/ID Anggota: {$defaultPassword}");
+        }
+    }
+
     public function destroy($id)
     {
         $member = Member::with('activeLoans')->findOrFail($id);
@@ -588,7 +609,7 @@ class MemberController extends Controller
                         'member_phone' => !empty($phone) ? $phone : null,
                         'inst_name' => 'Universitas Siber Indonesia',
                         'member_notes' => $memberNotes,
-                        'mpasswd' => Hash::make($nim),
+                        'mpasswd' => Hash::make($birthDate ?: $nim),
                         'register_date' => $today,
                         'member_since_date' => $today,
                         'expire_date' => $expireDate,

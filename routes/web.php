@@ -38,6 +38,7 @@ Route::post('/member/logout', [MemberAreaController::class, 'logout'])->name('me
 Route::middleware('auth:member')->group(function () {
     Route::get('/member/dashboard', [MemberAreaController::class, 'dashboard'])->name('member.dashboard');
     Route::post('/member/update-contact', [MemberAreaController::class, 'updateContact'])->name('member.update-contact');
+    Route::post('/member/update-password', [MemberAreaController::class, 'updatePassword'])->name('member.password.update');
     Route::get('/member/skripsi', [MemberAreaController::class, 'showSkripsiForm'])->name('member.skripsi');
     Route::post('/member/skripsi', [MemberAreaController::class, 'storeSkripsi'])->name('member.skripsi.store');
     Route::get('/member/bebas-pustaka/print', [MemberAreaController::class, 'printBebasPustaka'])->name('member.bebas-pustaka.print');
@@ -105,6 +106,7 @@ Route::prefix('admin')->group(function () {
         Route::put('/member/{id}', [MemberController::class, 'update'])->name('admin.member.update');
         Route::get('/member/{id}/card', [MemberController::class, 'showCard'])->name('admin.member.card');
         Route::patch('/member/{id}/toggle-status', [MemberController::class, 'toggleStatus'])->name('admin.member.toggle-status');
+        Route::post('/member/{id}/reset-password', [MemberController::class, 'resetPassword'])->name('admin.member.reset-password');
         Route::delete('/member/{id}', [MemberController::class, 'destroy'])->name('admin.member.destroy');
 
         // Pusat Ekspor Data & Laporan

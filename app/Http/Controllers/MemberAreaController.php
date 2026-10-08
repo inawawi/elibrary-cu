@@ -46,41 +46,47 @@ class MemberAreaController extends Controller
 
         $passwordValid = false;
         $inputPassword = trim($request->password);
+        $isMahasiswa = (int)$member->member_type_id === 1;
 
-        // 1. Check Bcrypt hash
+        // 1. Cek Bcrypt hash (jika mahasiswa sudah pernah ubah password atau admin meresetnya)
         if (!empty($member->mpasswd) && Hash::check($inputPassword, $member->mpasswd)) {
             $passwordValid = true;
         }
-        // 2. Check if password matches member_id (NIM default)
-        elseif ($inputPassword === $member->member_id) {
-            $passwordValid = true;
-        }
-        // 3. Check if password matches PIN
-        elseif (!empty($member->pin) && $inputPassword === $member->pin) {
-            $passwordValid = true;
-        }
-        // 4. Check if password matches birth date in various formats
-        elseif (!empty($member->birth_date)) {
-            $birthDate = $member->birth_date;
+        // 2. Default password mahasiswa adalah Tanggal Lahir (YYYY-MM-DD)
+        elseif ($isMahasiswa && !empty($member->birth_date)) {
+            $birthDate = Carbon::parse($member->birth_date)->format('Y-m-d');
             $birthFormats = [
-                $birthDate, // YYYY-MM-DD
+                $birthDate, // YYYY-MM-DD (format utama sesuai permintaan)
                 str_replace('-', '', $birthDate), // YYYYMMDD
                 date('dmY', strtotime($birthDate)), // DDMMYYYY
                 date('d-m-Y', strtotime($birthDate)), // DD-MM-YYYY
-                date('d/m/Y', strtotime($birthDate)), // DD/MM/YYYY
-                date('dmy', strtotime($birthDate)), // DDMMYY
             ];
             if (in_array($inputPassword, $birthFormats, true)) {
                 $passwordValid = true;
             }
         }
-        // 5. Legacy MD5 or plain
+        // 3. Fallback jika mahasiswa belum memiliki tanggal lahir di database: izinkan NIM
+        elseif ($isMahasiswa && empty($member->birth_date) && $inputPassword === $member->member_id) {
+            $passwordValid = true;
+        }
+        // 4. Default password Dosen & Staf (non-mahasiswa) menggunakan ID Anggota / NIDN / NIP
+        elseif (!$isMahasiswa && $inputPassword === $member->member_id) {
+            $passwordValid = true;
+        }
+        // 5. Cek PIN
+        elseif (!empty($member->pin) && $inputPassword === $member->pin) {
+            $passwordValid = true;
+        }
+        // 6. Legacy MD5 atau plain
         elseif (!empty($member->mpasswd) && (md5($inputPassword) === $member->mpasswd || $inputPassword === $member->mpasswd)) {
             $passwordValid = true;
         }
 
         if (!$passwordValid) {
-            return back()->withErrors(['password' => 'Kata sandi salah. Gunakan NIM atau tanggal lahir Anda.'])->withInput();
+            $hintMsg = $isMahasiswa 
+                ? 'Kata sandi salah. Sandi default mahasiswa adalah tanggal lahir Anda (format: YYYY-MM-DD, contoh: 2004-05-18) atau sandi baru jika pernah diubah.'
+                : 'Kata sandi salah. Silakan periksa kembali kata sandi atau ID Anggota Anda.';
+            return back()->withErrors(['password' => $hintMsg])->withInput();
         }
 
         if ($member->is_pending) {
@@ -456,6 +462,52 @@ class MemberAreaController extends Controller
         $member->save();
 
         return redirect()->route('member.dashboard')->with('success', 'Data kontak Anda (Nomor WhatsApp & Email) berhasil disimpan! Seluruh layanan keanggotaan kini aktif.');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        /** @var Member $member */
+        $member = Auth::guard('member')->user();
+
+        $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
+        ], [
+            'current_password.required' => 'Kata sandi saat ini wajib diisi.',
+            'password.required' => 'Kata sandi baru wajib diisi.',
+            'password.min' => 'Kata sandi baru minimal 6 karakter.',
+            'password.confirmed' => 'Konfirmasi kata sandi baru tidak sesuai.',
+        ]);
+
+        $currentPassword = trim($request->current_password);
+        $currentValid = false;
+
+        // Cek kecocokan sandi saat ini dengan mpasswd hash
+        if (!empty($member->mpasswd) && Hash::check($currentPassword, $member->mpasswd)) {
+            $currentValid = true;
+        }
+        // Cek default tanggal lahir (YYYY-MM-DD)
+        elseif (!empty($member->birth_date) && $currentPassword === Carbon::parse($member->birth_date)->format('Y-m-d')) {
+            $currentValid = true;
+        }
+        // Cek fallback NIM
+        elseif ($currentPassword === $member->member_id) {
+            $currentValid = true;
+        }
+        // Cek PIN
+        elseif (!empty($member->pin) && $currentPassword === $member->pin) {
+            $currentValid = true;
+        }
+
+        if (!$currentValid) {
+            return back()->withErrors(['current_password' => 'Kata sandi saat ini salah. Jika belum pernah diubah, gunakan tanggal lahir format YYYY-MM-DD.'])->withInput();
+        }
+
+        $member->mpasswd = Hash::make($request->password);
+        $member->last_update = Carbon::now();
+        $member->save();
+
+        return back()->with('success', 'Kata sandi Anda berhasil diperbarui! Silakan gunakan kata sandi baru ini untuk login berikutnya.');
     }
 
     public function logout(Request $request)

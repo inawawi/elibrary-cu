@@ -151,6 +151,106 @@
                 </div>
             </div>
 
+            <!-- Keamanan Akun & Ubah Kata Sandi Card -->
+            <div x-data="{ openPasswordModal: {{ $errors->has('current_password') || $errors->has('password') ? 'true' : 'false' }} }" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="key-round" class="w-4 h-4 text-brand-500"></i>
+                            Keamanan Akun & Sandi
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">
+                            @if(!empty($member->mpasswd))
+                                Sandi telah dikustomisasi. Anda dapat mengubahnya kapan saja.
+                            @else
+                                Sandi default aktif (Format Tanggal Lahir: {{ $member->birth_date ?: 'NIM' }}).
+                            @endif
+                        </p>
+                    </div>
+                    <button type="button" @click="openPasswordModal = true" class="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/60 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-xs font-bold transition-all border border-purple-200 dark:border-purple-800/60 flex items-center gap-1.5 flex-shrink-0 shadow-sm">
+                        <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                        <span>Ubah Sandi</span>
+                    </button>
+                </div>
+
+                <!-- Modal Ubah Kata Sandi -->
+                <div x-show="openPasswordModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" @keydown.escape.window="openPasswordModal = false">
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl relative" @click.outside="openPasswordModal = false">
+                        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                                    <i data-lucide="key-round" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-black text-slate-900 dark:text-white">Ubah Kata Sandi</h3>
+                                    <p class="text-xs text-slate-400">Perbarui kata sandi login area anggota Anda</p>
+                                </div>
+                            </div>
+                            <button type="button" @click="openPasswordModal = false" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <form action="{{ route('member.password.update') }}" method="POST" class="space-y-4">
+                            @csrf
+                            <!-- Kata Sandi Saat Ini -->
+                            <div x-data="{ show: false }">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                                    <span>Kata Sandi Saat Ini *</span>
+                                    <span class="text-[10px] text-purple-600 dark:text-purple-400 font-normal">Default: YYYY-MM-DD</span>
+                                </label>
+                                <div class="relative">
+                                    <input :type="show ? 'text' : 'password'" name="current_password" required placeholder="Masukkan kata sandi saat ini..." class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border {{ $errors->has('current_password') ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700' }} bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <button type="button" @mousedown="show = true" @mouseup="show = false" @mouseleave="show = false" @touchstart.prevent="show = true" @touchend="show = false" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer" title="Tahan untuk melihat">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                @if($errors->has('current_password'))
+                                    <p class="text-[11px] text-rose-500 mt-1">{{ $errors->first('current_password') }}</p>
+                                @else
+                                    <p class="text-[10px] text-slate-400 mt-1">Jika belum pernah diubah, gunakan tanggal lahir format <code class="font-mono">YYYY-MM-DD</code> (contoh: 2004-05-18).</p>
+                                @endif
+                            </div>
+
+                            <!-- Kata Sandi Baru -->
+                            <div x-data="{ show: false }">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Kata Sandi Baru (Min. 6 Karakter) *</label>
+                                <div class="relative">
+                                    <input :type="show ? 'text' : 'password'" name="password" required minlength="6" placeholder="Masukkan kata sandi baru..." class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border {{ $errors->has('password') ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700' }} bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <button type="button" @mousedown="show = true" @mouseup="show = false" @mouseleave="show = false" @touchstart.prevent="show = true" @touchend="show = false" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer" title="Tahan untuk melihat">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                @if($errors->has('password'))
+                                    <p class="text-[11px] text-rose-500 mt-1">{{ $errors->first('password') }}</p>
+                                @endif
+                            </div>
+
+                            <!-- Konfirmasi Kata Sandi Baru -->
+                            <div x-data="{ show: false }">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Ulangi Kata Sandi Baru *</label>
+                                <div class="relative">
+                                    <input :type="show ? 'text' : 'password'" name="password_confirmation" required minlength="6" placeholder="Ketik ulang kata sandi baru..." class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <button type="button" @mousedown="show = true" @mouseup="show = false" @mouseleave="show = false" @touchstart.prevent="show = true" @touchend="show = false" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer" title="Tahan untuk melihat">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                                <button type="button" @click="openPasswordModal = false" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                    Batal
+                                </button>
+                                <button type="submit" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/25 transition-all flex items-center gap-1.5">
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                    <span>Simpan Kata Sandi</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tata Tertib Card -->
             @if(!empty($libraryRules))
             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">

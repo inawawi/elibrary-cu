@@ -60,6 +60,12 @@
                             </svg>
                         </button>
                     </div>
+                    <div class="mt-2 p-2.5 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900/40 text-[11px] text-purple-800 dark:text-purple-300 flex items-start gap-2">
+                        <i data-lucide="info" class="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0"></i>
+                        <span>
+                            <b>Petunjuk Sandi:</b> Sandi default mahasiswa adalah <b>tanggal lahir</b> format <code class="font-mono font-bold bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800">YYYY-MM-DD</code> (contoh: <code class="font-mono bg-white dark:bg-slate-900 px-1 py-0.5 rounded border border-purple-200 dark:border-purple-800">2004-05-18</code>).
+                        </span>
+                    </div>
                 </div>
 
                 <button type="submit" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-sky-600 hover:from-brand-700 hover:to-sky-700 text-white font-bold text-sm shadow-lg shadow-brand-500/25 transition-all">

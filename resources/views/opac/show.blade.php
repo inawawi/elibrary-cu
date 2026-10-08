@@ -52,6 +52,17 @@
 
                 <!-- Action Buttons -->
                 <div class="space-y-2.5">
+                    @if(!empty($book->file_att))
+                        @php
+                            $isExternalUrl = \Illuminate\Support\Str::startsWith($book->file_att, ['http://', 'https://']);
+                            $digitalUrl = $isExternalUrl ? $book->file_att : asset($book->file_att);
+                        @endphp
+                        <a href="{{ $digitalUrl }}" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm text-center shadow-md shadow-purple-600/25 flex items-center justify-center gap-2 transition-all">
+                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                            <span>Buka / Akses Jurnal Daring (Online)</span>
+                        </a>
+                    @endif
+
                     <a href="{{ route('member.login') }}" class="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm text-center shadow-md flex items-center justify-center gap-2 transition-all">
                         <i data-lucide="bookmark" class="w-4 h-4"></i>
                         <span>Pinjam / Reservasi Buku</span>

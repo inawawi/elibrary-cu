@@ -286,6 +286,7 @@ class BiblioController extends Controller
             'publish_place_id' => 'nullable|string|max:255',
             'classification' => 'nullable|string|max:40',
             'notes' => 'nullable|string',
+            'file_att' => 'nullable|string|max:255',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'authors' => 'nullable|array',
             'topics' => 'nullable|array',
@@ -294,6 +295,7 @@ class BiblioController extends Controller
             'frequency_id' => 'nullable|integer',
             'spec_detail_info' => 'nullable|string|max:100',
             'additional_copies_count' => 'nullable|integer|min:0',
+            'additional_edition' => 'nullable|string|max:100',
         ]);
 
         if ($request->hasFile('image')) {
@@ -339,6 +341,9 @@ class BiblioController extends Controller
 
         // Tambah jumlah eksemplar baru jika diinput (tanpa mengubah eksemplar lama yang sudah ada)
         $additionalCount = (int) $request->input('additional_copies_count', 0);
+        $additionalEdition = trim($request->input('additional_edition', ''));
+        $itemEdition = !empty($additionalEdition) ? $additionalEdition : $biblio->edition;
+
         $addedCodes = [];
         if ($additionalCount > 0) {
             $isJurnal = (int)$biblio->gmd_id === 263 || str_contains(strtolower($biblio->gmd?->gmd_name ?? ''), 'jurnal');
@@ -351,7 +356,7 @@ class BiblioController extends Controller
                     'biblio_id' => $biblio->biblio_id,
                     'item_code' => $code,
                     'call_number' => $biblio->call_number,
-                    'edition' => $biblio->edition,
+                    'edition' => $itemEdition,
                     'coll_type_id' => 1,
                     'location_id' => '001',
                     'item_status_id' => '001',
@@ -364,7 +369,8 @@ class BiblioController extends Controller
 
         $msg = 'Data buku "' . $biblio->title . '" berhasil diperbarui!';
         if ($additionalCount > 0) {
-            $msg .= ' Dan ' . $additionalCount . ' eksemplar baru berhasil ditambahkan (' . implode(', ', $addedCodes) . ').';
+            $edInfo = !empty($additionalEdition) ? " dengan edisi '{$additionalEdition}'" : '';
+            $msg .= ' Dan ' . $additionalCount . ' eksemplar baru' . $edInfo . ' berhasil ditambahkan (' . implode(', ', $addedCodes) . ').';
         }
 
         return redirect()->route('admin.biblio.index')->with('success', $msg);
@@ -1101,6 +1107,7 @@ class BiblioController extends Controller
             'call_number' => 'nullable|string|max:50',
             'classification' => 'nullable|string|max:40',
             'collation' => 'nullable|string|max:100',
+            'url' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'subjects' => 'nullable|array',
@@ -1132,6 +1139,7 @@ class BiblioController extends Controller
             'call_number' => $validated['call_number'] ?? null,
             'classification' => $validated['classification'] ?? null,
             'collation' => $validated['collation'] ?? null,
+            'file_att' => !empty($validated['url']) ? trim($validated['url']) : null,
             'notes' => $validated['notes'] ?? null,
             'image' => $imageName,
             'language_id' => 'id',
