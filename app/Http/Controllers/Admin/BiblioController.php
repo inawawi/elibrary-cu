@@ -175,15 +175,50 @@ class BiblioController extends Controller
             'classification' => $validated['classification'] ?? null,
             'notes' => $validated['notes'] ?? null,
             'image' => $imageName,
-            'frequency_id' => $validated['frequency_id'] ?? null,
+            'frequency_id' => !empty($validated['frequency_id']) ? (int)$validated['frequency_id'] : 0,
             'spec_detail_info' => $validated['spec_detail_info'] ?? null,
             'input_date' => Carbon::now(),
             'last_update' => Carbon::now(),
             'uid' => auth()->id() ?? 1,
         ]);
 
-        if (!empty($validated['authors'])) {
-            $biblio->authors()->sync($validated['authors']);
+        $authorIds = [];
+        if ($request->has('author_names')) {
+            $authorNames = (array) $request->input('author_names');
+            foreach ($authorNames as $authorName) {
+                $trimmed = trim($authorName);
+                if (!empty($trimmed)) {
+                    $auth = Author::firstOrCreate(
+                        ['author_name' => $trimmed],
+                        [
+                            'authority_type' => 'p',
+                            'input_date' => Carbon::today()->toDateString(),
+                            'last_update' => Carbon::today()->toDateString(),
+                        ]
+                    );
+                    $authorIds[] = $auth->author_id;
+                }
+            }
+        } elseif (!empty($validated['authors'])) {
+            foreach ($validated['authors'] as $authVal) {
+                if (is_numeric($authVal) && Author::where('author_id', $authVal)->exists()) {
+                    $authorIds[] = (int) $authVal;
+                } elseif (is_string($authVal) && !empty(trim($authVal))) {
+                    $auth = Author::firstOrCreate(
+                        ['author_name' => trim($authVal)],
+                        ['authority_type' => 'p', 'input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+                    );
+                    $authorIds[] = $auth->author_id;
+                }
+            }
+        }
+
+        if (!empty($authorIds)) {
+            $biblio->authors()->sync($authorIds);
+            if (empty($biblio->sor)) {
+                $names = Author::whereIn('author_id', $authorIds)->pluck('author_name')->toArray();
+                $biblio->update(['sor' => implode(' ; ', $names)]);
+            }
         }
 
         // Simpan topik / subjek
@@ -316,7 +351,29 @@ class BiblioController extends Controller
 
         $biblio->update($validated);
 
-        if (isset($validated['authors'])) {
+        $authorIds = [];
+        if ($request->has('author_names')) {
+            $authorNames = (array) $request->input('author_names');
+            foreach ($authorNames as $authorName) {
+                $trimmed = trim($authorName);
+                if (!empty($trimmed)) {
+                    $auth = Author::firstOrCreate(
+                        ['author_name' => $trimmed],
+                        [
+                            'authority_type' => 'p',
+                            'input_date' => Carbon::today()->toDateString(),
+                            'last_update' => Carbon::today()->toDateString(),
+                        ]
+                    );
+                    $authorIds[] = $auth->author_id;
+                }
+            }
+            $biblio->authors()->sync($authorIds);
+            if (empty($biblio->sor) && !empty($authorIds)) {
+                $names = Author::whereIn('author_id', $authorIds)->pluck('author_name')->toArray();
+                $biblio->update(['sor' => implode(' ; ', $names)]);
+            }
+        } elseif (isset($validated['authors'])) {
             $biblio->authors()->sync($validated['authors']);
         }
 

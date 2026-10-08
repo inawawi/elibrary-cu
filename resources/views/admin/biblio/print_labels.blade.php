@@ -136,13 +136,8 @@
             @foreach($items as $item)
                 @php
                     $biblio = $item->biblio;
-                    $spine = $biblio ? $biblio->spine_label_components : [
-                        'header' => 'Elibrary Cyber University',
-                        'classification' => '000',
-                        'author_code' => 'XXX',
-                        'title_code' => 'x',
-                        'full_call_number' => '000 XXX x'
-                    ];
+                    $spine = $item->spine_label_components;
+                    $lines = $spine['lines'] ?? array_filter([$spine['classification'] ?? '', $spine['author_code'] ?? '', $spine['title_code'] ?? '']);
                     $currentMode = request('mode', $printMode);
                     $itemEdition = $item->edition ?: $biblio?->edition;
                 @endphp
@@ -156,17 +151,13 @@
                     @if($currentMode === 'both' || $currentMode === 'spine')
                         <div class="spine-box border-2 border-slate-900 rounded-lg p-2.5 w-36 text-center flex-shrink-0 bg-white leading-tight">
                             <div class="text-[9px] font-black uppercase tracking-tight border-b border-slate-900 pb-1 mb-1 text-slate-900">
-                                {{ $spine['header'] }}
+                                {{ $spine['header'] ?? 'ELIBRARY CYBER UNIVERSITY' }}
                             </div>
-                            <div class="text-xs font-mono font-black text-slate-900 my-0.5">
-                                {{ $spine['classification'] }}
-                            </div>
-                            <div class="text-xs font-mono font-black uppercase text-slate-900 my-0.5">
-                                {{ $spine['author_code'] }}
-                            </div>
-                            <div class="text-xs font-mono font-black lowercase text-slate-900 mt-0.5">
-                                {{ $spine['title_code'] }}
-                            </div>
+                            @foreach($lines as $line)
+                                <div class="text-xs font-mono font-black text-slate-900 my-0.5">
+                                    {{ $line }}
+                                </div>
+                            @endforeach
                         </div>
                     @endif
 

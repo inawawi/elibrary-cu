@@ -138,5 +138,34 @@ class Item extends Model
 
         return $result;
     }
+
+    public function getSpineLabelComponentsAttribute(): array
+    {
+        $callNumber = trim($this->call_number ?? '');
+        if (!empty($callNumber)) {
+            $parts = preg_split('/\s+/', $callNumber);
+            return [
+                'header' => 'ELIBRARY CYBER UNIVERSITY',
+                'lines' => $parts,
+                'full_call_number' => $callNumber,
+                'classification' => $parts[0] ?? '000',
+                'author_code' => $parts[1] ?? '',
+                'title_code' => $parts[2] ?? '',
+            ];
+        }
+
+        if ($this->biblio) {
+            return $this->biblio->spine_label_components;
+        }
+
+        return [
+            'header' => 'ELIBRARY CYBER UNIVERSITY',
+            'lines' => ['000', 'XXX', 'x'],
+            'full_call_number' => '000 XXX x',
+            'classification' => '000',
+            'author_code' => 'XXX',
+            'title_code' => 'x',
+        ];
+    }
 }
 

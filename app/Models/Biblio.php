@@ -111,10 +111,31 @@ class Biblio extends Model
         return $this->items()->whereDoesntHave('activeLoan')->count();
     }
 
+    public function setFrequencyIdAttribute($value)
+    {
+        $this->attributes['frequency_id'] = !empty($value) ? (int)$value : 0;
+    }
+
     public function getSpineLabelComponentsAttribute(): array
     {
-        // Klasifikasi / DDC
-        $classification = !empty($this->classification) ? trim($this->classification) : (!empty($this->call_number) ? explode(' ', trim($this->call_number))[0] : '000');
+        $header = 'ELIBRARY CYBER UNIVERSITY';
+        $callNumber = trim($this->call_number ?? '');
+
+        // Jika nomor panggil diisi, gunakan pemisahan kata/token nomor panggil tersebut
+        if (!empty($callNumber)) {
+            $parts = preg_split('/\s+/', $callNumber);
+            return [
+                'header' => $header,
+                'lines' => $parts,
+                'full_call_number' => $callNumber,
+                'classification' => $parts[0] ?? '000',
+                'author_code' => $parts[1] ?? '',
+                'title_code' => $parts[2] ?? '',
+            ];
+        }
+
+        // Fallback jika call_number kosong: buat dari klasifikasi, 3 huruf pengarang, 1 huruf judul
+        $classification = !empty($this->classification) ? trim($this->classification) : '000';
         
         // 3 huruf pertama nama pengarang utama (uppercase)
         $author = $this->authors->first();
@@ -129,8 +150,11 @@ class Biblio extends Model
         $cleanTitle = preg_replace('/^(the|a|an)\s+/i', '', trim($this->title));
         $titleCode = strtolower(substr(preg_replace('/[^a-zA-Z0-9]/', '', $cleanTitle), 0, 1));
 
+        $lines = array_values(array_filter([$classification, $authorCode, $titleCode]));
+
         return [
-            'header' => 'Elibrary Cyber University',
+            'header' => $header,
+            'lines' => $lines,
             'classification' => $classification,
             'author_code' => $authorCode,
             'title_code' => $titleCode,
