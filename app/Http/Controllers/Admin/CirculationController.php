@@ -193,6 +193,8 @@ class CirculationController extends Controller
 
         if ($status === 'returned') {
             $query->where('is_return', 1);
+        } elseif ($status === 'renewed') {
+            $query->where('renewed', '>', 0);
         } elseif ($status === 'active') {
             $query->where('is_return', 0);
         }
@@ -215,6 +217,7 @@ class CirculationController extends Controller
         $stats = [
             'total'    => Loan::count(),
             'returned' => Loan::where('is_return', 1)->count(),
+            'renewed'  => Loan::where('renewed', '>', 0)->count(),
             'active'   => Loan::where('is_return', 0)->count(),
         ];
 

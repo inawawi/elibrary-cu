@@ -17,6 +17,10 @@
                class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap {{ ($status ?? '') === 'returned' ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900' }}">
                 Sudah Kembali ({{ $stats['returned'] ?? 0 }})
             </a>
+            <a href="{{ route('admin.circulation.history', ['status' => 'renewed', 'search' => $search]) }}"
+               class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap {{ ($status ?? '') === 'renewed' ? 'bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900' }}">
+                Diperpanjang ({{ $stats['renewed'] ?? 0 }})
+            </a>
             <a href="{{ route('admin.circulation.history', ['status' => 'active', 'search' => $search]) }}"
                class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap {{ ($status ?? '') === 'active' ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900' }}">
                 Sedang Dipinjam ({{ $stats['active'] ?? 0 }})
@@ -54,7 +58,7 @@
                         <th class="py-4 px-6">Tgl Pinjam</th>
                         <th class="py-4 px-6">Batas Waktu</th>
                         <th class="py-4 px-6">Tgl Kembali</th>
-                        <th class="py-4 px-6">Status</th>
+                        <th class="py-4 px-6">Status & Perpanjangan</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -66,7 +70,7 @@
                                         <img src="{{ $hist->item?->biblio?->cover_url ?: asset('images/default_cover.svg') }}" class="w-full h-full object-cover">
                                     </div>
                                     <div>
-                                        <div class="font-mono font-bold text-brand-600 dark:text-sky-400">{{ $hist->item_code }}</div>
+                                        <span class="font-mono font-bold text-brand-600 dark:text-sky-400">{{ $hist->item_code }}</span>
                                         <div class="font-bold text-slate-900 dark:text-white line-clamp-1" title="{{ $hist->item?->biblio?->title ?: 'Judul Buku' }}">
                                             {{ $hist->item?->biblio?->title ?: 'Judul Buku' }}
                                         </div>
@@ -87,19 +91,27 @@
                                 {{ $hist->return_date ? \Carbon\Carbon::parse($hist->return_date)->format('d/m/Y') : ($hist->is_return ? 'Sudah Kembali' : '-') }}
                             </td>
                             <td class="py-3 px-6">
-                                @if($hist->is_return)
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 inline-flex items-center gap-1">
-                                        <i data-lucide="check" class="w-3 h-3"></i> Sudah Kembali
-                                    </span>
-                                @elseif($hist->isOverdue())
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 inline-flex items-center gap-1">
-                                        <i data-lucide="alert-circle" class="w-3 h-3"></i> Terlambat
-                                    </span>
-                                @else
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 inline-flex items-center gap-1">
-                                        <i data-lucide="clock" class="w-3 h-3"></i> Sedang Dipinjam
-                                    </span>
-                                @endif
+                                <div class="flex flex-col gap-1 items-start">
+                                    @if($hist->is_return)
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 inline-flex items-center gap-1">
+                                            <i data-lucide="check" class="w-3 h-3"></i> Sudah Kembali
+                                        </span>
+                                    @elseif($hist->isOverdue())
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 inline-flex items-center gap-1">
+                                            <i data-lucide="alert-circle" class="w-3 h-3"></i> Terlambat
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-300 inline-flex items-center gap-1">
+                                            <i data-lucide="clock" class="w-3 h-3"></i> Sedang Dipinjam
+                                        </span>
+                                    @endif
+
+                                    @if($hist->renewed > 0)
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 inline-flex items-center gap-1" title="Pernah diperpanjang {{ $hist->renewed }} kali">
+                                            <i data-lucide="rotate-cw" class="w-3 h-3"></i> Diperpanjang {{ $hist->renewed }}x
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

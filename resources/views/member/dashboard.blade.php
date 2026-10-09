@@ -614,9 +614,16 @@
                                             {{ $hist->return_date ? \Carbon\Carbon::parse($hist->return_date)->format('d/m/Y') : '-' }}
                                         </td>
                                         <td class="py-3">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                                                Sudah Kembali
-                                            </span>
+                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                                    Sudah Kembali
+                                                </span>
+                                                @if($hist->renewed > 0)
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                                        Diperpanjang {{ $hist->renewed }}x
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach

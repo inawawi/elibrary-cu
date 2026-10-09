@@ -292,7 +292,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="text-left sm:text-right">
+                                        <div class="text-left sm:text-right flex flex-col sm:items-end gap-1">
                                             @if($rc->is_return)
                                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                                                     Selesai
@@ -304,6 +304,12 @@
                                             @else
                                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300">
                                                     Aktif
+                                                </span>
+                                            @endif
+
+                                            @if($rc->renewed > 0)
+                                                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 inline-flex items-center gap-1">
+                                                    <i data-lucide="rotate-cw" class="w-2.5 h-2.5"></i> Diperpanjang {{ $rc->renewed }}x
                                                 </span>
                                             @endif
                                         </div>
