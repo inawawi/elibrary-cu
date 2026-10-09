@@ -82,7 +82,7 @@ class Member extends Authenticatable
 
     public function loanHistories()
     {
-        return $this->hasMany(LoanHistory::class, 'member_id', 'member_id');
+        return $this->hasMany(Loan::class, 'member_id', 'member_id')->where('is_return', 1);
     }
 
     public function reserves()

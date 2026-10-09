@@ -33,6 +33,16 @@ class Loan extends Model
         'return_date' => 'date',
     ];
 
+    public function setItemCodeAttribute($value)
+    {
+        $this->attributes['item_code'] = strtoupper(trim((string)$value));
+    }
+
+    public function getItemCodeAttribute($value)
+    {
+        return strtoupper(trim((string)$value));
+    }
+
     public function member()
     {
         return $this->belongsTo(Member::class, 'member_id', 'member_id');

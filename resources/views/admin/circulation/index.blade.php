@@ -244,14 +244,74 @@
                     @endif
                 </div>
             @else
-                <div class="p-12 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mx-auto mb-4">
-                        <i data-lucide="user-search" class="w-8 h-8"></i>
+                <div class="space-y-6">
+                    <div class="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-sky-950/60 text-brand-600 dark:text-sky-400 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="user-search" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-900 dark:text-white mb-1">Mulai Transaksi Sirkulasi</h3>
+                        <p class="text-xs text-slate-500 max-w-sm mx-auto">
+                            Masukkan ID / NIM anggota pada formulir di sebelah kiri untuk memulai peminjaman baru atau melihat pinjaman aktif anggota.
+                        </p>
                     </div>
-                    <h3 class="font-bold text-base text-slate-900 dark:text-white mb-2">Pilih Anggota Terlebih Dahulu</h3>
-                    <p class="text-xs text-slate-400 max-w-sm mx-auto">
-                        Masukkan ID / NIM anggota pada formulir di sebelah kiri untuk memulai transaksi peminjaman buku baru atau melihat pinjaman aktif.
-                    </p>
+
+                    <!-- Aktivitas Sirkulasi Terkini -->
+                    @if(isset($recentCirculations) && $recentCirculations->isNotEmpty())
+                        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
+                            <div class="flex items-center justify-between mb-5">
+                                <div>
+                                    <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                                        <i data-lucide="history" class="w-5 h-5 text-brand-500"></i>
+                                        Transaksi Sirkulasi Terakhir
+                                    </h3>
+                                    <p class="text-xs text-slate-400">Catatan transaksi peminjaman & pengembalian buku</p>
+                                </div>
+                                <a href="{{ route('admin.circulation.history') }}" class="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-sky-400 flex items-center gap-1">
+                                    <span>Lihat Semua</span>
+                                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                </a>
+                            </div>
+
+                            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                                @foreach($recentCirculations as $rc)
+                                    <div class="py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-14 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 border border-slate-200 dark:border-slate-700">
+                                                <img src="{{ $rc->item?->biblio?->cover_url ?: asset('images/default_cover.svg') }}" class="w-full h-full object-cover">
+                                            </div>
+                                            <div>
+                                                <span class="font-mono text-[10px] font-bold text-brand-600 dark:text-sky-400">{{ $rc->item_code }}</span>
+                                                <h4 class="font-bold text-xs text-slate-900 dark:text-white line-clamp-1 max-w-sm">
+                                                    {{ $rc->item?->biblio?->title ?: 'Judul Buku' }}
+                                                </h4>
+                                                <div class="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                                                    <span>{{ $rc->member?->member_name ?: $rc->member_id }}</span>
+                                                    <span>•</span>
+                                                    <span>{{ $rc->loan_date ? \Carbon\Carbon::parse($rc->loan_date)->format('d/m/Y') : '-' }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-left sm:text-right">
+                                            @if($rc->is_return)
+                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                                    Selesai
+                                                </span>
+                                            @elseif($rc->isOverdue())
+                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+                                                    Terlambat
+                                                </span>
+                                            @else
+                                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                                                    Aktif
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @endif
         </div>

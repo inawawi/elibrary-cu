@@ -48,7 +48,12 @@ class CirculationController extends Controller
             }
         }
 
-        return view('admin.circulation.index', compact('member', 'activeLoans', 'reserves', 'memberId', 'canBorrow', 'borrowBlockReason'));
+        $recentCirculations = Loan::with(['member', 'item.biblio'])
+            ->orderBy('input_date', 'desc')
+            ->take(10)
+            ->get();
+
+        return view('admin.circulation.index', compact('member', 'activeLoans', 'reserves', 'memberId', 'canBorrow', 'borrowBlockReason', 'recentCirculations'));
     }
 
     public function loan(Request $request)
@@ -182,8 +187,15 @@ class CirculationController extends Controller
     public function history(Request $request)
     {
         $search = $request->input('search');
+        $status = $request->input('status', 'all'); // 'all', 'returned', 'active'
 
-        $query = LoanHistory::with(['member', 'item.biblio']);
+        $query = Loan::with(['member', 'item.biblio']);
+
+        if ($status === 'returned') {
+            $query->where('is_return', 1);
+        } elseif ($status === 'active') {
+            $query->where('is_return', 0);
+        }
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -198,9 +210,15 @@ class CirculationController extends Controller
             });
         }
 
-        $histories = $query->orderBy('return_date', 'desc')->paginate(20)->withQueryString();
+        $histories = $query->orderBy('loan_date', 'desc')->paginate(20)->withQueryString();
 
-        return view('admin.circulation.history', compact('histories', 'search'));
+        $stats = [
+            'total'    => Loan::count(),
+            'returned' => Loan::where('is_return', 1)->count(),
+            'active'   => Loan::where('is_return', 0)->count(),
+        ];
+
+        return view('admin.circulation.history', compact('histories', 'search', 'status', 'stats'));
     }
 
     /**

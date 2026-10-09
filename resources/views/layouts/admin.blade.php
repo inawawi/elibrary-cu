@@ -299,9 +299,19 @@
                         <i data-lucide="clock" class="w-4 h-4"></i>
                         <span>Pinjaman Aktif</span>
                     </a>
-                    <a href="{{ route('admin.circulation.history') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.circulation.history') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
-                        <i data-lucide="history" class="w-4 h-4"></i>
-                        <span>Riwayat Pengembalian</span>
+                    @php
+                        $sidebarHistoryCount = \App\Models\Loan::count();
+                    @endphp
+                    <a href="{{ route('admin.circulation.history') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.circulation.history') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="history" class="w-4 h-4 text-indigo-500"></i>
+                            <span>Riwayat Sirkulasi</span>
+                        </div>
+                        @if($sidebarHistoryCount > 0)
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                {{ $sidebarHistoryCount }}
+                            </span>
+                        @endif
                     </a>
                     <a href="{{ route('admin.guestbook.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.guestbook*') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
                         <i data-lucide="book-open-check" class="w-4 h-4 text-amber-500"></i>
