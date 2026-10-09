@@ -44,9 +44,10 @@ Route::middleware('auth:member')->group(function () {
     Route::post('/member/skripsi', [MemberAreaController::class, 'storeSkripsi'])->name('member.skripsi.store');
     Route::get('/member/bebas-pustaka/print', [MemberAreaController::class, 'printBebasPustaka'])->name('member.bebas-pustaka.print');
 
-    // Reservasi / Pinjam Buku
+    // Reservasi & Perpanjangan Pinjaman Buku
     Route::post('/member/reserve', [MemberAreaController::class, 'reserveBook'])->name('member.reserve');
     Route::post('/member/reserve/{id}/cancel', [MemberAreaController::class, 'cancelReserve'])->name('member.reserve.cancel');
+    Route::post('/member/loan/{id}/renew', [MemberAreaController::class, 'renewLoan'])->name('member.loan.renew');
 
     // Live Chat Member
     Route::get('/member/chat/status', [ChatController::class, 'memberStatus'])->name('member.chat.status');
@@ -101,6 +102,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/circulation', [CirculationController::class, 'index'])->name('admin.circulation.index');
         Route::post('/circulation/loan', [CirculationController::class, 'loan'])->name('admin.circulation.loan');
         Route::post('/circulation/return', [CirculationController::class, 'returnItem'])->name('admin.circulation.return');
+        Route::post('/circulation/loan/{id}/extend', [CirculationController::class, 'extendLoan'])->name('admin.circulation.loan.extend');
         Route::get('/circulation/active', [CirculationController::class, 'activeLoans'])->name('admin.circulation.active');
         Route::get('/circulation/reserves', [CirculationController::class, 'reserves'])->name('admin.circulation.reserves');
         Route::post('/circulation/reserve/{id}/cancel', [CirculationController::class, 'cancelReserve'])->name('admin.circulation.reserve.cancel');

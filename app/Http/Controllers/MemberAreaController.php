@@ -7,6 +7,7 @@ use App\Models\BebasPustaka;
 use App\Models\Biblio;
 use App\Models\Gmd;
 use App\Models\Item;
+use App\Models\Loan;
 use App\Models\Member;
 use App\Models\Place;
 use App\Models\Publisher;
@@ -119,7 +120,7 @@ class MemberAreaController extends Controller
         $member = Auth::guard('member')->user();
 
         $activeLoans = $member->activeLoans()
-            ->with(['item.biblio.authors', 'item.location'])
+            ->with(['item.biblio.authors', 'item.location', 'item.reserve'])
             ->orderBy('due_date', 'asc')
             ->get();
 
@@ -653,6 +654,74 @@ class MemberAreaController extends Controller
         $reserve->delete();
 
         return back()->with('success', 'Reservasi buku berhasil dibatalkan.');
+    }
+
+    /**
+     * Perpanjangan pinjaman mandiri oleh member
+     */
+    public function renewLoan(Request $request, $id)
+    {
+        /** @var Member $member */
+        $member = Auth::guard('member')->user();
+        if (!$member) {
+            return redirect()->route('member.login');
+        }
+
+        // Cek status keanggotaan
+        if ($member->is_pending == 1) {
+            return back()->with('error', 'Status keanggotaan Anda sedang dinonaktifkan (Suspen). Silakan hubungi petugas perpustakaan.');
+        }
+
+        if ($member->isExpired()) {
+            return back()->with('error', 'Masa berlaku keanggotaan Anda telah habis (' . $member->expire_date . '). Silakan lakukan perpanjangan keanggotaan.');
+        }
+
+        // Cari pinjaman aktif milik member ini
+        $loan = Loan::with(['item.biblio', 'member.memberType'])
+            ->where('loan_id', $id)
+            ->where('member_id', $member->member_id)
+            ->where('is_return', 0)
+            ->first();
+
+        if (!$loan) {
+            return back()->with('error', 'Data pinjaman tidak ditemukan atau buku sudah dikembalikan.');
+        }
+
+        // Cek apakah pinjaman sudah terlambat / overdue
+        if ($loan->isOverdue()) {
+            $daysOverdue = $loan->overdueDays();
+            $fine = $loan->calculateFine();
+            return back()->with('error', 'Buku ini tidak dapat diperpanjang karena telah melewati batas tanggal pengembalian (terlambat ' . $daysOverdue . ' hari, denda: Rp ' . number_format($fine, 0, ',', '.') . '). Harap segera kembalikan buku ke meja sirkulasi perpustakaan.');
+        }
+
+        // Cek batas kuota perpanjangan (reborrow_limit)
+        $reborrowLimit = (int) ($member->memberType?->reborrow_limit ?? 1);
+        $currentRenewed = (int) ($loan->renewed ?? 0);
+        if ($currentRenewed >= $reborrowLimit) {
+            return back()->with('error', 'Batas maksimal perpanjangan mandiri untuk tipe anggota Anda (' . $reborrowLimit . 'x) telah tercapai untuk buku ini.');
+        }
+
+        // Cek apakah buku ini sudah direservasi oleh peminjam lain
+        $isReserved = Reserve::where('item_code', $loan->item_code)
+            ->where('member_id', '!=', $member->member_id)
+            ->exists();
+        if ($isReserved) {
+            return back()->with('error', 'Buku ini tidak dapat diperpanjang karena telah direservasi/dipesan oleh anggota lain. Silakan kembalikan buku tepat waktu.');
+        }
+
+        // Hitung periode perpanjangan berdasarkan tipe anggota
+        $loanPeriode = (int) ($member->memberType?->loan_periode ?? 7);
+        $oldDueDate = Carbon::parse($loan->due_date);
+        $newDueDate = $oldDueDate->copy()->addDays($loanPeriode);
+
+        $loan->due_date = $newDueDate->toDateString();
+        $loan->renewed = $currentRenewed + 1;
+        $loan->last_update = Carbon::now();
+        $loan->save();
+
+        $bookTitle = $loan->item?->biblio?->title ?: 'Buku';
+
+        return back()->with('success', 'Pinjaman buku "' . $bookTitle . '" berhasil diperpanjang hingga ' . $newDueDate->translatedFormat('d F Y') . ' (Perpanjangan ke-' . $loan->renewed . ' dari ' . $reborrowLimit . ').');
     }
 }
 

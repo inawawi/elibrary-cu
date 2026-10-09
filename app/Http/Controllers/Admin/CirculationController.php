@@ -142,6 +142,29 @@ class CirculationController extends Controller
         return redirect()->route('admin.circulation.index', ['member_id' => $memberId])->with('success', $msg);
     }
 
+    public function extendLoan(Request $request, $id)
+    {
+        $loan = Loan::with(['member.memberType', 'item.biblio'])
+            ->where('loan_id', $id)
+            ->where('is_return', 0)
+            ->first();
+
+        if (!$loan) {
+            return back()->with('error', 'Data pinjaman tidak ditemukan atau buku sudah dikembalikan.');
+        }
+
+        $loanPeriode = (int) ($loan->member?->memberType?->loan_periode ?? 7);
+        $oldDueDate = Carbon::parse($loan->due_date);
+        $newDueDate = $oldDueDate->copy()->addDays($loanPeriode);
+
+        $loan->due_date = $newDueDate->toDateString();
+        $loan->renewed = (int) ($loan->renewed ?? 0) + 1;
+        $loan->last_update = Carbon::now();
+        $loan->save();
+
+        return back()->with('success', 'Masa pinjam buku "' . ($loan->item?->biblio?->title ?? $loan->item_code) . '" berhasil diperpanjang hingga ' . $newDueDate->translatedFormat('d F Y') . ' (Perpanjangan ke-' . $loan->renewed . ').');
+    }
+
     public function activeLoans(Request $request)
     {
         $status = $request->input('status', 'all'); // all, normal, overdue

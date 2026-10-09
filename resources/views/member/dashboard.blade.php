@@ -500,6 +500,10 @@
                                 $isOverdue = $loan->isOverdue();
                                 $daysOverdue = $loan->overdueDays();
                                 $fine = $loan->calculateFine();
+                                $reborrowLimit = (int) ($member->memberType?->reborrow_limit ?? 1);
+                                $currentRenewed = (int) ($loan->renewed ?? 0);
+                                $canRenew = !$isOverdue && ($currentRenewed < $reborrowLimit) && !$loan->item?->reserve && ($member->is_pending == 0) && !$member->isExpired();
+                                $loanPeriode = (int) ($member->memberType?->loan_periode ?? 7);
                             @endphp
                             <div class="p-4 rounded-2xl border {{ $isOverdue ? 'border-rose-300 bg-rose-50/50 dark:bg-rose-950/30 dark:border-rose-900/60' : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40' }} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <div class="flex items-center gap-4">
@@ -519,20 +523,55 @@
                                     </div>
                                 </div>
 
-                                <div class="text-left sm:text-right w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-700">
-                                    <div class="text-[11px] text-slate-400">Batas Waktu Pengembalian:</div>
-                                    <div class="text-sm font-black {{ $isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white' }}">
-                                        {{ \Carbon\Carbon::parse($loan->due_date)->format('d F Y') }}
+                                <div class="text-left sm:text-right w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-700 flex flex-col items-start sm:items-end gap-2">
+                                    <div>
+                                        <div class="text-[11px] text-slate-400">Batas Waktu Pengembalian:</div>
+                                        <div class="text-sm font-black {{ $isOverdue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white' }}">
+                                            {{ \Carbon\Carbon::parse($loan->due_date)->format('d F Y') }}
+                                        </div>
+                                        @if($isOverdue)
+                                            <div class="mt-1 px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[10px] font-bold inline-block">
+                                                Terlambat {{ $daysOverdue }} Hari (Denda: Rp {{ number_format($fine, 0, ',', '.') }})
+                                            </div>
+                                        @else
+                                            <div class="mt-0.5 flex items-center sm:justify-end gap-2 text-[11px]">
+                                                <span class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                                                    <i data-lucide="check" class="w-3 h-3"></i> Tepat Waktu
+                                                </span>
+                                                <span class="text-slate-400">•</span>
+                                                <span class="text-slate-500 dark:text-slate-400">
+                                                    Diperpanjang: <strong class="text-slate-700 dark:text-slate-300">{{ $currentRenewed }}/{{ $reborrowLimit }}x</strong>
+                                                </span>
+                                            </div>
+                                        @endif
                                     </div>
-                                    @if($isOverdue)
-                                        <div class="mt-1 px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 text-[10px] font-bold inline-block">
-                                            Terlambat {{ $daysOverdue }} Hari (Denda: Rp {{ number_format($fine, 0, ',', '.') }})
-                                        </div>
-                                    @else
-                                        <div class="mt-1 text-[11px] text-emerald-600 font-semibold">
-                                            Tepat Waktu
-                                        </div>
-                                    @endif
+
+                                    <div class="mt-1">
+                                        @if($canRenew)
+                                            <form action="{{ route('member.loan.renew', $loan->loan_id) }}" method="POST" onsubmit="return confirm('Perpanjang masa pinjam buku &quot;{{ addslashes($biblio?->title ?: 'Buku') }}&quot; selama {{ $loanPeriode }} hari ke depan?')">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold shadow-sm transition-all">
+                                                    <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                                                    <span>Perpanjang Pinjaman (+{{ $loanPeriode }} hari)</span>
+                                                </button>
+                                            </form>
+                                        @elseif($isOverdue)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-[11px] font-medium">
+                                                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-500"></i>
+                                                <span>Harap kembalikan buku ke perpustakaan</span>
+                                            </span>
+                                        @elseif($currentRenewed >= $reborrowLimit)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[11px] font-medium" title="Batas perpanjangan mandiri telah tercapai">
+                                                <i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+                                                <span>Maksimal perpanjangan tercapai</span>
+                                            </span>
+                                        @elseif($loan->item?->reserve)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[11px] font-medium" title="Buku telah direservasi oleh anggota lain">
+                                                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-500"></i>
+                                                <span>Direservasi peminjam lain</span>
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         @endforeach

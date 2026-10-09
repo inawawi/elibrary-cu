@@ -73,14 +73,24 @@
                                 @endif
                             </td>
                             <td class="py-3.5 px-6 text-right">
-                                <form action="{{ route('admin.circulation.return') }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="item_code" value="{{ $loan->item_code }}">
-                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1.5">
-                                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                        <span>Kembalikan</span>
-                                    </button>
-                                </form>
+                                <div class="flex items-center justify-end gap-2">
+                                    <form action="{{ route('admin.circulation.loan.extend', $loan->loan_id) }}" method="POST" onsubmit="return confirm('Perpanjang masa pinjam buku ini selama {{ $loan->member?->memberType?->loan_periode ?? 7 }} hari?')">
+                                        @csrf
+                                        <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-bold text-xs transition-colors inline-flex items-center gap-1.5" title="Perpanjang Pinjaman">
+                                            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                                            <span>Perpanjang</span>
+                                        </button>
+                                    </form>
+
+                                    <form action="{{ route('admin.circulation.return') }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="item_code" value="{{ $loan->item_code }}">
+                                        <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors inline-flex items-center gap-1.5">
+                                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                            <span>Kembalikan</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty

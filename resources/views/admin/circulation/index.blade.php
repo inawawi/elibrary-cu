@@ -219,15 +219,25 @@
                                         </div>
                                     </div>
 
-                                    <form action="{{ route('admin.circulation.return') }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="item_code" value="{{ $loan->item_code }}">
-                                        <input type="hidden" name="redirect_member_id" value="{{ $member->member_id }}">
-                                        <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-colors">
-                                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                            <span>Kembalikan</span>
-                                        </button>
-                                    </form>
+                                    <div class="flex items-center gap-2">
+                                        <form action="{{ route('admin.circulation.loan.extend', $loan->loan_id) }}" method="POST" onsubmit="return confirm('Perpanjang masa pinjam buku ini selama {{ $member->memberType?->loan_periode ?? 7 }} hari?')">
+                                            @csrf
+                                            <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-bold flex items-center gap-1.5 transition-colors" title="Perpanjang Pinjaman">
+                                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                                                <span>Perpanjang</span>
+                                            </button>
+                                        </form>
+
+                                        <form action="{{ route('admin.circulation.return') }}" method="POST">
+                                            @csrf
+                                            <input type="hidden" name="item_code" value="{{ $loan->item_code }}">
+                                            <input type="hidden" name="redirect_member_id" value="{{ $member->member_id }}">
+                                            <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-colors">
+                                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                                <span>Kembalikan</span>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
