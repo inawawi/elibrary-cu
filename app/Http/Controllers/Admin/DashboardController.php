@@ -8,6 +8,7 @@ use App\Models\GuestBook;
 use App\Models\Item;
 use App\Models\Loan;
 use App\Models\Member;
+use App\Models\Reserve;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -18,13 +19,19 @@ class DashboardController extends Controller
         $today = Carbon::today()->toDateString();
 
         $stats = [
-            'total_biblio' => Biblio::count(),
-            'total_items' => Item::count(),
-            'total_members' => Member::count(),
-            'active_loans' => Loan::active()->count(),
-            'overdue_loans' => Loan::overdue()->count(),
-            'today_visitors' => GuestBook::where('tgl', $today)->count(),
+            'total_biblio'     => Biblio::count(),
+            'total_items'      => Item::count(),
+            'total_members'    => Member::count(),
+            'active_loans'     => Loan::active()->count(),
+            'overdue_loans'    => Loan::overdue()->count(),
+            'pending_reserves' => Reserve::count(),
+            'today_visitors'   => GuestBook::where('tgl', $today)->count(),
         ];
+
+        $recentReserves = Reserve::with(['member.memberType', 'item.biblio.authors'])
+            ->orderBy('reserve_date', 'desc')
+            ->take(6)
+            ->get();
 
         $recentLoans = Loan::with(['member', 'item.biblio'])
             ->orderBy('input_date', 'desc')
@@ -42,6 +49,6 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'recentLoans', 'overdueLoansList', 'recentVisitors'));
+        return view('admin.dashboard', compact('stats', 'recentReserves', 'recentLoans', 'overdueLoansList', 'recentVisitors'));
     }
 }

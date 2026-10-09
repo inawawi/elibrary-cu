@@ -102,6 +102,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/circulation/loan', [CirculationController::class, 'loan'])->name('admin.circulation.loan');
         Route::post('/circulation/return', [CirculationController::class, 'returnItem'])->name('admin.circulation.return');
         Route::get('/circulation/active', [CirculationController::class, 'activeLoans'])->name('admin.circulation.active');
+        Route::get('/circulation/reserves', [CirculationController::class, 'reserves'])->name('admin.circulation.reserves');
+        Route::post('/circulation/reserve/{id}/cancel', [CirculationController::class, 'cancelReserve'])->name('admin.circulation.reserve.cancel');
         Route::get('/circulation/history', [CirculationController::class, 'history'])->name('admin.circulation.history');
         Route::get('/guestbook', [GuestBookController::class, 'index'])->name('admin.guestbook.index');
         Route::get('/guestbook/export', [GuestBookController::class, 'export'])->name('admin.guestbook.export');

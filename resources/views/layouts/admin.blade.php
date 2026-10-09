@@ -281,6 +281,20 @@
                         <i data-lucide="repeat" class="w-4 h-4"></i>
                         <span>Meja Sirkulasi</span>
                     </a>
+                    @php
+                        $sidebarReserveCount = \App\Models\Reserve::count();
+                    @endphp
+                    <a href="{{ route('admin.circulation.reserves') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.circulation.reserves*') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="bookmark-check" class="w-4 h-4 text-amber-500"></i>
+                            <span>Booking / Reservasi</span>
+                        </div>
+                        @if($sidebarReserveCount > 0)
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse shadow-sm">
+                                {{ $sidebarReserveCount }}
+                            </span>
+                        @endif
+                    </a>
                     <a href="{{ route('admin.circulation.active') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.circulation.active') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
                         <i data-lucide="clock" class="w-4 h-4"></i>
                         <span>Pinjaman Aktif</span>
@@ -406,6 +420,20 @@
             </div>
 
             <div class="flex items-center gap-3">
+                @php
+                    $headerReserveCount = \App\Models\Reserve::count();
+                @endphp
+                @if($headerReserveCount > 0)
+                    <a href="{{ route('admin.circulation.reserves') }}" class="relative px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 transition-all flex items-center gap-2 shadow-sm" title="{{ $headerReserveCount }} buku sedang dibooking oleh member">
+                        <i data-lucide="bookmark-check" class="w-4 h-4 text-amber-600 dark:text-amber-400"></i>
+                        <span class="text-xs font-bold hidden sm:inline">{{ $headerReserveCount }} Booking Buku</span>
+                        <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">
+                            {{ $headerReserveCount }}
+                        </span>
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping absolute -top-1 -right-1"></span>
+                    </a>
+                @endif
+
                 <!-- Theme Toggle -->
                 <button @click="darkMode = !darkMode; localStorage.setItem('theme', darkMode ? 'dark' : 'light')"
                         class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

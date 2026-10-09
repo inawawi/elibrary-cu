@@ -179,4 +179,43 @@ class CirculationController extends Controller
 
         return view('admin.circulation.history', compact('histories', 'search'));
     }
+
+    /**
+     * Daftar seluruh reservasi / booking buku aktif
+     */
+    public function reserves(Request $request)
+    {
+        $search = $request->input('search');
+
+        $query = Reserve::with(['member.memberType', 'item.location', 'biblio.authors']);
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('item_code', 'like', "%{$search}%")
+                  ->orWhere('member_id', 'like', "%{$search}%")
+                  ->orWhereHas('member', function ($mq) use ($search) {
+                      $mq->where('member_name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('biblio', function ($bq) use ($search) {
+                      $bq->where('title', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $reserves = $query->orderBy('reserve_date', 'desc')->paginate(20)->withQueryString();
+
+        return view('admin.circulation.reserves', compact('reserves', 'search'));
+    }
+
+    /**
+     * Batalkan reservasi buku oleh admin
+     */
+    public function cancelReserve(Request $request, $id)
+    {
+        $reserve = Reserve::findOrFail($id);
+        $title = $reserve->biblio?->title ?: $reserve->item_code;
+        $reserve->delete();
+
+        return back()->with('success', 'Reservasi buku "' . $title . '" (Kode: ' . $reserve->item_code . ') berhasil dibatalkan oleh admin.');
+    }
 }
