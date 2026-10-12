@@ -146,25 +146,51 @@ class Item extends Model
 
     public function getSpineLabelComponentsAttribute(): array
     {
+        $header = 'ELIBRARY CYBER UNIVERSITY';
         $callNumber = trim($this->call_number ?? '');
+        $biblio = $this->biblio;
+
+        // Jika nomor panggil terisi dan memiliki lebih dari 1 token atau bukan sekadar angka klasifikasi tunggal
         if (!empty($callNumber)) {
             $parts = preg_split('/\s+/', $callNumber);
-            return [
-                'header' => 'ELIBRARY CYBER UNIVERSITY',
-                'lines' => $parts,
-                'full_call_number' => $callNumber,
-                'classification' => $parts[0] ?? '000',
-                'author_code' => $parts[1] ?? '',
-                'title_code' => $parts[2] ?? '',
-            ];
+            $isSingleNumeric = (count($parts) === 1 && preg_match('/^[0-9.]+$/', $parts[0]));
+            $isRPrefixNumericOnly = (count($parts) === 2 && strtoupper($parts[0]) === 'R' && preg_match('/^[0-9.]+$/', $parts[1]));
+
+            if (!$isSingleNumeric && !$isRPrefixNumericOnly) {
+                return [
+                    'header' => $header,
+                    'lines' => $parts,
+                    'full_call_number' => $callNumber,
+                    'classification' => $parts[0] ?? '000',
+                    'author_code' => $parts[1] ?? '',
+                    'title_code' => $parts[2] ?? '',
+                ];
+            }
         }
 
-        if ($this->biblio) {
-            return $this->biblio->spine_label_components;
+        // Jika nomor panggil kosong ATAU hanya berupa angka klasifikasi (misal '658'),
+        // delegasikan ke Biblio yang memiliki data lengkap judul, pengarang, dan GMD
+        if ($biblio) {
+            $bibSpine = $biblio->spine_label_components;
+            // Jika item memiliki nomor panggil klasifikasi khusus (misal '658') tapi biblio berbeda,
+            // sesuaikan nomor klasifikasinya
+            if (!empty($callNumber) && preg_match('/^[0-9.]+$/', $callNumber)) {
+                $lines = $bibSpine['lines'];
+                foreach ($lines as $idx => $line) {
+                    if (preg_match('/^[0-9.]+$/', $line)) {
+                        $lines[$idx] = $callNumber;
+                        break;
+                    }
+                }
+                $bibSpine['lines'] = $lines;
+                $bibSpine['full_call_number'] = implode(' ', $lines);
+                $bibSpine['classification'] = $callNumber;
+            }
+            return $bibSpine;
         }
 
         return [
-            'header' => 'ELIBRARY CYBER UNIVERSITY',
+            'header' => $header,
             'lines' => ['000', 'XXX', 'x'],
             'full_call_number' => '000 XXX x',
             'classification' => '000',

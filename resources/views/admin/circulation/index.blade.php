@@ -95,6 +95,24 @@
                             <span class="font-semibold text-slate-800 dark:text-slate-200">{{ $activeLoans->count() }} / {{ $member->memberType?->loan_limit ?? 3 }} Buku</span>
                         </div>
                     </div>
+
+                    @if($unpaidFineTotal > 0)
+                        <div class="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center justify-between gap-3 text-xs">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 flex-shrink-0">
+                                    <i data-lucide="receipt" class="w-4 h-4"></i>
+                                </div>
+                                <div>
+                                    <div class="text-[10px] text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider">Tunggakan Denda</div>
+                                    <div class="text-sm font-black text-rose-700 dark:text-rose-300 font-mono">Rp {{ number_format($unpaidFineTotal, 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                            <a href="{{ route('admin.circulation.fines', ['search' => $member->member_id]) }}" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] transition shadow-sm flex items-center gap-1">
+                                <span>Bayar</span>
+                                <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                            </a>
+                        </div>
+                    @endif
                 </div>
             @endif
         </div>
@@ -179,69 +197,264 @@
                     </form>
                 </div>
 
-                <!-- Active Loans for this Member -->
-                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
-                    <div class="flex items-center justify-between mb-5">
-                        <h3 class="font-bold text-base text-slate-900 dark:text-white">Pinjaman Aktif Anggota Ini</h3>
-                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">
-                            {{ $activeLoans->count() }} Buku Sedang Dipinjam
-                        </span>
+                <!-- Tabs: Active Loans, Loan History, Fines -->
+                <div x-data="{ activeTab: 'active_loans', payModalOpen: false, selectedFine: null, payAmount: 0 }" class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
+                    <!-- Tab Header Navigation -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button"
+                                    @click="activeTab = 'active_loans'"
+                                    :class="activeTab === 'active_loans' ? 'bg-brand-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer">
+                                <i data-lucide="book-open" class="w-4 h-4"></i>
+                                <span>Pinjaman Aktif</span>
+                                <span :class="activeTab === 'active_loans' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'" class="px-2 py-0.5 rounded-full text-[10px]">
+                                    {{ $activeLoans->count() }}
+                                </span>
+                            </button>
+
+                            <button type="button"
+                                    @click="activeTab = 'history'"
+                                    :class="activeTab === 'history' ? 'bg-brand-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer">
+                                <i data-lucide="history" class="w-4 h-4"></i>
+                                <span>Riwayat Peminjaman</span>
+                                <span :class="activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'" class="px-2 py-0.5 rounded-full text-[10px]">
+                                    {{ $memberLoanHistory->count() }}
+                                </span>
+                            </button>
+
+                            <button type="button"
+                                    @click="activeTab = 'fines'"
+                                    :class="activeTab === 'fines' ? 'bg-brand-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+                                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer">
+                                <i data-lucide="receipt" class="w-4 h-4"></i>
+                                <span>Catatan Denda</span>
+                                @if($unpaidFineTotal > 0)
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] bg-rose-500 text-white font-black animate-pulse">
+                                        Rp {{ number_format($unpaidFineTotal, 0, ',', '.') }}
+                                    </span>
+                                @else
+                                    <span :class="activeTab === 'fines' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'" class="px-2 py-0.5 rounded-full text-[10px]">
+                                        {{ $memberFines->count() }}
+                                    </span>
+                                @endif
+                            </button>
+                        </div>
                     </div>
 
-                    @if($activeLoans->isEmpty())
-                        <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-2xl">
-                            Anggota ini sedang tidak memiliki pinjaman buku.
-                        </div>
-                    @else
-                        <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                            @foreach($activeLoans as $loan)
-                                @php
-                                    $isOverdue = $loan->isOverdue();
-                                    $fine = $loan->calculateFine();
-                                @endphp
-                                <div class="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-12 h-16 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0">
-                                            <img src="{{ $loan->item?->biblio?->cover_url ?: asset('images/default_cover.svg') }}" class="w-full h-full object-cover">
-                                        </div>
-                                        <div>
-                                            <div class="font-mono text-[11px] font-bold text-brand-600 dark:text-sky-400">{{ $loan->item_code }}</div>
-                                            <h4 class="font-bold text-sm text-slate-900 dark:text-white line-clamp-1 max-w-sm">{{ $loan->item?->biblio?->title ?: 'Judul Buku' }}</h4>
-                                            <div class="text-[11px] text-slate-400">
-                                                Pinjam: {{ \Carbon\Carbon::parse($loan->loan_date)->format('d/m/Y') }} •
-                                                Batas: <span class="font-bold {{ $isOverdue ? 'text-rose-600' : 'text-slate-700 dark:text-slate-300' }}">{{ \Carbon\Carbon::parse($loan->due_date)->format('d/m/Y') }}</span>
+                    <!-- TAB 1: PINJAMAN AKTIF -->
+                    <div x-show="activeTab === 'active_loans'">
+                        @if($activeLoans->isEmpty())
+                            <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-2xl">
+                                <i data-lucide="book-check" class="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2"></i>
+                                Anggota ini sedang tidak memiliki pinjaman buku aktif.
+                            </div>
+                        @else
+                            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                                @foreach($activeLoans as $loan)
+                                    @php
+                                        $isOverdue = $loan->isOverdue();
+                                        $fine = $loan->calculateFine();
+                                    @endphp
+                                    <div class="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-12 h-16 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0 border border-slate-200 dark:border-slate-700">
+                                                <img src="{{ $loan->item?->biblio?->cover_url ?: asset('images/default_cover.svg') }}" class="w-full h-full object-cover">
                                             </div>
-                                            @if($isOverdue)
-                                                <div class="text-[10px] text-rose-600 font-bold mt-0.5">
-                                                    Terlambat {{ $loan->overdueDays() }} hari (Denda: Rp {{ number_format($fine, 0, ',', '.') }})
+                                            <div>
+                                                <div class="font-mono text-[11px] font-bold text-brand-600 dark:text-sky-400">{{ $loan->item_code }}</div>
+                                                <h4 class="font-bold text-sm text-slate-900 dark:text-white line-clamp-1 max-w-sm">{{ $loan->item?->biblio?->title ?: 'Judul Buku' }}</h4>
+                                                <div class="text-[11px] text-slate-400">
+                                                    Pinjam: {{ \Carbon\Carbon::parse($loan->loan_date)->format('d/m/Y') }} •
+                                                    Batas: <span class="font-bold {{ $isOverdue ? 'text-rose-600' : 'text-slate-700 dark:text-slate-300' }}">{{ \Carbon\Carbon::parse($loan->due_date)->format('d/m/Y') }}</span>
                                                 </div>
-                                            @endif
+                                                @if($isOverdue)
+                                                    <div class="text-[10px] text-rose-600 font-bold mt-0.5 flex items-center gap-1">
+                                                        <i data-lucide="alert-triangle" class="w-3 h-3"></i>
+                                                        Terlambat {{ $loan->overdueDays() }} hari (Estimasi Denda: Rp {{ number_format($fine, 0, ',', '.') }})
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <form action="{{ route('admin.circulation.loan.extend', $loan->loan_id) }}" method="POST" onsubmit="return confirm('Perpanjang masa pinjam buku ini selama {{ $member->memberType?->loan_periode ?? 7 }} hari?')">
+                                                @csrf
+                                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer" title="Perpanjang Pinjaman">
+                                                    <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                                                    <span>Perpanjang</span>
+                                                </button>
+                                            </form>
+
+                                            <form action="{{ route('admin.circulation.return') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="item_code" value="{{ $loan->item_code }}">
+                                                <input type="hidden" name="redirect_member_id" value="{{ $member->member_id }}">
+                                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer">
+                                                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                                    <span>Kembalikan</span>
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
 
-                                    <div class="flex items-center gap-2">
-                                        <form action="{{ route('admin.circulation.loan.extend', $loan->loan_id) }}" method="POST" onsubmit="return confirm('Perpanjang masa pinjam buku ini selama {{ $member->memberType?->loan_periode ?? 7 }} hari?')">
-                                            @csrf
-                                            <button type="submit" class="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 text-xs font-bold flex items-center gap-1.5 transition-colors" title="Perpanjang Pinjaman">
-                                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
-                                                <span>Perpanjang</span>
-                                            </button>
-                                        </form>
+                    <!-- TAB 2: RIWAYAT PEMINJAMAN ANGGOTA -->
+                    <div x-show="activeTab === 'history'" style="display: none;">
+                        @if($memberLoanHistory->isEmpty())
+                            <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-2xl">
+                                <i data-lucide="history" class="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2"></i>
+                                Anggota ini belum memiliki riwayat peminjaman yang telah selesai dikembalikan.
+                            </div>
+                        @else
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs text-left">
+                                    <thead class="text-[11px] text-slate-400 dark:text-slate-500 uppercase border-b border-slate-100 dark:border-slate-800">
+                                        <tr>
+                                            <th class="py-3 px-2">Buku</th>
+                                            <th class="py-3 px-2">Tgl Pinjam</th>
+                                            <th class="py-3 px-2">Tgl Kembali</th>
+                                            <th class="py-3 px-2 text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                        @foreach($memberLoanHistory as $history)
+                                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                                                <td class="py-3 px-2">
+                                                    <div class="font-mono text-[10px] font-bold text-brand-600 dark:text-sky-400">{{ $history->item_code }}</div>
+                                                    <div class="font-bold text-slate-900 dark:text-white line-clamp-1 max-w-xs">
+                                                        {{ $history->item?->biblio?->title ?: 'Judul Buku' }}
+                                                    </div>
+                                                </td>
+                                                <td class="py-3 px-2 text-slate-600 dark:text-slate-400">
+                                                    {{ $history->loan_date ? \Carbon\Carbon::parse($history->loan_date)->format('d/m/Y') : '-' }}
+                                                </td>
+                                                <td class="py-3 px-2 text-slate-600 dark:text-slate-400">
+                                                    {{ $history->return_date ? \Carbon\Carbon::parse($history->return_date)->format('d/m/Y') : '-' }}
+                                                </td>
+                                                <td class="py-3 px-2 text-center">
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                                        Dikembalikan
+                                                    </span>
+                                                    @if($history->renewed > 0)
+                                                        <span class="block mt-1 text-[9px] text-purple-600 dark:text-purple-400 font-semibold">
+                                                            Diperpanjang {{ $history->renewed }}x
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
 
-                                        <form action="{{ route('admin.circulation.return') }}" method="POST">
-                                            @csrf
-                                            <input type="hidden" name="item_code" value="{{ $loan->item_code }}">
-                                            <input type="hidden" name="redirect_member_id" value="{{ $member->member_id }}">
-                                            <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-colors">
-                                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                                <span>Kembalikan</span>
-                                            </button>
-                                        </form>
+                    <!-- TAB 3: CATATAN DENDA ANGGOTA -->
+                    <div x-show="activeTab === 'fines'" style="display: none;">
+                        @if($memberFines->isEmpty())
+                            <div class="p-8 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-2xl">
+                                <i data-lucide="check-circle" class="w-8 h-8 text-emerald-500 mx-auto mb-2"></i>
+                                Tidak ada catatan denda untuk anggota ini. Semua bersih!
+                            </div>
+                        @else
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs text-left">
+                                    <thead class="text-[11px] text-slate-400 dark:text-slate-500 uppercase border-b border-slate-100 dark:border-slate-800">
+                                        <tr>
+                                            <th class="py-3 px-2">Tanggal</th>
+                                            <th class="py-3 px-2">Keterangan</th>
+                                            <th class="py-3 px-2 text-right">Denda</th>
+                                            <th class="py-3 px-2 text-right">Dibayar</th>
+                                            <th class="py-3 px-2 text-right">Sisa</th>
+                                            <th class="py-3 px-2 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                        @foreach($memberFines as $f)
+                                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                                                <td class="py-3 px-2 text-slate-500 whitespace-nowrap">
+                                                    {{ $f->fines_date ? \Carbon\Carbon::parse($f->fines_date)->format('d/m/Y') : '-' }}
+                                                </td>
+                                                <td class="py-3 px-2">
+                                                    <div class="font-bold text-slate-900 dark:text-white">{{ $f->description ?: 'Denda Keterlambatan' }}</div>
+                                                </td>
+                                                <td class="py-3 px-2 text-right font-mono font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                                    Rp {{ number_format($f->debet, 0, ',', '.') }}
+                                                </td>
+                                                <td class="py-3 px-2 text-right font-mono text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                                    Rp {{ number_format($f->credit, 0, ',', '.') }}
+                                                </td>
+                                                <td class="py-3 px-2 text-right font-mono font-black {{ $f->balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400' }} whitespace-nowrap">
+                                                    Rp {{ number_format($f->balance, 0, ',', '.') }}
+                                                </td>
+                                                <td class="py-3 px-2 text-center whitespace-nowrap">
+                                                    @if($f->balance > 0)
+                                                        <button type="button"
+                                                                @click="selectedFine = {{ json_encode($f) }}; payAmount = {{ $f->balance }}; payModalOpen = true"
+                                                                class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow transition cursor-pointer">
+                                                            Bayar
+                                                        </button>
+                                                    @else
+                                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                                            Lunas
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Modal Pelunasan Denda -->
+                    <div x-show="payModalOpen"
+                         x-cloak
+                         class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+                         style="display: none;">
+                        <div @click.away="payModalOpen = false" class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 relative">
+                            <h3 class="text-base font-extrabold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                                <i data-lucide="hand-coins" class="w-5 h-5 text-amber-500"></i>
+                                Pembayaran Denda
+                            </h3>
+                            <p class="text-xs text-slate-500 mb-4">Catat penerimaan uang denda dari anggota.</p>
+
+                            <form :action="'{{ url('admin/circulation/fines') }}/' + (selectedFine ? selectedFine.fines_id : '') + '/pay'" method="POST" class="space-y-4">
+                                @csrf
+                                <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-1 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Total Denda:</span>
+                                        <span class="font-bold text-slate-700 dark:text-slate-300" x-text="'Rp ' + (selectedFine ? new Intl.NumberFormat('id-ID').format(selectedFine.debet) : '0')"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-400">Sisa Tagihan:</span>
+                                        <span class="font-extrabold text-rose-600 dark:text-rose-400" x-text="'Rp ' + (selectedFine ? new Intl.NumberFormat('id-ID').format(selectedFine.balance) : '0')"></span>
                                     </div>
                                 </div>
-                            @endforeach
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jumlah Dibayarkan (Rp)</label>
+                                    <input type="number" name="amount" min="1" :max="selectedFine ? selectedFine.balance : 0" x-model="payAmount" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                </div>
+
+                                <div class="flex justify-end gap-2 pt-2">
+                                    <button type="button" @click="payModalOpen = false" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">
+                                        Batal
+                                    </button>
+                                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-md cursor-pointer">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                        <span>Simpan Pembayaran</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    @endif
+                    </div>
                 </div>
             @else
                 <div class="space-y-6">

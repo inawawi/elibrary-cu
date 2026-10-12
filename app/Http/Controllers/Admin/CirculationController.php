@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Fine;
 use App\Models\Item;
 use App\Models\Loan;
 use App\Models\LoanHistory;
@@ -19,6 +20,9 @@ class CirculationController extends Controller
         $member = null;
         $activeLoans = collect();
         $reserves = collect();
+        $memberFines = collect();
+        $memberLoanHistory = collect();
+        $unpaidFineTotal = 0;
         $canBorrow = true;
         $borrowBlockReason = null;
 
@@ -30,6 +34,19 @@ class CirculationController extends Controller
                 $reserves = Reserve::where('member_id', $member->member_id)
                     ->with(['biblio.authors', 'item.location'])
                     ->orderBy('reserve_date', 'desc')
+                    ->get();
+
+                $memberFines = Fine::where('member_id', $member->member_id)
+                    ->orderBy('fines_date', 'desc')
+                    ->orderBy('fines_id', 'desc')
+                    ->get();
+                $unpaidFineTotal = $member->total_unpaid_fine;
+
+                $memberLoanHistory = Loan::where('member_id', $member->member_id)
+                    ->where('is_return', 1)
+                    ->with(['item.biblio'])
+                    ->orderBy('return_date', 'desc')
+                    ->take(20)
                     ->get();
 
                 if ($member->is_pending == 1) {
@@ -53,7 +70,18 @@ class CirculationController extends Controller
             ->take(10)
             ->get();
 
-        return view('admin.circulation.index', compact('member', 'activeLoans', 'reserves', 'memberId', 'canBorrow', 'borrowBlockReason', 'recentCirculations'));
+        return view('admin.circulation.index', compact(
+            'member',
+            'activeLoans',
+            'reserves',
+            'memberFines',
+            'unpaidFineTotal',
+            'memberLoanHistory',
+            'memberId',
+            'canBorrow',
+            'borrowBlockReason',
+            'recentCirculations'
+        ));
     }
 
     public function loan(Request $request)
@@ -140,7 +168,14 @@ class CirculationController extends Controller
 
         $msg = 'Buku "' . ($loan->item?->biblio?->title ?? $loan->item_code) . '" berhasil dikembalikan.';
         if ($fine > 0) {
-            $msg .= ' Denda keterlambatan: Rp ' . number_format($fine, 0, ',', '.');
+            Fine::create([
+                'fines_date' => $today->toDateString(),
+                'member_id' => $loan->member_id,
+                'debet' => (int) $fine,
+                'credit' => 0,
+                'description' => 'Denda keterlambatan untuk eksemplar ' . $loan->item_code,
+            ]);
+            $msg .= ' Denda keterlambatan: Rp ' . number_format($fine, 0, ',', '.') . ' (Tercatat di daftar denda).';
         }
 
         $memberId = $request->input('redirect_member_id') ?? $loan->member_id;
@@ -261,5 +296,74 @@ class CirculationController extends Controller
         $reserve->delete();
 
         return back()->with('success', 'Reservasi buku "' . $title . '" (Kode: ' . $reserve->item_code . ') berhasil dibatalkan oleh admin.');
+    }
+
+    /**
+     * Daftar seluruh denda sirkulasi (Fines List)
+     */
+    public function fines(Request $request)
+    {
+        $search = $request->input('search');
+        $status = $request->input('status', 'all'); // 'all', 'unpaid', 'paid'
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        $query = Fine::with('member.memberType');
+
+        if ($status === 'unpaid') {
+            $query->unpaid();
+        } elseif ($status === 'paid') {
+            $query->paid();
+        }
+
+        if (!empty($dateFrom)) {
+            $query->whereDate('fines_date', '>=', $dateFrom);
+        }
+        if (!empty($dateTo)) {
+            $query->whereDate('fines_date', '<=', $dateTo);
+        }
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('member_id', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('member', function ($mq) use ($search) {
+                      $mq->where('member_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $fines = $query->orderBy('fines_date', 'desc')->orderBy('fines_id', 'desc')->paginate(20)->withQueryString();
+
+        $stats = [
+            'total_debet'  => (int) Fine::sum('debet'),
+            'total_credit' => (int) Fine::sum('credit'),
+            'total_unpaid' => (int) (Fine::whereRaw('debet > credit')->selectRaw('COALESCE(SUM(debet - credit), 0) as unp')->value('unp') ?: 0),
+            'count_unpaid' => (int) Fine::whereRaw('debet > credit')->count(),
+        ];
+
+        return view('admin.circulation.fines', compact('fines', 'search', 'status', 'dateFrom', 'dateTo', 'stats'));
+    }
+
+    /**
+     * Catat pembayaran / pelunasan denda
+     */
+    public function payFine(Request $request, $id)
+    {
+        $fine = Fine::with('member')->findOrFail($id);
+        $validated = $request->validate([
+            'amount' => 'required|integer|min:1',
+            'payment_note' => 'nullable|string|max:255',
+        ]);
+
+        $amount = (int) $validated['amount'];
+        $fine->credit = (int) $fine->credit + $amount;
+        if (!empty($validated['payment_note'])) {
+            $fine->description = trim($fine->description . ' | Bayar: ' . $validated['payment_note']);
+        }
+        $fine->save();
+
+        $memberName = $fine->member?->member_name ?? $fine->member_id;
+        return back()->with('success', 'Pembayaran denda sebesar Rp ' . number_format($amount, 0, ',', '.') . ' untuk ' . $memberName . ' berhasil dicatat.');
     }
 }

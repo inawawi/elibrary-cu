@@ -155,6 +155,24 @@ class MemberAreaController extends Controller
         $isSenior = $member->isSeniorStudent();
         $isBebasPustakaEligible = $member->isBebasPustakaEligible();
 
+        // Koleksi Jurnal Ilmiah & Terbitan Daring
+        $journals = Biblio::with(['authors', 'publisher', 'gmd'])
+            ->where('opac_hide', 0)
+            ->where(function($q) {
+                $q->where('gmd_id', 263)
+                  ->orWhereHas('gmd', function($gq) {
+                      $gq->where('gmd_name', 'like', '%jurnal%')
+                         ->orWhere('gmd_name', 'like', '%journal%');
+                  })
+                  ->orWhere(function($sub) {
+                      $sub->whereNotNull('file_att')
+                          ->where('file_att', 'like', 'http%');
+                  });
+            })
+            ->orderBy('biblio_id', 'desc')
+            ->take(8)
+            ->get();
+
         return view('member.dashboard', compact(
             'member', 
             'activeLoans', 
@@ -166,7 +184,8 @@ class MemberAreaController extends Controller
             'thesis',
             'bebasPustaka',
             'isSenior',
-            'isBebasPustakaEligible'
+            'isBebasPustakaEligible',
+            'journals'
         ));
     }
 

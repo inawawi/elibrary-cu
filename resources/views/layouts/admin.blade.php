@@ -313,6 +313,20 @@
                             </span>
                         @endif
                     </a>
+                    @php
+                        $sidebarUnpaidFinesCount = \App\Models\Fine::whereRaw('debet > credit')->count();
+                    @endphp
+                    <a href="{{ route('admin.circulation.fines') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.circulation.fines*') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="wallet" class="w-4 h-4 text-rose-500"></i>
+                            <span>Daftar Denda</span>
+                        </div>
+                        @if($sidebarUnpaidFinesCount > 0)
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400">
+                                {{ $sidebarUnpaidFinesCount }}
+                            </span>
+                        @endif
+                    </a>
                     <a href="{{ route('admin.guestbook.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.guestbook*') ? 'bg-brand-50 text-brand-600 dark:bg-sky-950/80 dark:text-sky-300 font-bold' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
                         <i data-lucide="book-open-check" class="w-4 h-4 text-amber-500"></i>
                         <span>Buku Tamu (Kunjungan)</span>

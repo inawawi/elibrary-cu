@@ -170,12 +170,20 @@
                                 <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mb-3">
                                     {{ $book->author_names }}
                                 </p>
-                                <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                                    <span>{{ $book->publisher?->publisher_name ?: 'Penerbit Umum' }}</span>
-                                    <a href="{{ route('opac.show', $book->biblio_id) }}" class="font-semibold text-brand-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1">
-                                        <span>Detail</span>
-                                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                                    </a>
+                                <div class="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs text-slate-400">
+                                    <span class="truncate max-w-[120px]">{{ $book->publisher?->publisher_name ?: 'Penerbit Umum' }}</span>
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        @if(!empty($book->digital_url))
+                                            <a href="{{ $book->digital_url }}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] inline-flex items-center gap-1 shadow-sm transition-colors" title="Buka Jurnal Daring / OJS">
+                                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                                <span>Buka Jurnal</span>
+                                            </a>
+                                        @endif
+                                        <a href="{{ route('opac.show', $book->biblio_id) }}" class="font-semibold text-brand-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1">
+                                            <span>Detail</span>
+                                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>

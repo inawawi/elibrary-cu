@@ -172,6 +172,18 @@
                             {{ $book->classification ?: '-' }}
                         </div>
                     </div>
+
+                    @if(!empty($book->file_att))
+                    <div class="sm:col-span-2 p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
+                        <span class="block text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1">Tautan Akses Daring / Web Jurnal (OJS)</span>
+                        <div class="font-medium text-xs break-all">
+                            <a href="{{ $digitalUrl }}" target="_blank" rel="noopener noreferrer" class="text-purple-600 dark:text-purple-400 font-bold hover:underline inline-flex items-center gap-1.5">
+                                <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0"></i>
+                                <span>{{ $digitalUrl }}</span>
+                            </a>
+                        </div>
+                    </div>
+                    @endif
                 </div>
 
                 <!-- Topics / Subject Tags -->

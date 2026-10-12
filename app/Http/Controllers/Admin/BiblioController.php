@@ -347,9 +347,21 @@ class BiblioController extends Controller
             $validated['publish_place_id'] = $this->resolvePlaceId($request->publish_place_id);
         }
 
+        $oldCallNumber = $biblio->call_number;
         $validated['last_update'] = Carbon::now();
 
         $biblio->update($validated);
+
+        if (!empty($validated['call_number'])) {
+            Item::where('biblio_id', $biblio->biblio_id)
+                ->where(function ($q) use ($oldCallNumber) {
+                    $q->whereNull('call_number')
+                      ->orWhere('call_number', '')
+                      ->orWhere('call_number', $oldCallNumber)
+                      ->orWhereRaw('call_number REGEXP "^[0-9.]+$"');
+                })
+                ->update(['call_number' => $validated['call_number']]);
+        }
 
         $authorIds = [];
         if ($request->has('author_names')) {
@@ -1182,6 +1194,22 @@ class BiblioController extends Controller
         $publisherId = $this->resolvePublisherId($request->publisher_id);
         $publishPlaceId = $this->resolvePlaceId($request->publish_place_id);
 
+        $callNumber = trim($validated['call_number'] ?? '');
+        $classification = trim($validated['classification'] ?? '');
+
+        // Auto-complete nomor panggil jika kosong atau hanya nomor DDC
+        if (empty($callNumber)) {
+            $class = !empty($classification) ? $classification : '000';
+            $titleCutter = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $validated['title']), 0, 3)) ?: 'JUR';
+            $callNumber = "R {$class} {$titleCutter}";
+        } elseif (preg_match('/^[0-9.]+$/', $callNumber)) {
+            $titleCutter = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $validated['title']), 0, 3)) ?: 'JUR';
+            $callNumber = "R {$callNumber} {$titleCutter}";
+        } elseif (preg_match('/^R\s+([0-9.]+)$/i', $callNumber, $m)) {
+            $titleCutter = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $validated['title']), 0, 3)) ?: 'JUR';
+            $callNumber = "R {$m[1]} {$titleCutter}";
+        }
+
         $biblio = Biblio::create([
             'gmd_id' => 263, // Jurnal
             'title' => $validated['title'],
@@ -1193,8 +1221,8 @@ class BiblioController extends Controller
             'publish_place_id' => $publishPlaceId,
             'publish_year' => $validated['publish_year'] ?? null,
             'sor' => $validated['sor'] ?? null,
-            'call_number' => $validated['call_number'] ?? null,
-            'classification' => $validated['classification'] ?? null,
+            'call_number' => $callNumber,
+            'classification' => !empty($classification) ? $classification : null,
             'collation' => $validated['collation'] ?? null,
             'file_att' => !empty($validated['url']) ? trim($validated['url']) : null,
             'notes' => $validated['notes'] ?? null,
@@ -1230,7 +1258,7 @@ class BiblioController extends Controller
             Item::create([
                 'biblio_id' => $biblio->biblio_id,
                 'item_code' => $code,
-                'call_number' => $validated['call_number'] ?? null,
+                'call_number' => $callNumber,
                 'edition' => $validated['edition'] ?? null,
                 'coll_type_id' => 1,
                 'location_id' => '001',

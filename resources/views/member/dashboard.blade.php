@@ -447,6 +447,14 @@
                                         <div class="text-[11px] text-slate-500 mt-0.5">
                                             Direservasi pada: {{ $reserve->reserve_date ? \Carbon\Carbon::parse($reserve->reserve_date)->translatedFormat('d M Y, H:i') : '-' }} WIB
                                         </div>
+                                        @if(!empty($biblio?->digital_url))
+                                            <div class="mt-1">
+                                                <a href="{{ $biblio->digital_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline">
+                                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                                    <span>Tautan Jurnal / OJS Daring</span>
+                                                </a>
+                                            </div>
+                                        @endif
                                         <div class="text-[10px] text-amber-700 dark:text-amber-400 font-semibold mt-1 flex items-center gap-1">
                                             <i data-lucide="map-pin" class="w-3 h-3"></i>
                                             <span>Ambil di Meja Sirkulasi Perpustakaan (Tunjukkan NIM Anda)</span>
@@ -520,6 +528,12 @@
                                         <p class="text-xs text-slate-500">
                                             Dipinjam: {{ \Carbon\Carbon::parse($loan->loan_date)->format('d/m/Y') }}
                                         </p>
+                                        @if(!empty($biblio?->digital_url))
+                                            <a href="{{ $biblio->digital_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline mt-1">
+                                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                                <span>Akses Tautan Jurnal (Online)</span>
+                                            </a>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -579,6 +593,88 @@
                 @endif
             </div>
 
+            <!-- Jurnal Ilmiah & E-Resources Section -->
+            @if(isset($journals) && $journals->isNotEmpty())
+                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-purple-200/90 dark:border-purple-900/60 p-6 sm:p-8 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-purple-100 dark:border-purple-900/40">
+                        <div class="flex items-center gap-3">
+                            <span class="w-10 h-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/25 flex-shrink-0">
+                                <i data-lucide="newspaper" class="w-5 h-5"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span>Koleksi Jurnal Ilmiah & E-Resources</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                                        Akses Daring
+                                    </span>
+                                </h2>
+                                <p class="text-xs text-slate-500">Tautan publikasi jurnal dan artikel ilmiah yang dapat diakses online</p>
+                            </div>
+                        </div>
+
+                        <a href="{{ route('opac.search', ['gmd_id' => 263]) }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 hover:underline">
+                            <span>Jelajahi Semua Jurnal</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($journals as $jurnal)
+                            <div class="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:border-purple-300 dark:hover:border-purple-700/80 transition-all flex flex-col justify-between gap-3">
+                                <div class="flex items-start gap-3.5">
+                                    <div class="w-12 h-16 rounded-xl overflow-hidden bg-purple-100 dark:bg-purple-950/60 flex-shrink-0 shadow-sm border border-purple-200/50 dark:border-purple-800/50">
+                                        <img src="{{ $jurnal->cover_url }}" alt="{{ $jurnal->title }}" class="w-full h-full object-cover" onerror="this.src='{{ asset('images/default_cover.svg') }}'">
+                                    </div>
+                                    <div class="min-w-0 flex-grow">
+                                        <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                                            @if($jurnal->call_number)
+                                                <span class="text-[10px] font-mono font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/80 px-2 py-0.5 rounded">
+                                                    {{ $jurnal->call_number }}
+                                                </span>
+                                            @endif
+                                            @if($jurnal->publish_year)
+                                                <span class="text-[10px] text-slate-400">
+                                                    Tahun {{ $jurnal->publish_year }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <h4 class="font-bold text-sm text-slate-900 dark:text-white line-clamp-2 leading-snug">
+                                            <a href="{{ route('opac.show', $jurnal->biblio_id) }}" class="hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                                                {{ $jurnal->title }}
+                                            </a>
+                                        </h4>
+                                        <p class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                                            {{ $jurnal->author_names }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-2">
+                                    <span class="text-[11px] text-slate-400 truncate max-w-[140px]">
+                                        {{ $jurnal->publisher?->publisher_name ?: 'Perpustakaan' }}
+                                    </span>
+
+                                    @if(!empty($jurnal->digital_url))
+                                        <a href="{{ $jurnal->digital_url }}" target="_blank" rel="noopener noreferrer"
+                                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm shadow-purple-600/20 hover:shadow transition-all flex-shrink-0"
+                                           title="Buka situs web jurnal atau OJS">
+                                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                            <span>Buka Link Jurnal</span>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('opac.show', $jurnal->biblio_id) }}"
+                                           class="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400">
+                                            <span>Detail Koleksi</span>
+                                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <!-- Loan History -->
             <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm">
                 <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
@@ -605,7 +701,13 @@
                                 @foreach($loanHistories as $hist)
                                     <tr>
                                         <td class="py-3 font-semibold text-slate-800 dark:text-slate-200 max-w-xs truncate">
-                                            {{ $hist->item?->biblio?->title ?: $hist->item_code }}
+                                            <div>{{ $hist->item?->biblio?->title ?: $hist->item_code }}</div>
+                                            @if(!empty($hist->item?->biblio?->digital_url))
+                                                <a href="{{ $hist->item->biblio->digital_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[10px] font-bold text-purple-600 dark:text-purple-400 hover:underline mt-0.5">
+                                                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                                                    <span>Link Jurnal</span>
+                                                </a>
+                                            @endif
                                         </td>
                                         <td class="py-3 text-slate-500">
                                             {{ $hist->loan_date ? \Carbon\Carbon::parse($hist->loan_date)->format('d/m/Y') : '-' }}

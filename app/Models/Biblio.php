@@ -92,6 +92,25 @@ class Biblio extends Model
         return $this->sor ?: 'Pengarang Tidak Diketahui';
     }
 
+    public function getDigitalUrlAttribute(): ?string
+    {
+        if (empty($this->file_att)) {
+            return null;
+        }
+        $val = trim($this->file_att);
+        if (\Illuminate\Support\Str::startsWith($val, ['http://', 'https://'])) {
+            return $val;
+        }
+        return asset($val);
+    }
+
+    public function isJournal(): bool
+    {
+        $gmdId = (int)($this->gmd_id ?? 0);
+        $gmdName = strtolower($this->gmd?->gmd_name ?? '');
+        return $gmdId === 263 || str_contains($gmdName, 'jurnal') || str_contains($gmdName, 'journal');
+    }
+
     public function getCoverUrlAttribute(): string
     {
         if (!empty($this->image) && file_exists(public_path('images/docs/' . $this->image))) {
@@ -126,36 +145,84 @@ class Biblio extends Model
         $header = 'ELIBRARY CYBER UNIVERSITY';
         $callNumber = trim($this->call_number ?? '');
 
-        // Jika nomor panggil diisi, gunakan pemisahan kata/token nomor panggil tersebut
-        if (!empty($callNumber)) {
-            $parts = preg_split('/\s+/', $callNumber);
-            return [
-                'header' => $header,
-                'lines' => $parts,
-                'full_call_number' => $callNumber,
-                'classification' => $parts[0] ?? '000',
-                'author_code' => $parts[1] ?? '',
-                'title_code' => $parts[2] ?? '',
-            ];
-        }
+        $gmdId = (int)($this->gmd_id ?? 0);
+        $gmdName = strtolower($this->gmd?->gmd_name ?? '');
+        $isJurnal = $gmdId === 263 || str_contains($gmdName, 'jurnal') || str_contains($gmdName, 'serial') || str_contains($gmdName, 'periodical');
+        $isSkripsi = $gmdId === 262 || str_contains($gmdName, 'skripsi');
 
-        // Fallback jika call_number kosong: buat dari klasifikasi, 3 huruf pengarang, 1 huruf judul
         $classification = !empty($this->classification) ? trim($this->classification) : '000';
-        
-        // 3 huruf pertama nama pengarang utama (uppercase)
+
+        // 3 huruf pertama nama pengarang utama (uppercase) atau singkatan judul untuk jurnal
         $author = $this->authors->first();
         $authorName = $author ? trim($author->author_name) : trim($this->sor ?? '');
         $cleanAuthor = preg_replace('/^(dr\.|prof\.|drs\.|ir\.|h\.|hj\.)\s+/i', '', $authorName);
         $authorCode = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $cleanAuthor), 0, 3));
-        if (empty($authorCode)) {
+        if (empty($authorCode) && !empty($this->title)) {
             $authorCode = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $this->title), 0, 3));
+        }
+        if (empty($authorCode)) {
+            $authorCode = $isJurnal ? 'JUR' : ($isSkripsi ? 'SKR' : 'XXX');
         }
 
         // 1 huruf pertama judul buku (lowercase, ignore kata sandang)
-        $cleanTitle = preg_replace('/^(the|a|an)\s+/i', '', trim($this->title));
-        $titleCode = strtolower(substr(preg_replace('/[^a-zA-Z0-9]/', '', $cleanTitle), 0, 1));
+        $cleanTitle = preg_replace('/^(the|a|an)\s+/i', '', trim($this->title ?? ''));
+        $titleCode = strtolower(substr(preg_replace('/[^a-zA-Z0-9]/', '', $cleanTitle), 0, 1)) ?: 'x';
 
-        $lines = array_values(array_filter([$classification, $authorCode, $titleCode]));
+        // Jika nomor panggil diisi
+        if (!empty($callNumber)) {
+            $parts = preg_split('/\s+/', $callNumber);
+
+            // Jika nomor panggil hanya 1 kata berupa angka klasifikasi DDC (misal hanya '658' atau '005.1')
+            if (count($parts) === 1 && preg_match('/^[0-9.]+$/', $parts[0])) {
+                $classNum = $parts[0];
+                if ($isJurnal) {
+                    $lines = ['R', $classNum, $authorCode];
+                } elseif ($isSkripsi) {
+                    $lines = ['SKR', $classNum, $authorCode];
+                } else {
+                    $lines = [$classNum, $authorCode, $titleCode];
+                }
+                return [
+                    'header' => $header,
+                    'lines' => $lines,
+                    'full_call_number' => implode(' ', $lines),
+                    'classification' => $classNum,
+                    'author_code' => $authorCode,
+                    'title_code' => $titleCode,
+                ];
+            }
+
+            // Jika hanya 'R 658' (kurang kode judul/pengarang)
+            if (count($parts) === 2 && strtoupper($parts[0]) === 'R' && preg_match('/^[0-9.]+$/', $parts[1])) {
+                $lines = ['R', $parts[1], $authorCode];
+                return [
+                    'header' => $header,
+                    'lines' => $lines,
+                    'full_call_number' => implode(' ', $lines),
+                    'classification' => $parts[1],
+                    'author_code' => $authorCode,
+                    'title_code' => $titleCode,
+                ];
+            }
+
+            return [
+                'header' => $header,
+                'lines' => $parts,
+                'full_call_number' => $callNumber,
+                'classification' => $parts[0] ?? $classification,
+                'author_code' => $parts[1] ?? $authorCode,
+                'title_code' => $parts[2] ?? $titleCode,
+            ];
+        }
+
+        // Fallback jika call_number kosong: buat otomatis sesuai standar perpustakaan
+        if ($isJurnal) {
+            $lines = ['R', $classification, $authorCode];
+        } elseif ($isSkripsi) {
+            $lines = ['SKR', $classification, $authorCode];
+        } else {
+            $lines = array_values(array_filter([$classification, $authorCode, $titleCode]));
+        }
 
         return [
             'header' => $header,
@@ -163,7 +230,7 @@ class Biblio extends Model
             'classification' => $classification,
             'author_code' => $authorCode,
             'title_code' => $titleCode,
-            'full_call_number' => "{$classification} {$authorCode} {$titleCode}",
+            'full_call_number' => implode(' ', $lines),
         ];
     }
 }

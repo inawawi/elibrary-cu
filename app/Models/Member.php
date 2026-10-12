@@ -90,6 +90,21 @@ class Member extends Authenticatable
         return $this->hasMany(Reserve::class, 'member_id', 'member_id');
     }
 
+    public function fines()
+    {
+        return $this->hasMany(Fine::class, 'member_id', 'member_id');
+    }
+
+    public function unpaidFines()
+    {
+        return $this->hasMany(Fine::class, 'member_id', 'member_id')->whereRaw('debet > credit');
+    }
+
+    public function getTotalUnpaidFineAttribute(): int
+    {
+        return (int) ($this->fines()->selectRaw('COALESCE(SUM(debet - credit), 0) as balance')->value('balance') ?: 0);
+    }
+
     public function isLecturer(): bool
     {
         return (int)$this->member_type_id === 2 

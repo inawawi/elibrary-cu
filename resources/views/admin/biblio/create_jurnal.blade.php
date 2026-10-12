@@ -39,7 +39,7 @@
             <!-- Judul Jurnal -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Nama / Judul Jurnal *</label>
-                <input type="text" name="title" value="{{ old('title') }}" required placeholder="Contoh: Jurnal Teknologi dan Sistem Informasi (JTSI)..." class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <input type="text" id="jurnal_title" name="title" value="{{ old('title') }}" required placeholder="Contoh: Jurnal Teknologi dan Sistem Informasi (JTSI)..." class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
             </div>
 
             <!-- Reviewer Requirements: Kolom Edisi & Kategori Akreditasi Jurnal -->
@@ -105,12 +105,15 @@
             <!-- Call Number, Klasifikasi, Penanggung Jawab -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Nomor Panggil (Call Number)</label>
-                    <input type="text" name="call_number" value="{{ old('call_number') }}" placeholder="Contoh: R 005.1 JUR" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white font-bold focus:outline-none">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Nomor Panggil (Call Number)</span>
+                        <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold font-mono">Format: R [DDC] [JUDUL]</span>
+                    </label>
+                    <input type="text" id="jurnal_call_number" name="call_number" value="{{ old('call_number') }}" placeholder="Auto: R [DDC] [JUD]" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white font-bold focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Klasifikasi DDC</label>
-                    <input type="text" name="classification" value="{{ old('classification') }}" placeholder="Contoh: 005.1" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white font-medium focus:outline-none">
+                    <input type="text" id="jurnal_classification" name="classification" value="{{ old('classification') }}" placeholder="Contoh: 658" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white font-medium focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Dewan Redaksi / Editor (SOR)</label>
@@ -243,6 +246,27 @@
                 if (countInput && codeInput && previewEl) {
                     countInput.addEventListener('input', updateJurnalPreview);
                     codeInput.addEventListener('input', updateJurnalPreview);
+                }
+
+                // Auto-generate placeholder nomor panggil jurnal: R [DDC] [3-HURUF-JUDUL]
+                const titleInput = document.getElementById('jurnal_title');
+                const classInput = document.getElementById('jurnal_classification');
+                const callInput = document.getElementById('jurnal_call_number');
+
+                function updateAutoCallNumber() {
+                    if (!callInput) return;
+                    const title = (titleInput ? titleInput.value : '').trim().replace(/^(the|a|an)\s+/i, '');
+                    const cleanLetters = title.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+                    const cutter = cleanLetters || 'JUR';
+                    const ddc = (classInput ? classInput.value : '').trim() || '000';
+                    const autoVal = `R ${ddc} ${cutter}`;
+                    callInput.placeholder = `Auto: ${autoVal}`;
+                }
+
+                if (titleInput && classInput && callInput) {
+                    titleInput.addEventListener('input', updateAutoCallNumber);
+                    classInput.addEventListener('input', updateAutoCallNumber);
+                    updateAutoCallNumber();
                 }
             });
         </script>
