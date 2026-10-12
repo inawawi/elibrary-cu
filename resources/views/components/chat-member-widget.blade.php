@@ -4,8 +4,8 @@
     <!-- Floating Trigger Button -->
     <div class="relative">
         <button id="member-chat-toggle-btn" type="button"
-                onclick="toggleMemberChat()"
-                class="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-white/40 focus:outline-none">
+                title="Klik untuk membuka chat, tahan & geser untuk memindahkan posisi (dobel-klik untuk reset)"
+                class="flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-white/40 focus:outline-none cursor-grab active:cursor-grabbing select-none group">
             <div class="relative flex items-center justify-center">
                 <!-- Chat Icon -->
                 <svg id="member-chat-icon-msg" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,6 +19,17 @@
                 <span id="member-btn-online-dot" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-slate-400 border-2 border-white"></span>
             </div>
             <span class="text-xs font-bold tracking-wide pr-1 hidden sm:inline-block">Tanya Pustakawan</span>
+            <!-- Drag Grip Indicator -->
+            <span class="text-white/40 group-hover:text-white/80 transition-colors hidden sm:inline-flex items-center" title="Bisa digeser">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="9" cy="6" r="1.5" fill="currentColor"></circle>
+                    <circle cx="15" cy="6" r="1.5" fill="currentColor"></circle>
+                    <circle cx="9" cy="12" r="1.5" fill="currentColor"></circle>
+                    <circle cx="15" cy="12" r="1.5" fill="currentColor"></circle>
+                    <circle cx="9" cy="18" r="1.5" fill="currentColor"></circle>
+                    <circle cx="15" cy="18" r="1.5" fill="currentColor"></circle>
+                </svg>
+            </span>
             <!-- Unread Badge -->
             <span id="member-chat-unread-badge" class="hidden absolute -top-2 -right-2 px-2 py-0.5 min-w-[20px] text-[11px] font-black text-white bg-rose-500 rounded-full border-2 border-white shadow animate-bounce text-center">0</span>
         </button>
@@ -27,7 +38,7 @@
     <!-- Chat Window Container -->
     <div id="member-chat-window" class="hidden fixed sm:absolute bottom-20 right-0 sm:right-0 w-[95vw] sm:w-[410px] max-w-[450px] h-[560px] max-h-[85vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
         <!-- Header -->
-        <div class="px-5 py-4 bg-gradient-to-r from-sky-600 via-brand-600 to-indigo-600 text-white flex items-center justify-between shadow-md">
+        <div id="member-chat-header" class="px-5 py-4 bg-gradient-to-r from-sky-600 via-brand-600 to-indigo-600 text-white flex items-center justify-between shadow-md cursor-grab active:cursor-grabbing select-none" title="Tahan dan geser untuk memindahkan jendela chat (dobel-klik untuk reset)">
             <div class="flex items-center gap-3">
                 <div class="relative">
                     <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold text-white shadow-inner">
@@ -42,6 +53,7 @@
                     <div class="flex items-center gap-1.5 mt-0.5">
                         <span id="member-header-status-pulse" class="inline-block w-2 h-2 rounded-full bg-slate-400"></span>
                         <span id="member-header-status-text" class="text-[11px] font-medium text-sky-100">Memeriksa status...</span>
+                        <span class="text-white/60 text-[10px] hidden sm:inline">• (Bisa digeser)</span>
                     </div>
                 </div>
             </div>
@@ -171,6 +183,11 @@
         }
 
         window.toggleMemberChat = function() {
+            if (window.__memberChatJustDragged) {
+                window.__memberChatJustDragged = false;
+                return;
+            }
+
             const win = document.getElementById('member-chat-window');
             const iconMsg = document.getElementById('member-chat-icon-msg');
             const iconClose = document.getElementById('member-chat-icon-close');
@@ -179,6 +196,9 @@
             isChatOpen = !isChatOpen;
 
             if (isChatOpen) {
+                if (window.__adjustMemberChatPlacement) {
+                    window.__adjustMemberChatPlacement();
+                }
                 win.classList.remove('hidden');
                 setTimeout(() => {
                     win.classList.remove('scale-95', 'opacity-0');
@@ -606,9 +626,239 @@
             return div.innerHTML;
         }
 
+        // -----------------------------------------------------------------
+        // Draggable Widget Feature (Bisa dipindah & digeser di layar)
+        // -----------------------------------------------------------------
+        function initMemberDraggableWidget() {
+            const root = document.getElementById('member-chat-root');
+            const toggleBtn = document.getElementById('member-chat-toggle-btn');
+            const header = document.getElementById('member-chat-header');
+            const win = document.getElementById('member-chat-window');
+            if (!root || !toggleBtn) return;
+
+            const storageKey = 'elib_member_chat_pos';
+
+            // Function to adapt the chat window opening direction based on balloon coordinates
+            function adjustWindowPlacement(currLeft, currTop) {
+                if (!win) return;
+                const vWidth = window.innerWidth;
+                const vHeight = window.innerHeight;
+                const rootRect = root.getBoundingClientRect();
+                const actualLeft = typeof currLeft === 'number' ? currLeft : rootRect.left;
+                const actualTop = typeof currTop === 'number' ? currTop : rootRect.top;
+
+                if (vWidth < 640) {
+                    win.style.left = '2.5vw';
+                    win.style.right = 'auto';
+                    win.style.width = '95vw';
+                    if (actualTop < vHeight * 0.45) {
+                        win.style.top = Math.max(10, root.offsetHeight + 10) + 'px';
+                        win.style.bottom = 'auto';
+                    } else {
+                        win.style.bottom = Math.max(10, root.offsetHeight + 10) + 'px';
+                        win.style.top = 'auto';
+                    }
+                    return;
+                }
+
+                // Desktop / Tablet
+                const winWidth = Math.min(vWidth - 30, 410);
+
+                let desiredScreenX;
+                if (actualLeft > vWidth * 0.5) {
+                    desiredScreenX = (actualLeft + root.offsetWidth) - winWidth;
+                } else {
+                    desiredScreenX = actualLeft;
+                }
+                const clampedScreenX = Math.max(10, Math.min(vWidth - winWidth - 10, desiredScreenX));
+                const relativeLeft = clampedScreenX - actualLeft;
+
+                win.style.left = relativeLeft + 'px';
+                win.style.right = 'auto';
+
+                if (actualTop < vHeight * 0.45) {
+                    win.style.top = (root.offsetHeight + 12) + 'px';
+                    win.style.bottom = 'auto';
+                    win.style.transformOrigin = (actualLeft < vWidth * 0.5 ? 'top left' : 'top right');
+                } else {
+                    win.style.bottom = (root.offsetHeight + 12) + 'px';
+                    win.style.top = 'auto';
+                    win.style.transformOrigin = (actualLeft < vWidth * 0.5 ? 'bottom left' : 'bottom right');
+                }
+            }
+
+            window.__adjustMemberChatPlacement = adjustWindowPlacement;
+
+            // Restore saved position on page load
+            try {
+                const saved = JSON.parse(localStorage.getItem(storageKey));
+                if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
+                    const maxLeft = Math.max(10, window.innerWidth - 80);
+                    const maxTop = Math.max(10, window.innerHeight - 80);
+                    const clampedLeft = Math.min(Math.max(10, saved.left), maxLeft);
+                    const clampedTop = Math.min(Math.max(10, saved.top), maxTop);
+                    root.classList.remove('bottom-6', 'right-6');
+                    root.style.setProperty('left', clampedLeft + 'px', 'important');
+                    root.style.setProperty('top', clampedTop + 'px', 'important');
+                    root.style.setProperty('right', 'auto', 'important');
+                    root.style.setProperty('bottom', 'auto', 'important');
+                    adjustWindowPlacement(clampedLeft, clampedTop);
+                }
+            } catch (e) {}
+
+            // Prevent native browser drag/drop ghosting
+            toggleBtn.addEventListener('dragstart', (e) => e.preventDefault());
+            root.addEventListener('dragstart', (e) => e.preventDefault());
+            toggleBtn.querySelectorAll('*').forEach(el => el.style.pointerEvents = 'none');
+
+            function setupDraggable(triggerEl, isHeader = false) {
+                if (!triggerEl) return;
+                triggerEl.style.touchAction = 'none';
+
+                let isDown = false;
+                let hasMoved = false;
+                let startX = 0, startY = 0;
+                let initLeft = 0, initTop = 0;
+
+                function onPointerMove(e) {
+                    if (!isDown) return;
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    const dx = clientX - startX;
+                    const dy = clientY - startY;
+
+                    if (!hasMoved && (Math.hypot(dx, dy) > 4)) {
+                        hasMoved = true;
+                        window.__memberChatJustDragged = true;
+                        root.classList.remove('bottom-6', 'right-6');
+                        root.style.transition = 'none';
+                        document.body.style.userSelect = 'none';
+                        document.body.style.cursor = 'grabbing';
+                        triggerEl.style.cursor = 'grabbing';
+                    }
+
+                    if (hasMoved) {
+                        if (e.cancelable) e.preventDefault();
+                        let newLeft = initLeft + dx;
+                        let newTop = initTop + dy;
+
+                        const maxLeft = Math.max(10, window.innerWidth - root.offsetWidth - 10);
+                        const maxTop = Math.max(10, window.innerHeight - root.offsetHeight - 10);
+                        newLeft = Math.max(10, Math.min(newLeft, maxLeft));
+                        newTop = Math.max(10, Math.min(newTop, maxTop));
+
+                        root.style.setProperty('left', newLeft + 'px', 'important');
+                        root.style.setProperty('top', newTop + 'px', 'important');
+                        root.style.setProperty('right', 'auto', 'important');
+                        root.style.setProperty('bottom', 'auto', 'important');
+
+                        adjustWindowPlacement(newLeft, newTop);
+                    }
+                }
+
+                function onPointerUp(e) {
+                    if (!isDown) return;
+                    isDown = false;
+
+                    window.removeEventListener('mousemove', onPointerMove);
+                    window.removeEventListener('mouseup', onPointerUp);
+                    window.removeEventListener('touchmove', onPointerMove);
+                    window.removeEventListener('touchend', onPointerUp);
+
+                    document.body.style.userSelect = '';
+                    document.body.style.cursor = '';
+                    triggerEl.style.cursor = '';
+                    root.style.transition = '';
+
+                    if (hasMoved) {
+                        window.__memberChatJustDragged = true;
+                        setTimeout(() => {
+                            window.__memberChatJustDragged = false;
+                        }, 300);
+                        const rect = root.getBoundingClientRect();
+                        try {
+                            localStorage.setItem(storageKey, JSON.stringify({ left: rect.left, top: rect.top }));
+                        } catch(err) {}
+                    }
+                }
+
+                function onPointerDown(e) {
+                    if (isHeader && e.target.closest('button')) return;
+                    if (e.type === 'mousedown' && e.button !== 0) return;
+
+                    isDown = true;
+                    hasMoved = false;
+
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    startX = clientX;
+                    startY = clientY;
+
+                    const rect = root.getBoundingClientRect();
+                    initLeft = rect.left;
+                    initTop = rect.top;
+
+                    window.addEventListener('mousemove', onPointerMove, { passive: false });
+                    window.addEventListener('mouseup', onPointerUp);
+                    window.addEventListener('touchmove', onPointerMove, { passive: false });
+                    window.addEventListener('touchend', onPointerUp);
+                }
+
+                triggerEl.addEventListener('mousedown', onPointerDown);
+                triggerEl.addEventListener('touchstart', onPointerDown, { passive: true });
+
+                // Double click to reset position back to bottom-right default
+                triggerEl.addEventListener('dblclick', function(e) {
+                    if (isHeader && e.target.closest('button')) return;
+                    e.preventDefault();
+                    localStorage.removeItem(storageKey);
+                    root.style.removeProperty('left');
+                    root.style.removeProperty('top');
+                    root.style.removeProperty('right');
+                    root.style.removeProperty('bottom');
+                    root.classList.add('bottom-6', 'right-6');
+                    if (win) {
+                        win.style.removeProperty('left');
+                        win.style.removeProperty('top');
+                        win.style.removeProperty('right');
+                        win.style.removeProperty('bottom');
+                    }
+                });
+            }
+
+            setupDraggable(toggleBtn, false);
+            setupDraggable(header, true);
+
+            // Toggle button click listener
+            toggleBtn.addEventListener('click', function(e) {
+                if (window.__memberChatJustDragged) {
+                    e.preventDefault();
+                    return;
+                }
+                toggleMemberChat();
+            });
+
+            // Window resize handler
+            window.addEventListener('resize', () => {
+                const rect = root.getBoundingClientRect();
+                const maxLeft = Math.max(10, window.innerWidth - root.offsetWidth - 10);
+                const maxTop = Math.max(10, window.innerHeight - root.offsetHeight - 10);
+                if (rect.left > maxLeft || rect.top > maxTop) {
+                    const clampedLeft = Math.min(rect.left, maxLeft);
+                    const clampedTop = Math.min(rect.top, maxTop);
+                    root.style.setProperty('left', clampedLeft + 'px', 'important');
+                    root.style.setProperty('top', clampedTop + 'px', 'important');
+                    adjustWindowPlacement(clampedLeft, clampedTop);
+                }
+            });
+        }
+
         // Initialize status polling
         checkMemberStatus();
         statusPollingInterval = setInterval(checkMemberStatus, 20000);
+
+        // Initialize Draggable Widget
+        initMemberDraggableWidget();
     })();
 </script>
 @endif
