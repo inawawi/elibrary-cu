@@ -137,7 +137,15 @@
                                      onerror="this.src='{{ asset('images/default_cover.svg') }}'">
 
                                 <div class="absolute top-3 right-3">
-                                    @if($book->available_copies > 0)
+                                    @if($book->isEbook() || ($book->total_copies === 0 && !empty($book->digital_url)))
+                                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-600/90 text-white backdrop-blur shadow-sm">
+                                            Akses Daring
+                                        </span>
+                                    @elseif($book->total_copies === 0)
+                                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-500/90 text-white backdrop-blur shadow-sm">
+                                            Belum Ada Eks
+                                        </span>
+                                    @elseif($book->available_copies > 0)
                                         <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/90 text-white backdrop-blur shadow-sm">
                                             Tersedia ({{ $book->available_copies }})
                                         </span>

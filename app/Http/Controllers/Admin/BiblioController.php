@@ -182,41 +182,51 @@ class BiblioController extends Controller
             'uid' => auth()->id() ?? 1,
         ]);
 
-        $authorIds = [];
+        $authorSyncData = [];
         if ($request->has('author_names')) {
             $authorNames = (array) $request->input('author_names');
-            foreach ($authorNames as $authorName) {
+            $authorTypes = (array) $request->input('author_types', []);
+            $authorLevels = (array) $request->input('author_levels', []);
+            foreach ($authorNames as $idx => $authorName) {
                 $trimmed = trim($authorName);
                 if (!empty($trimmed)) {
+                    $authType = $authorTypes[$idx] ?? 'p';
+                    if (!in_array($authType, ['p', 'o', 'c'])) $authType = 'p';
+                    $authLevel = (int) ($authorLevels[$idx] ?? ($idx === 0 ? 1 : 2));
+                    if (!in_array($authLevel, [1, 2, 3])) $authLevel = 1;
+
                     $auth = Author::firstOrCreate(
                         ['author_name' => $trimmed],
                         [
-                            'authority_type' => 'p',
+                            'authority_type' => $authType,
                             'input_date' => Carbon::today()->toDateString(),
                             'last_update' => Carbon::today()->toDateString(),
                         ]
                     );
-                    $authorIds[] = $auth->author_id;
+                    if ($auth->authority_type !== $authType) {
+                        $auth->update(['authority_type' => $authType]);
+                    }
+                    $authorSyncData[$auth->author_id] = ['level' => $authLevel];
                 }
             }
         } elseif (!empty($validated['authors'])) {
-            foreach ($validated['authors'] as $authVal) {
+            foreach ($validated['authors'] as $idx => $authVal) {
                 if (is_numeric($authVal) && Author::where('author_id', $authVal)->exists()) {
-                    $authorIds[] = (int) $authVal;
+                    $authorSyncData[(int) $authVal] = ['level' => $idx === 0 ? 1 : 2];
                 } elseif (is_string($authVal) && !empty(trim($authVal))) {
                     $auth = Author::firstOrCreate(
                         ['author_name' => trim($authVal)],
                         ['authority_type' => 'p', 'input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
                     );
-                    $authorIds[] = $auth->author_id;
+                    $authorSyncData[$auth->author_id] = ['level' => $idx === 0 ? 1 : 2];
                 }
             }
         }
 
-        if (!empty($authorIds)) {
-            $biblio->authors()->sync($authorIds);
+        if (!empty($authorSyncData)) {
+            $biblio->authors()->sync($authorSyncData);
             if (empty($biblio->sor)) {
-                $names = Author::whereIn('author_id', $authorIds)->pluck('author_name')->toArray();
+                $names = Author::whereIn('author_id', array_keys($authorSyncData))->pluck('author_name')->toArray();
                 $biblio->update(['sor' => implode(' ; ', $names)]);
             }
         }
@@ -363,30 +373,52 @@ class BiblioController extends Controller
                 ->update(['call_number' => $validated['call_number']]);
         }
 
-        $authorIds = [];
+        $authorSyncData = [];
         if ($request->has('author_names')) {
             $authorNames = (array) $request->input('author_names');
-            foreach ($authorNames as $authorName) {
+            $authorTypes = (array) $request->input('author_types', []);
+            $authorLevels = (array) $request->input('author_levels', []);
+            foreach ($authorNames as $idx => $authorName) {
                 $trimmed = trim($authorName);
                 if (!empty($trimmed)) {
+                    $authType = $authorTypes[$idx] ?? 'p';
+                    if (!in_array($authType, ['p', 'o', 'c'])) $authType = 'p';
+                    $authLevel = (int) ($authorLevels[$idx] ?? ($idx === 0 ? 1 : 2));
+                    if (!in_array($authLevel, [1, 2, 3])) $authLevel = 1;
+
                     $auth = Author::firstOrCreate(
                         ['author_name' => $trimmed],
                         [
-                            'authority_type' => 'p',
+                            'authority_type' => $authType,
                             'input_date' => Carbon::today()->toDateString(),
                             'last_update' => Carbon::today()->toDateString(),
                         ]
                     );
-                    $authorIds[] = $auth->author_id;
+                    if ($auth->authority_type !== $authType) {
+                        $auth->update(['authority_type' => $authType]);
+                    }
+                    $authorSyncData[$auth->author_id] = ['level' => $authLevel];
                 }
             }
-            $biblio->authors()->sync($authorIds);
-            if (empty($biblio->sor) && !empty($authorIds)) {
-                $names = Author::whereIn('author_id', $authorIds)->pluck('author_name')->toArray();
+            $biblio->authors()->sync($authorSyncData);
+            if (!empty($authorSyncData)) {
+                $names = Author::whereIn('author_id', array_keys($authorSyncData))->pluck('author_name')->toArray();
                 $biblio->update(['sor' => implode(' ; ', $names)]);
             }
         } elseif (isset($validated['authors'])) {
             $biblio->authors()->sync($validated['authors']);
+        }
+
+        // Simpan jenis e-book jika ada
+        if ($request->filled('ebook_type')) {
+            $ebookType = trim($request->ebook_type);
+            $specData = json_decode($biblio->spec_detail_info ?? '{}', true) ?: [];
+            $specData['tipe'] = 'e-Book';
+            $specData['jenis_ebook'] = $ebookType;
+            $biblio->update([
+                'spec_detail_info' => json_encode($specData, JSON_UNESCAPED_UNICODE),
+                'edition' => 'e-Book (' . $ebookType . ')',
+            ]);
         }
 
         // Simpan topik & subjek reviewer
@@ -720,17 +752,24 @@ class BiblioController extends Controller
     {
         $authors = Author::orderBy('author_name')->get();
         $publishers = Publisher::orderBy('publisher_name')->get();
+        $places = Place::orderBy('place_name')->get();
         $topics = Topic::orderBy('topic')->get();
+        $reviewerTopics = Topic::REVIEWER_SUBJECTS;
 
-        return view('admin.biblio.create_ebook', compact('authors', 'publishers', 'topics'));
+        return view('admin.biblio.create_ebook', compact('authors', 'publishers', 'places', 'topics', 'reviewerTopics'));
     }
 
     public function storeEbook(Request $request)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:500',
-            'author_name' => 'required|string|max:200',
-            'publisher_id' => 'nullable|integer',
+            'author_names' => 'nullable|array',
+            'author_types' => 'nullable|array',
+            'author_levels' => 'nullable|array',
+            'author_name' => 'nullable|string|max:200',
+            'ebook_type' => 'nullable|string|max:100',
+            'publisher_id' => 'nullable|string|max:255',
+            'publish_place_id' => 'nullable|string|max:255',
             'publisher_name' => 'nullable|string|max:100',
             'publish_year' => 'nullable|string|max:4',
             'isbn_issn' => 'nullable|string|max:32',
@@ -739,6 +778,7 @@ class BiblioController extends Controller
             'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'synopsis' => 'nullable|string',
             'topics' => 'nullable|array',
+            'subjects' => 'nullable|array',
             'call_number' => 'nullable|string|max:50',
         ]);
 
@@ -747,15 +787,9 @@ class BiblioController extends Controller
             ->first();
         $gmdId = $gmdEbook ? $gmdEbook->gmd_id : 30;
 
-        // Publisher
-        $pubId = $validated['publisher_id'] ?? null;
-        if (!$pubId && !empty($validated['publisher_name'])) {
-            $p = Publisher::firstOrCreate(
-                ['publisher_name' => $validated['publisher_name']],
-                ['input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
-            );
-            $pubId = $p->publisher_id;
-        }
+        // Publisher & Place resolution
+        $pubId = $this->resolvePublisherId($request->publisher_id ?: $request->publisher_name);
+        $placeId = $this->resolvePlaceId($request->publish_place_id);
 
         // Upload file
         $fileName = null;
@@ -776,21 +810,26 @@ class BiblioController extends Controller
             $cfile->move(public_path('images/docs'), $imageName);
         }
 
+        $ebookType = trim($request->input('ebook_type') ?: 'Buku Teks Kuliah');
+
         $specDetail = json_encode([
             'tipe' => 'e-Book',
+            'jenis_ebook' => $ebookType,
             'url' => $validated['ebook_url'] ?? null,
             'format' => $fileName ? pathinfo($fileName, PATHINFO_EXTENSION) : 'Online Link',
         ], JSON_UNESCAPED_UNICODE);
 
+        $editionStr = 'e-Book (' . $ebookType . ')';
         $callNumber = $validated['call_number'] ?: ('EB-' . ($validated['publish_year'] ?? date('Y')) . '-' . rand(1000, 9999));
 
         $biblio = Biblio::create([
             'gmd_id' => $gmdId,
             'title' => $validated['title'],
-            'sor' => $validated['author_name'],
-            'edition' => 'Edisi Digital (e-Book)',
+            'sor' => null,
+            'edition' => $editionStr,
             'isbn_issn' => $validated['isbn_issn'] ?? null,
             'publisher_id' => $pubId,
+            'publish_place_id' => $placeId,
             'publish_year' => $validated['publish_year'] ?? date('Y'),
             'call_number' => $callNumber,
             'language_id' => 'id',
@@ -803,15 +842,61 @@ class BiblioController extends Controller
             'uid' => auth()->id() ?? 1,
         ]);
 
-        // Register author
-        $author = Author::firstOrCreate(
-            ['author_name' => $validated['author_name']],
-            ['authority_type' => 'p', 'input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
-        );
-        $biblio->authors()->attach($author->author_id, ['level' => 1]);
+        // Process Authors
+        $authorSyncData = [];
+        $authorNames = (array) $request->input('author_names', []);
+        if (empty($authorNames) && !empty($request->author_name)) {
+            $authorNames = [$request->author_name];
+        }
+        $authorTypes = (array) $request->input('author_types', []);
+        $authorLevels = (array) $request->input('author_levels', []);
 
+        foreach ($authorNames as $idx => $authorName) {
+            $trimmed = trim($authorName);
+            if (!empty($trimmed)) {
+                $authType = $authorTypes[$idx] ?? 'p';
+                if (!in_array($authType, ['p', 'o', 'c'])) $authType = 'p';
+                $authLevel = (int) ($authorLevels[$idx] ?? ($idx === 0 ? 1 : 2));
+                if (!in_array($authLevel, [1, 2, 3])) $authLevel = 1;
+
+                $auth = Author::firstOrCreate(
+                    ['author_name' => $trimmed],
+                    [
+                        'authority_type' => $authType,
+                        'input_date' => Carbon::today()->toDateString(),
+                        'last_update' => Carbon::today()->toDateString(),
+                    ]
+                );
+                if ($auth->authority_type !== $authType) {
+                    $auth->update(['authority_type' => $authType]);
+                }
+                $authorSyncData[$auth->author_id] = ['level' => $authLevel];
+            }
+        }
+
+        if (!empty($authorSyncData)) {
+            $biblio->authors()->sync($authorSyncData);
+            $names = Author::whereIn('author_id', array_keys($authorSyncData))->pluck('author_name')->toArray();
+            $biblio->update(['sor' => implode(' ; ', $names)]);
+        }
+
+        // Process Topics & Subjects
+        $topicIds = [];
+        if (!empty($request->subjects)) {
+            foreach ($request->subjects as $subjName) {
+                $t = Topic::firstOrCreate(['topic' => trim($subjName)], [
+                    'topic_type' => 't',
+                    'input_date' => Carbon::today()->toDateString(),
+                    'last_update' => Carbon::today()->toDateString(),
+                ]);
+                $topicIds[] = $t->topic_id;
+            }
+        }
         if (!empty($validated['topics'])) {
-            $biblio->topics()->sync($validated['topics']);
+            $topicIds = array_unique(array_merge($topicIds, $validated['topics']));
+        }
+        if (!empty($topicIds)) {
+            $biblio->topics()->sync($topicIds);
         }
 
         return redirect()->route('admin.biblio.index')->with('success', 'Data e-Book "' . $validated['title'] . '" berhasil ditambahkan ke katalog digital!');

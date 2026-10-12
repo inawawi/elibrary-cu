@@ -166,6 +166,13 @@ class Biblio extends Model
         return $gmdId === 263 || str_contains($gmdName, 'jurnal') || str_contains($gmdName, 'journal');
     }
 
+    public function isEbook(): bool
+    {
+        $gmdId = (int)($this->gmd_id ?? 0);
+        $gmdName = strtolower($this->gmd?->gmd_name ?? '');
+        return $gmdId === 30 || str_contains($gmdName, 'ebook') || str_contains($gmdName, 'e-book') || str_contains($gmdName, 'electronic');
+    }
+
     public function getCoverUrlAttribute(): string
     {
         if (!empty($this->image) && file_exists(public_path('images/docs/' . $this->image))) {
@@ -181,11 +188,19 @@ class Biblio extends Model
 
     public function getTotalCopiesAttribute(): int
     {
+        if ($this->relationLoaded('items')) {
+            return $this->items->count();
+        }
         return $this->items()->count();
     }
 
     public function getAvailableCopiesAttribute(): int
     {
+        if ($this->relationLoaded('items')) {
+            return $this->items->filter(function ($item) {
+                return !$item->activeLoan && !$item->reserve;
+            })->count();
+        }
         // Items that are not in active loans and not reserved
         return $this->items()->whereDoesntHave('activeLoan')->whereDoesntHave('reserve')->count();
     }

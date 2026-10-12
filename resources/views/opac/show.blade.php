@@ -29,7 +29,16 @@
                          onerror="this.src='{{ asset('images/default_cover.svg') }}'">
 
                     <div class="absolute top-3 right-3">
-                        @if($book->available_copies > 0)
+                        @if($book->isEbook() || ($book->total_copies === 0 && !empty($book->digital_url)))
+                            <span class="px-3 py-1.5 rounded-full text-xs font-bold bg-cyan-600 text-white shadow-md flex items-center gap-1.5">
+                                <i data-lucide="tablet" class="w-3.5 h-3.5"></i>
+                                Akses Daring / E-Book
+                            </span>
+                        @elseif($book->total_copies === 0)
+                            <span class="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-500 text-white shadow-md">
+                                Belum Ada Eksemplar
+                            </span>
+                        @elseif($book->available_copies > 0)
                             <span class="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-md flex items-center gap-1.5">
                                 <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
                                 Tersedia ({{ $book->available_copies }} Eks)
@@ -92,6 +101,11 @@
                                 <i data-lucide="bookmark" class="w-4 h-4"></i>
                                 <span>Pinjam / Reservasi Buku</span>
                             </button>
+                        @elseif($book->isEbook() || $book->total_copies === 0)
+                            <div class="p-3 text-center rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-500 text-xs">
+                                <i data-lucide="info" class="w-4 h-4 inline mr-1 text-cyan-600"></i>
+                                <span>{{ $book->isEbook() ? 'Koleksi digital daring (tidak perlu peminjaman fisik).' : 'Belum ada eksemplar fisik yang terdaftar.' }}</span>
+                            </div>
                         @else
                             <button type="button" disabled class="w-full py-3 px-4 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold text-sm text-center flex items-center justify-center gap-2 cursor-not-allowed">
                                 <i data-lucide="bookmark-x" class="w-4 h-4"></i>
@@ -246,6 +260,7 @@
                                 <tr>
                                     <th class="py-3 px-4 rounded-l-xl">Kode Barcode</th>
                                     <th class="py-3 px-4">No. Panggil</th>
+                                    <th class="py-3 px-4">Edisi / Seri</th>
                                     <th class="py-3 px-4">Lokasi Rak</th>
                                     <th class="py-3 px-4">Tipe Koleksi</th>
                                     <th class="py-3 px-4 rounded-r-xl">Status Ketersediaan</th>
@@ -259,6 +274,9 @@
                                         </td>
                                         <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                                             {{ $item->call_number ?: $book->call_number ?: '-' }}
+                                        </td>
+                                        <td class="py-3.5 px-4 text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                                            {{ $item->edition ?: ($book->edition ?: '-') }}
                                         </td>
                                         <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
                                             {{ $item->location?->location_name ?: 'Rak Umum' }}

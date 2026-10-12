@@ -61,9 +61,12 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Penerbit</label>
-                    <select name="publisher_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
-                        <option value="">Pilih Penerbit</option>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Penerbit</span>
+                        <span class="text-[10px] text-brand-600 dark:text-sky-400 font-semibold">Bisa ketik baru</span>
+                    </label>
+                    <select id="publisher_id" name="publisher_id" class="w-full">
+                        <option value="">-- Pilih atau Ketik Penerbit Baru --</option>
                         @foreach($publishers as $p)
                             <option value="{{ $p->publisher_id }}" {{ old('publisher_id', $biblio->publisher_id) == $p->publisher_id ? 'selected' : '' }}>{{ $p->publisher_name }}</option>
                         @endforeach
@@ -74,9 +77,12 @@
                     <input type="text" name="publish_year" value="{{ old('publish_year', $biblio->publish_year) }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Tempat Terbit</label>
-                    <select name="publish_place_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
-                        <option value="">Pilih Kota Terbit</option>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Tempat Terbit</span>
+                        <span class="text-[10px] text-brand-600 dark:text-sky-400 font-semibold">Bisa ketik baru</span>
+                    </label>
+                    <select id="publish_place_id" name="publish_place_id" class="w-full">
+                        <option value="">-- Pilih atau Ketik Kota Terbit Baru --</option>
                         @foreach($places as $pl)
                             <option value="{{ $pl->place_id }}" {{ old('publish_place_id', $biblio->publish_place_id) == $pl->place_id ? 'selected' : '' }}>{{ $pl->place_name }}</option>
                         @endforeach
@@ -88,39 +94,67 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
                 <div class="sm:col-span-2">
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                        <span>Nama Pengarang / Penulis</span>
+                        <span>Nama Pengarang & Peran</span>
                         <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Bisa tambah lebih dari 1 pengarang</span>
                     </label>
-                    <div id="author-inputs-container" class="space-y-2">
+                    <div id="author-inputs-container" class="space-y-2.5">
                         @php
-                            $existingAuthors = $biblio->authors->pluck('author_name')->toArray();
-                            if (empty($existingAuthors) && !empty($biblio->sor)) {
-                                $existingAuthors = array_filter(array_map('trim', explode(';', $biblio->sor)));
+                            $existingAuthorData = [];
+                            if ($biblio->authors->isNotEmpty()) {
+                                foreach ($biblio->authors as $a) {
+                                    $existingAuthorData[] = [
+                                        'name' => $a->author_name,
+                                        'type' => $a->authority_type ?: 'p',
+                                        'level' => $a->pivot->level ?: 1,
+                                    ];
+                                }
+                            } elseif (!empty($biblio->sor)) {
+                                $names = array_filter(array_map('trim', explode(';', $biblio->sor)));
+                                foreach ($names as $idx => $n) {
+                                    $existingAuthorData[] = [
+                                        'name' => $n,
+                                        'type' => 'p',
+                                        'level' => $idx === 0 ? 1 : 2,
+                                    ];
+                                }
                             }
-                            if (empty($existingAuthors)) {
-                                $existingAuthors = [''];
+                            if (empty($existingAuthorData)) {
+                                $existingAuthorData = [['name' => '', 'type' => 'p', 'level' => 1]];
                             }
                         @endphp
-                        @foreach($existingAuthors as $idx => $authorName)
-                            <div class="author-row flex items-center gap-2">
+                        @foreach($existingAuthorData as $idx => $authItem)
+                            <div class="author-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
                                 <div class="relative flex-grow">
-                                    <input type="text" name="author_names[]" list="authors-datalist" value="{{ $authorName }}" placeholder="Nama pengarang..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <input type="text" name="author_names[]" list="authors-datalist" value="{{ $authItem['name'] }}" placeholder="Nama pengarang..." class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
                                 </div>
-                                <span class="text-[10px] font-bold text-slate-400 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap">{{ $idx === 0 ? 'Utama' : 'Tambahan' }}</span>
+                                <div class="w-full sm:w-44 flex-shrink-0">
+                                    <select name="author_types[]" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none font-medium">
+                                        <option value="p" {{ $authItem['type'] === 'p' ? 'selected' : '' }}>Nama Orang</option>
+                                        <option value="o" {{ $authItem['type'] === 'o' ? 'selected' : '' }}>Nama Lembaga</option>
+                                        <option value="c" {{ $authItem['type'] === 'c' ? 'selected' : '' }}>Badan Organisasi</option>
+                                    </select>
+                                </div>
+                                <div class="w-full sm:w-44 flex-shrink-0">
+                                    <select name="author_levels[]" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none font-medium">
+                                        <option value="1" {{ $authItem['level'] == 1 ? 'selected' : '' }}>Pengarang Utama</option>
+                                        <option value="2" {{ $authItem['level'] == 2 ? 'selected' : '' }}>Editor</option>
+                                        <option value="3" {{ $authItem['level'] == 3 ? 'selected' : '' }}>Penerjemah</option>
+                                    </select>
+                                </div>
                                 @if($idx > 0)
-                                    <button type="button" class="btn-remove-author p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors" title="Hapus Pengarang Ini">
+                                    <button type="button" class="btn-remove-author p-2 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors flex-shrink-0" title="Hapus Pengarang Ini">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </button>
                                 @endif
                             </div>
                         @endforeach
                     </div>
-                    <div class="mt-2 flex items-center justify-between">
+                    <div class="mt-2.5 flex items-center justify-between">
                         <button type="button" id="btn-add-author" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-xs border border-purple-200/60 dark:border-purple-800/40 transition-colors cursor-pointer">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             <span>+ Tambah Pengarang Lain</span>
                         </button>
-                        <p class="text-[11px] text-slate-400">Ketik nama bebas atau pilih dari saran autocomplete.</p>
+                        <p class="text-[11px] text-slate-400">Pilih tipe nama dan peran untuk setiap pengarang.</p>
                     </div>
 
                     <datalist id="authors-datalist">
@@ -140,23 +174,51 @@
                 </div>
             </div>
 
-            <!-- Subjek Dropdown (Reviewer Requirement: Multiple Select) -->
+            <!-- Khusus e-Book: Input Jenis e-Book -->
+            @php
+                $isEbookBiblio = $biblio->isEbook() || $biblio->gmd_id == 30;
+                $specData = json_decode($biblio->spec_detail_info ?? '{}', true) ?: [];
+                $curEbookType = $specData['jenis_ebook'] ?? (str_contains($biblio->edition ?? '', 'e-Book (') ? trim(str_replace(['e-Book (', ')'], '', $biblio->edition)) : '');
+            @endphp
+            @if($isEbookBiblio)
+                <div class="p-4 rounded-2xl bg-cyan-50/50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800/60">
+                    <label class="block text-xs font-bold text-cyan-900 dark:text-cyan-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Jenis / Tipe Koleksi e-Book</span>
+                        <span class="text-[10px] text-cyan-600 dark:text-cyan-400 font-semibold">Khusus e-Book</span>
+                    </label>
+                    <input type="text" name="ebook_type" list="ebook-types-list" value="{{ old('ebook_type', $curEbookType ?: 'Buku Teks Kuliah') }}" placeholder="Contoh: Buku Teks Kuliah, Modul Praktikum, Monograf, Buku Referensi..." class="w-full px-4 py-2.5 rounded-xl border border-cyan-300 dark:border-cyan-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    <datalist id="ebook-types-list">
+                        <option value="Buku Teks Kuliah"></option>
+                        <option value="Modul Pembelajaran / Praktikum"></option>
+                        <option value="Buku Referensi / Handbook"></option>
+                        <option value="Monograf & Hasil Penelitian"></option>
+                        <option value="Buku Populer / Umum"></option>
+                    </datalist>
+                </div>
+            @endif
+
+            <!-- Subjek Dropdown (Select2 Tags Creatable & Multiple Select) -->
             <div>
                 @php
                     $existingTopics = $biblio->topics->pluck('topic')->toArray();
                 @endphp
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                    <span>Subjek / Bidang Ilmu (Bisa pilih lebih dari 1)</span>
-                    <span class="text-[11px] font-normal text-brand-600 dark:text-sky-400">Tahan tombol Ctrl / Cmd untuk memilih lebih dari 1</span>
+                    <span>Subjek / Bidang Ilmu (Bisa pilih lebih dari 1 atau ketik baru)</span>
+                    <span class="text-[11px] font-normal text-brand-600 dark:text-sky-400">Pilih atau ketik topik baru lalu Enter</span>
                 </label>
-                <select name="subjects[]" multiple size="4" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <select id="subjects" name="subjects[]" multiple class="w-full">
                     @foreach($reviewerTopics as $sub)
                         <option value="{{ $sub }}" {{ (is_array(old('subjects')) ? in_array($sub, old('subjects')) : in_array($sub, $existingTopics)) ? 'selected' : '' }}>
                             {{ $sub }}
                         </option>
                     @endforeach
+                    @foreach($existingTopics as $exSub)
+                        @if(!in_array($exSub, $reviewerTopics))
+                            <option value="{{ $exSub }}" selected>{{ $exSub }}</option>
+                        @endif
+                    @endforeach
                 </select>
-                <p class="text-[11px] text-slate-400 mt-1">Pilihan rekomendasi kurikulum: Sistem Informasi, STI, TI, Bisnis Digital, Kewirausahaan, Metodologi Penelitian, Agama, Ekonomi & Keuangan, Pancasila & Kewarganegaraan.</p>
+                <p class="text-[11px] text-slate-400 mt-1">Pilihan rekomendasi kurikulum: Sistem Informasi, TI, Bisnis Digital, Kewirausahaan, Metodologi Penelitian, Agama, dll.</p>
             </div>
 
             <div>
@@ -297,13 +359,26 @@
                         e.preventDefault();
                         const currentRows = authorContainer.querySelectorAll('.author-row').length + 1;
                         const row = document.createElement('div');
-                        row.className = 'author-row flex items-center gap-2';
+                        row.className = 'author-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700';
                         row.innerHTML = `
                             <div class="relative flex-grow">
-                                <input type="text" name="author_names[]" list="authors-datalist" placeholder="Nama pengarang ke-${currentRows}..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                <input type="text" name="author_names[]" list="authors-datalist" placeholder="Nama pengarang ke-${currentRows}..." class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
                             </div>
-                            <span class="text-[10px] font-bold text-slate-400 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap">Tambahan</span>
-                            <button type="button" class="btn-remove-author p-2 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors" title="Hapus Pengarang Ini">
+                            <div class="w-full sm:w-44 flex-shrink-0">
+                                <select name="author_types[]" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none font-medium">
+                                    <option value="p">Nama Orang</option>
+                                    <option value="o">Nama Lembaga</option>
+                                    <option value="c">Badan Organisasi</option>
+                                </select>
+                            </div>
+                            <div class="w-full sm:w-44 flex-shrink-0">
+                                <select name="author_levels[]" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none font-medium">
+                                    <option value="2">Editor</option>
+                                    <option value="1">Pengarang Utama</option>
+                                    <option value="3">Penerjemah</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn-remove-author p-2 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors flex-shrink-0" title="Hapus Pengarang Ini">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         `;
@@ -321,6 +396,49 @@
                         }
                     });
                 }
+            });
+
+            // Select2 Init
+            $(document).ready(function() {
+                $('#publisher_id').select2({
+                    placeholder: '-- Pilih atau Ketik Penerbit Baru --',
+                    allowClear: true,
+                    tags: true,
+                    width: '100%',
+                    createTag: function (params) {
+                        var term = $.trim(params.term);
+                        if (term === '') return null;
+                        return {
+                            id: term,
+                            text: term + ' (Penerbit Baru)',
+                            newTag: true
+                        };
+                    }
+                });
+
+                $('#publish_place_id').select2({
+                    placeholder: '-- Pilih atau Ketik Kota Terbit Baru --',
+                    allowClear: true,
+                    tags: true,
+                    width: '100%',
+                    createTag: function (params) {
+                        var term = $.trim(params.term);
+                        if (term === '') return null;
+                        return {
+                            id: term,
+                            text: term + ' (Kota Baru)',
+                            newTag: true
+                        };
+                    }
+                });
+
+                $('#subjects').select2({
+                    placeholder: '-- Pilih atau Ketik Subjek / Topik (Bisa lebih dari 1) --',
+                    allowClear: true,
+                    tags: true,
+                    width: '100%',
+                    multiple: true
+                });
             });
         </script>
 
