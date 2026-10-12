@@ -92,16 +92,71 @@ class Biblio extends Model
         return $this->sor ?: 'Pengarang Tidak Diketahui';
     }
 
+    public function files()
+    {
+        return $this->belongsToMany(
+            BiblioFile::class,
+            'biblio_attachment',
+            'biblio_id',
+            'file_id'
+        )->withPivot(['access_type', 'access_limit', 'placement']);
+    }
+
     public function getDigitalUrlAttribute(): ?string
     {
-        if (empty($this->file_att)) {
-            return null;
+        // 1. Direct URL in file_att column
+        if (!empty($this->file_att)) {
+            $val = trim($this->file_att);
+            if (\Illuminate\Support\Str::startsWith($val, ['http://', 'https://'])) {
+                return $val;
+            }
         }
-        $val = trim($this->file_att);
-        if (\Illuminate\Support\Str::startsWith($val, ['http://', 'https://'])) {
-            return $val;
+
+        // 2. Attached file / OJS link in files table via biblio_attachment
+        if ($this->relationLoaded('files') || $this->files()->exists()) {
+            $attachedFile = $this->files->first();
+            if ($attachedFile && !empty($attachedFile->url)) {
+                return $attachedFile->url;
+            }
         }
-        return asset($val);
+
+        // 3. Fallback: if file_att is a relative file path
+        if (!empty($this->file_att)) {
+            return asset(trim($this->file_att));
+        }
+
+        return null;
+    }
+
+    public function getJournalLinksAttribute(): array
+    {
+        $links = [];
+
+        // 1. Dari kolom file_att
+        if (!empty($this->file_att)) {
+            $val = trim($this->file_att);
+            $url = \Illuminate\Support\Str::startsWith($val, ['http://', 'https://']) ? $val : asset($val);
+            $links[] = [
+                'title' => 'Buka / Akses Jurnal Daring (Online)',
+                'url' => $url,
+            ];
+        }
+
+        // 2. Dari relasi files (biblio_attachment)
+        $attachedFiles = $this->relationLoaded('files') ? $this->files : $this->files()->get();
+        foreach ($attachedFiles as $file) {
+            $url = $file->url;
+            if ($url && !collect($links)->pluck('url')->contains($url)) {
+                $links[] = [
+                    'title' => !empty($file->file_title) && !in_array(strtolower($file->file_title), ['file', 'attachment'])
+                        ? $file->file_title
+                        : 'Buka / Akses Jurnal Daring (Online)',
+                    'url' => $url,
+                ];
+            }
+        }
+
+        return $links;
     }
 
     public function isJournal(): bool

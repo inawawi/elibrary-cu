@@ -52,11 +52,19 @@
 
                 <!-- Action Buttons -->
                 <div class="space-y-2.5">
-                    @if(!empty($book->file_att))
-                        @php
-                            $isExternalUrl = \Illuminate\Support\Str::startsWith($book->file_att, ['http://', 'https://']);
-                            $digitalUrl = $isExternalUrl ? $book->file_att : asset($book->file_att);
-                        @endphp
+                    @php
+                        $digitalUrl = $book->digital_url;
+                        $journalLinks = $book->journal_links;
+                    @endphp
+
+                    @if(!empty($journalLinks))
+                        @foreach($journalLinks as $jLink)
+                            <a href="{{ $jLink['url'] }}" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm text-center shadow-md shadow-purple-600/25 flex items-center justify-center gap-2 transition-all">
+                                <i data-lucide="external-link" class="w-4 h-4"></i>
+                                <span>{{ count($journalLinks) > 1 && !empty($jLink['title']) && !in_array(strtolower($jLink['title']), ['file', 'attachment', 'ojs']) ? 'Akses ' . $jLink['title'] : 'Buka / Akses Jurnal Daring (Online)' }}</span>
+                            </a>
+                        @endforeach
+                    @elseif(!empty($digitalUrl))
                         <a href="{{ $digitalUrl }}" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm text-center shadow-md shadow-purple-600/25 flex items-center justify-center gap-2 transition-all">
                             <i data-lucide="external-link" class="w-4 h-4"></i>
                             <span>Buka / Akses Jurnal Daring (Online)</span>
@@ -173,14 +181,18 @@
                         </div>
                     </div>
 
-                    @if(!empty($book->file_att))
+                    @if(!empty($digitalUrl) || !empty($journalLinks))
                     <div class="sm:col-span-2 p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
-                        <span class="block text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1">Tautan Akses Daring / Web Jurnal (OJS)</span>
-                        <div class="font-medium text-xs break-all">
-                            <a href="{{ $digitalUrl }}" target="_blank" rel="noopener noreferrer" class="text-purple-600 dark:text-purple-400 font-bold hover:underline inline-flex items-center gap-1.5">
-                                <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0"></i>
-                                <span>{{ $digitalUrl }}</span>
-                            </a>
+                        <span class="block text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wider mb-1.5">Tautan Akses Daring / Web Jurnal (OJS)</span>
+                        <div class="space-y-1">
+                            @foreach($journalLinks ?: [['title' => 'Link Jurnal', 'url' => $digitalUrl]] as $jLink)
+                                <div>
+                                    <a href="{{ $jLink['url'] }}" target="_blank" rel="noopener noreferrer" class="text-purple-600 dark:text-purple-400 font-bold hover:underline inline-flex items-center gap-1.5 text-xs break-all">
+                                        <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0"></i>
+                                        <span>{{ $jLink['url'] }}</span>
+                                    </a>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                     @endif

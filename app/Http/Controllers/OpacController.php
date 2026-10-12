@@ -186,6 +186,7 @@ class OpacController extends Controller
             'items.itemStatus',
             'items.activeLoan.member',
             'items.reserve.member',
+            'files',
         ])->findOrFail($id);
 
         $member = Auth::guard('member')->user();
