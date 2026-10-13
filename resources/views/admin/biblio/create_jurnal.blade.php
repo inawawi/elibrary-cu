@@ -151,19 +151,27 @@
                 </div>
             </div>
 
-            <!-- Subjek / Bidang Ilmu -->
+            <!-- Subjek / Bidang Ilmu (Select2 Multiple Tags) -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                    <span>Subjek / Bidang Ilmu (Bisa pilih lebih dari 1)</span>
-                    <span class="text-[11px] font-normal text-brand-600 dark:text-sky-400">Tahan tombol Ctrl / Cmd untuk memilih multi-subjek</span>
+                    <span>Subjek / Bidang Ilmu (Bisa pilih lebih dari 1 atau ketik baru)</span>
+                    <span class="text-[10px] text-brand-600 dark:text-sky-400 font-semibold">Pilih atau ketik topik baru lalu Enter</span>
                 </label>
-                <select name="subjects[]" multiple size="4" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <select id="subjects" name="subjects[]" multiple class="w-full">
                     @foreach($reviewerTopics as $sub)
                         <option value="{{ $sub }}" {{ (is_array(old('subjects')) && in_array($sub, old('subjects'))) ? 'selected' : '' }}>
                             {{ $sub }}
                         </option>
                     @endforeach
+                    @if(is_array(old('subjects')))
+                        @foreach(old('subjects') as $oldSub)
+                            @if(!in_array($oldSub, $reviewerTopics))
+                                <option value="{{ $oldSub }}" selected>{{ $oldSub }}</option>
+                            @endif
+                        @endforeach
+                    @endif
                 </select>
+                <p class="text-[11px] text-slate-400 mt-1">Pilihan rekomendasi kurikulum: Sistem Informasi, TI, Bisnis Digital, Kewirausahaan, dll.</p>
             </div>
 
             <!-- Link URL Jurnal / OJS -->
@@ -315,6 +323,14 @@
                     newTag: true
                 };
             }
+        });
+
+        $('#subjects').select2({
+            placeholder: '-- Pilih atau Ketik Subjek / Topik (Bisa lebih dari 1) --',
+            allowClear: true,
+            tags: true,
+            width: '100%',
+            multiple: true
         });
     });
 </script>
