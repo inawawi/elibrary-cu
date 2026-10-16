@@ -201,22 +201,29 @@
             <div>
                 @php
                     $existingTopics = $biblio->topics->pluck('topic')->toArray();
+                    $allSelectableTopics = array_values(array_unique(array_filter(array_merge(
+                        $reviewerTopics ?? [],
+                        isset($topics) ? $topics->pluck('topic')->toArray() : [],
+                        $existingTopics
+                    ))));
                 @endphp
                 <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                     <span>Subjek / Bidang Ilmu (Bisa pilih lebih dari 1 atau ketik baru)</span>
                     <span class="text-[11px] font-normal text-brand-600 dark:text-sky-400">Pilih atau ketik topik baru lalu Enter</span>
                 </label>
                 <select id="subjects" name="subjects[]" multiple class="w-full">
-                    @foreach($reviewerTopics as $sub)
+                    @foreach($allSelectableTopics as $sub)
                         <option value="{{ $sub }}" {{ (is_array(old('subjects')) ? in_array($sub, old('subjects')) : in_array($sub, $existingTopics)) ? 'selected' : '' }}>
                             {{ $sub }}
                         </option>
                     @endforeach
-                    @foreach($existingTopics as $exSub)
-                        @if(!in_array($exSub, $reviewerTopics))
-                            <option value="{{ $exSub }}" selected>{{ $exSub }}</option>
-                        @endif
-                    @endforeach
+                    @if(is_array(old('subjects')))
+                        @foreach(old('subjects') as $oldSub)
+                            @if(!in_array($oldSub, $allSelectableTopics))
+                                <option value="{{ $oldSub }}" selected>{{ $oldSub }}</option>
+                            @endif
+                        @endforeach
+                    @endif
                 </select>
                 <p class="text-[11px] text-slate-400 mt-1">Pilihan rekomendasi kurikulum: Sistem Informasi, TI, Bisnis Digital, Kewirausahaan, Metodologi Penelitian, Agama, dll.</p>
             </div>
