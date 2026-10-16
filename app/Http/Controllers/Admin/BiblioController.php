@@ -237,6 +237,8 @@ class BiblioController extends Controller
             foreach ($request->subjects as $subjName) {
                 $t = Topic::firstOrCreate(['topic' => trim($subjName)], [
                     'topic_type' => 't',
+                    'auth_list' => '',
+                    'classification' => '',
                     'input_date' => Carbon::today()->toDateString(),
                     'last_update' => Carbon::today()->toDateString(),
                 ]);
@@ -427,6 +429,8 @@ class BiblioController extends Controller
             foreach ($request->subjects as $subjName) {
                 $t = Topic::firstOrCreate(['topic' => trim($subjName)], [
                     'topic_type' => 't',
+                    'auth_list' => '',
+                    'classification' => '',
                     'input_date' => Carbon::today()->toDateString(),
                     'last_update' => Carbon::today()->toDateString(),
                 ]);
@@ -716,6 +720,8 @@ class BiblioController extends Controller
             foreach ($finalSubjects as $subjName) {
                 $t = Topic::firstOrCreate(['topic' => trim($subjName)], [
                     'topic_type' => 't',
+                    'auth_list' => '',
+                    'classification' => '',
                     'input_date' => Carbon::today()->toDateString(),
                     'last_update' => Carbon::today()->toDateString(),
                 ]);
@@ -886,6 +892,8 @@ class BiblioController extends Controller
             foreach ($request->subjects as $subjName) {
                 $t = Topic::firstOrCreate(['topic' => trim($subjName)], [
                     'topic_type' => 't',
+                    'auth_list' => '',
+                    'classification' => '',
                     'input_date' => Carbon::today()->toDateString(),
                     'last_update' => Carbon::today()->toDateString(),
                 ]);
@@ -993,6 +1001,8 @@ class BiblioController extends Controller
             foreach ($selectedSubjects as $subjName) {
                 $t = Topic::firstOrCreate(['topic' => trim($subjName)], [
                     'topic_type' => 't',
+                    'auth_list' => '',
+                    'classification' => '',
                     'input_date' => Carbon::today()->toDateString(),
                     'last_update' => Carbon::today()->toDateString(),
                 ]);
@@ -1324,6 +1334,8 @@ class BiblioController extends Controller
             foreach ($request->subjects as $subjName) {
                 $t = Topic::firstOrCreate(['topic' => trim($subjName)], [
                     'topic_type' => 't',
+                    'auth_list' => '',
+                    'classification' => '',
                     'input_date' => Carbon::today()->toDateString(),
                     'last_update' => Carbon::today()->toDateString(),
                 ]);

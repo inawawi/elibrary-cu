@@ -354,6 +354,8 @@ class MemberAreaController extends Controller
         foreach ($recommendedSubjects as $subjName) {
             $t = Topic::firstOrCreate(['topic' => trim($subjName)], [
                 'topic_type' => 't',
+                'auth_list' => '',
+                'classification' => '',
                 'input_date' => Carbon::today()->toDateString(),
                 'last_update' => Carbon::today()->toDateString(),
             ]);
@@ -366,7 +368,12 @@ class MemberAreaController extends Controller
         // Register student as author
         $studentAuthor = Author::firstOrCreate(
             ['author_name' => $member->member_name],
-            ['authority_type' => 'p', 'input_date' => Carbon::today()->toDateString(), 'last_update' => Carbon::today()->toDateString()]
+            [
+                'authority_type' => 'p',
+                'auth_list' => '',
+                'input_date' => Carbon::today()->toDateString(),
+                'last_update' => Carbon::today()->toDateString(),
+            ]
         );
         $biblio->authors()->syncWithoutDetaching([$studentAuthor->author_id => ['level' => 1]]);
 

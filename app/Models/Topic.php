@@ -19,6 +19,33 @@ class Topic extends Model
         'last_update',
     ];
 
+    protected $attributes = [
+        'topic_type' => 't',
+        'auth_list' => '',
+        'classification' => '',
+    ];
+
+    protected static function booted()
+    {
+        static::creating(function ($topic) {
+            if ($topic->classification === null) {
+                $topic->classification = '';
+            }
+            if ($topic->auth_list === null) {
+                $topic->auth_list = '';
+            }
+            if (empty($topic->topic_type)) {
+                $topic->topic_type = 't';
+            }
+            if (empty($topic->input_date)) {
+                $topic->input_date = now()->toDateString();
+            }
+            if (empty($topic->last_update)) {
+                $topic->last_update = now()->toDateString();
+            }
+        });
+    }
+
     public function biblios()
     {
         return $this->belongsToMany(Biblio::class, 'biblio_topic', 'topic_id', 'biblio_id')

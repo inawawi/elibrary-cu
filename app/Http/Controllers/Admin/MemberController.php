@@ -563,7 +563,8 @@ class MemberController extends Controller
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $apiUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -578,8 +579,10 @@ class MemberController extends Controller
             curl_close($ch);
 
             if ($response === false) {
+                $host = parse_url($apiUrl, PHP_URL_HOST);
+                $ip = @gethostbyname($host);
                 return redirect()->route('admin.member.index', ['tab' => 'mahasiswa'])
-                    ->with('error', "Gagal menghubungi API Web Student: " . $curlError);
+                    ->with('error', "Gagal menghubungi API Web Student ({$host} [{$ip}]): {$curlError}. Jaringan/firewall server belum mengizinkan koneksi keluar ke host tersebut atau endpoint di file .dbkon sedang tidak dapat dijangkau.");
             }
 
             if ($httpCode === 401) {
