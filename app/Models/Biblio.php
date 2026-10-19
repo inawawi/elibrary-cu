@@ -71,6 +71,11 @@ class Biblio extends Model
         return $this->belongsTo(Frequency::class, 'frequency_id');
     }
 
+    public function language()
+    {
+        return $this->belongsTo(Language::class, 'language_id', 'language_id');
+    }
+
     public function authors()
     {
         return $this->belongsToMany(Author::class, 'biblio_author', 'biblio_id', 'author_id')
@@ -171,6 +176,13 @@ class Biblio extends Model
         $gmdId = (int)($this->gmd_id ?? 0);
         $gmdName = strtolower($this->gmd?->gmd_name ?? '');
         return $gmdId === 30 || str_contains($gmdName, 'ebook') || str_contains($gmdName, 'e-book') || str_contains($gmdName, 'electronic');
+    }
+
+    public function isSkripsi(): bool
+    {
+        $gmdId = (int)($this->gmd_id ?? 0);
+        $gmdName = strtolower($this->gmd?->gmd_name ?? '');
+        return $gmdId === 262 || str_contains($gmdName, 'skripsi') || str_contains($this->spec_detail_info ?? '', '"tipe":"Skripsi"');
     }
 
     public function getCoverUrlAttribute(): string

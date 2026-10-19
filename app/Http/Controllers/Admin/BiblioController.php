@@ -280,7 +280,7 @@ class BiblioController extends Controller
                 'item_code' => $code,
                 'call_number' => $validated['call_number'] ?? null,
                 'edition' => $validated['edition'] ?? null,
-                'coll_type_id' => 1,
+                'coll_type_id' => ($isJurnal || $isSkripsi) ? 1 : 2,
                 'location_id' => $validated['location_id'] ?? '001',
                 'item_status_id' => '001',
                 'input_date' => Carbon::now(),
@@ -343,6 +343,8 @@ class BiblioController extends Controller
             'spec_detail_info' => 'nullable|string|max:100',
             'additional_copies_count' => 'nullable|integer|min:0',
             'additional_edition' => 'nullable|string|max:100',
+            'ebook_file' => 'nullable|file|mimes:pdf,epub|max:51200',
+            'skripsi_file' => 'nullable|file|mimes:pdf,doc,docx,zip,rar|max:51200',
         ]);
 
         if ($request->hasFile('image')) {
@@ -350,6 +352,27 @@ class BiblioController extends Controller
             $imageName = time() . '_' . Str::slug(substr($validated['title'], 0, 30)) . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('images/docs'), $imageName);
             $validated['image'] = $imageName;
+        }
+
+        if ($request->hasFile('ebook_file')) {
+            $file = $request->file('ebook_file');
+            $fileName = 'ebook_' . time() . '_' . Str::slug(substr($validated['title'], 0, 30)) . '.' . $file->getClientOriginalExtension();
+            if (!file_exists(public_path('files/ebooks'))) {
+                mkdir(public_path('files/ebooks'), 0755, true);
+            }
+            $file->move(public_path('files/ebooks'), $fileName);
+            $validated['file_att'] = 'files/ebooks/' . $fileName;
+        }
+
+        if ($request->hasFile('skripsi_file')) {
+            $file = $request->file('skripsi_file');
+            $nim = $request->input('student_nim') ?: 'skripsi';
+            $fileName = 'skripsi_' . $nim . '_' . time() . '.' . $file->getClientOriginalExtension();
+            if (!file_exists(public_path('files/skripsi'))) {
+                mkdir(public_path('files/skripsi'), 0755, true);
+            }
+            $file->move(public_path('files/skripsi'), $fileName);
+            $validated['file_att'] = 'files/skripsi/' . $fileName;
         }
 
         if ($request->has('publisher_id')) {
@@ -423,6 +446,32 @@ class BiblioController extends Controller
             ]);
         }
 
+        // Simpan data khusus skripsi jika ada
+        if ($biblio->isSkripsi() || (int)$biblio->gmd_id === 262) {
+            $specData = json_decode($biblio->spec_detail_info ?? '{}', true) ?: [];
+            $specData['tipe'] = 'Skripsi';
+            if ($request->filled('student_nim')) $specData['nim'] = trim($request->student_nim);
+            if ($request->filled('prodi')) $specData['prodi'] = trim($request->prodi);
+            if ($request->filled('pembimbing_1')) $specData['pembimbing_1'] = trim($request->pembimbing_1);
+            if ($request->filled('pembimbing_2')) $specData['pembimbing_2'] = trim($request->pembimbing_2);
+            $biblio->update(['spec_detail_info' => json_encode($specData, JSON_UNESCAPED_UNICODE)]);
+
+            if ($request->filled('student_nim')) {
+                try {
+                    DB::table('tb_skripsi')->updateOrInsert(
+                        ['kd_skripsi' => $biblio->biblio_id],
+                        [
+                            'nim' => trim($request->student_nim),
+                            'judul' => $validated['title'],
+                            'dosen' => trim($request->pembimbing_1 ?? ''),
+                            'asdos' => trim($request->pembimbing_2 ?? ''),
+                            'subjek' => !empty($request->subjects) ? implode(', ', $request->subjects) : ($request->prodi ?? ''),
+                        ]
+                    );
+                } catch (\Throwable $e) {}
+            }
+        }
+
         // Simpan topik & subjek reviewer
         $topicIds = [];
         if (!empty($request->subjects)) {
@@ -462,7 +511,7 @@ class BiblioController extends Controller
                     'item_code' => $code,
                     'call_number' => $biblio->call_number,
                     'edition' => $itemEdition,
-                    'coll_type_id' => 1,
+                    'coll_type_id' => ($isJurnal || $isSkripsi) ? 1 : 2,
                     'location_id' => '001',
                     'item_status_id' => '001',
                     'input_date' => Carbon::now(),
@@ -549,7 +598,7 @@ class BiblioController extends Controller
         $locations = Location::all();
         $collTypes = CollType::all();
 
-        return view('admin.biblio.items', compact('biblio', 'locations', 'collTypes', 'nextItemCode', 'prefix', 'isJurnal'));
+        return view('admin.biblio.items', compact('biblio', 'locations', 'collTypes', 'nextItemCode', 'prefix', 'isJurnal', 'isSkripsi'));
     }
 
     public function deleteItem($itemId)
@@ -592,6 +641,7 @@ class BiblioController extends Controller
             'item_code' => 'nullable|string|max:20',
             'topics' => 'nullable|array',
             'subjects' => 'nullable|array',
+            'language_id' => 'nullable|string|max:5',
         ]);
 
         $gmdSkripsi = Gmd::where('gmd_code', 'SR')->orWhere('gmd_name', 'like', '%Skripsi%')->first();
@@ -662,7 +712,7 @@ class BiblioController extends Controller
             'collation' => 'xx, 120 hlm. : ilus. ; 30 cm',
             'series_title' => 'Skripsi Program Studi ' . $validated['prodi'],
             'call_number' => $callNumber,
-            'language_id' => 'id',
+            'language_id' => $validated['language_id'] ?? 'id',
             'publish_place_id' => $place->place_id,
             'classification' => '004',
             'notes' => $validated['abstract'] ?? null,
@@ -706,7 +756,7 @@ class BiblioController extends Controller
             'biblio_id' => $biblio->biblio_id,
             'item_code' => $sBarcode,
             'call_number' => $callNumber,
-            'coll_type_id' => 2, // Reference
+            'coll_type_id' => 1, // Reference
             'location_id' => '001',
             'item_status_id' => '001',
             'input_date' => Carbon::now(),
@@ -786,6 +836,7 @@ class BiblioController extends Controller
             'topics' => 'nullable|array',
             'subjects' => 'nullable|array',
             'call_number' => 'nullable|string|max:50',
+            'language_id' => 'nullable|string|max:5',
         ]);
 
         $gmdEbook = Gmd::where('gmd_name', 'like', '%e-Book%')
@@ -838,7 +889,7 @@ class BiblioController extends Controller
             'publish_place_id' => $placeId,
             'publish_year' => $validated['publish_year'] ?? date('Y'),
             'call_number' => $callNumber,
-            'language_id' => 'id',
+            'language_id' => $validated['language_id'] ?? 'id',
             'notes' => $validated['synopsis'] ?? null,
             'image' => $imageName,
             'file_att' => $fileName ? ('files/ebooks/' . $fileName) : ($validated['ebook_url'] ?? null),
@@ -1103,7 +1154,7 @@ class BiblioController extends Controller
         $year = $request->input('year');
         $itemStatus = $request->input('item_status');
 
-        $books = Biblio::with(['authors', 'publisher', 'items', 'gmd', 'place', 'topics']);
+        $books = Biblio::with(['authors', 'publisher', 'items', 'gmd', 'place', 'topics', 'language', 'frequency']);
 
         if (!empty($search)) {
             $books->where(function ($q) use ($search) {
@@ -1122,6 +1173,9 @@ class BiblioController extends Controller
         }
 
         $gmdLabel = 'Semua Format / GMD';
+        $isSkripsiExport = false;
+        $isJurnalExport = false;
+
         if (!empty($gmdId) && $gmdId !== 'all') {
             if ($gmdId == '1' || $gmdId === 'buku') {
                 $books->where('gmd_id', 1);
@@ -1129,9 +1183,11 @@ class BiblioController extends Controller
             } elseif ($gmdId == '262' || $gmdId === 'skripsi') {
                 $books->where('gmd_id', 262);
                 $gmdLabel = 'Skripsi';
+                $isSkripsiExport = true;
             } elseif ($gmdId == '263' || $gmdId === 'jurnal') {
                 $books->where('gmd_id', 263);
                 $gmdLabel = 'Jurnal';
+                $isJurnalExport = true;
             } elseif ($gmdId == '30' || $gmdId === 'ebook') {
                 $books->where(function($q) {
                     $q->where('gmd_id', 30)->orWhereNotNull('file_att');
@@ -1150,7 +1206,14 @@ class BiblioController extends Controller
             } elseif (is_numeric($gmdId)) {
                 $books->where('gmd_id', $gmdId);
                 $selectedGmd = Gmd::find($gmdId);
-                if ($selectedGmd) $gmdLabel = $selectedGmd->gmd_name;
+                if ($selectedGmd) {
+                    $gmdLabel = $selectedGmd->gmd_name;
+                    if ((int)$gmdId === 262 || str_contains(strtolower($selectedGmd->gmd_name), 'skripsi')) {
+                        $isSkripsiExport = true;
+                    } elseif ((int)$gmdId === 263 || str_contains(strtolower($selectedGmd->gmd_name), 'jurnal')) {
+                        $isJurnalExport = true;
+                    }
+                }
             }
         }
 
@@ -1169,47 +1232,176 @@ class BiblioController extends Controller
         $title = $gmdLabel !== 'Semua Format / GMD' ? 'Laporan Koleksi ' . $gmdLabel : 'Laporan Katalog Koleksi Bibliografi';
         $filename = 'Laporan_Koleksi_' . Str::slug($gmdLabel, '_') . '_' . date('Ymd_His');
 
-        $headers = [
-            'No',
-            'Kode / Barcode Eksemplar',
-            'Judul Dokumen / Buku',
-            'Format (GMD)',
-            'Pengarang / Penulis',
-            'Penerbit',
-            'Tempat Terbit',
-            'Tahun',
-            'ISBN / ISSN',
-            'No. Panggil',
-            'Klasifikasi (DDC)',
-            'Subjek / Topik',
-            'Total Eksemplar',
-            'Status / Akses'
-        ];
-
         $rows = [];
         $no = 1;
-        foreach ($collection as $b) {
-            $itemCodes = $b->items->pluck('item_code')->filter()->implode(', ');
-            $topics = $b->topics->pluck('topic')->filter()->implode(', ');
-            $author = $b->author_names;
-            $statusText = $b->items->count() > 0 ? $b->items->count() . ' Eksemplar' : (!empty($b->file_att) ? 'Digital (e-Resource)' : 'Tersedia');
 
-            $rows[] = [
-                'no'           => $no++,
-                'item_code'    => $itemCodes ?: '-',
-                'title'        => $b->title,
-                'gmd'          => $b->gmd?->gmd_name ?? '-',
-                'author'       => $author ?: '-',
-                'publisher'    => $b->publisher?->publisher_name ?? '-',
-                'place'        => $b->place?->place_name ?? '-',
-                'year'         => $b->publish_year ?: '-',
-                'isbn'         => $b->isbn_issn ?: '-',
-                'call_number'  => $b->call_number ?: '-',
-                'ddc'          => $b->classification ?: '-',
-                'topics'       => $topics ?: '-',
-                'total_items'  => $b->items->count(),
-                'status'       => $statusText,
+        if ($isSkripsiExport) {
+            $headers = [
+                'No',
+                'Kode / Barcode Eksemplar',
+                'Judul Skripsi / Tugas Akhir',
+                'Nama Mahasiswa',
+                'NIM Mahasiswa',
+                'Program Studi',
+                'Dosen Pembimbing 1',
+                'Dosen Pembimbing 2',
+                'Tahun Kelulusan',
+                'No. Panggil',
+                'Subjek / Topik',
+                'Bahasa',
+                'Total Eksemplar',
+                'Status Berkas / Akses'
             ];
+
+            foreach ($collection as $b) {
+                $itemCodes = $b->items->pluck('item_code')->filter()->implode(', ');
+                $topics = $b->topics->pluck('topic')->filter()->implode(', ');
+                $specData = json_decode($b->spec_detail_info ?? '{}', true) ?: [];
+
+                $nim = $specData['nim'] ?? '';
+                $prodi = $specData['prodi'] ?? '';
+                $pembimbing1 = $specData['pembimbing_1'] ?? '';
+                $pembimbing2 = $specData['pembimbing_2'] ?? '';
+                $studentName = '';
+
+                if (empty($nim) || empty($pembimbing1)) {
+                    $skRow = DB::table('tb_skripsi')->where('kd_skripsi', $b->biblio_id)->first();
+                    if ($skRow) {
+                        $nim = $nim ?: $skRow->nim;
+                        $pembimbing1 = $pembimbing1 ?: $skRow->dosen;
+                        $pembimbing2 = $pembimbing2 ?: $skRow->asdos;
+                    }
+                }
+                if (!empty($b->sor) && preg_match('/^(.*?)\s*\(NIM:\s*([^\)]+)\)(?:\s*;\s*Pembimbing:\s*(.*))?$/i', $b->sor, $sm)) {
+                    $studentName = trim($sm[1]);
+                    if (empty($nim)) $nim = trim($sm[2]);
+                    if (empty($pembimbing1) && !empty($sm[3])) $pembimbing1 = trim($sm[3]);
+                }
+                if (empty($studentName)) {
+                    $firstAuthor = $b->authors->first();
+                    $studentName = $firstAuthor ? $firstAuthor->author_name : ($b->sor ?: '-');
+                }
+                if (empty($pembimbing1) && $b->authors->count() > 1) {
+                    $pembimbing1 = $b->authors->skip(1)->first()?->author_name ?? '-';
+                }
+                if (empty($pembimbing2) && $b->authors->count() > 2) {
+                    $pembimbing2 = $b->authors->skip(2)->first()?->author_name ?? '-';
+                }
+                if (empty($prodi) && !empty($b->series_title) && str_contains($b->series_title, 'Program Studi')) {
+                    $prodi = trim(str_replace('Skripsi Program Studi', '', $b->series_title));
+                }
+
+                $langName = $b->language?->language_name ?: ($b->language_id === 'en' ? 'English' : ($b->language_id === 'ar' ? 'Arab' : 'Indonesia'));
+                $statusText = $b->items->count() > 0 ? $b->items->count() . ' Eksemplar' : (!empty($b->file_att) ? 'Berkas Digital Tersedia' : 'Tersedia');
+
+                $rows[] = [
+                    'no'           => $no++,
+                    'item_code'    => $itemCodes ?: '-',
+                    'title'        => $b->title,
+                    'student_name' => $studentName ?: '-',
+                    'nim'          => $nim ?: '-',
+                    'prodi'        => $prodi ?: '-',
+                    'pembimbing_1' => $pembimbing1 ?: '-',
+                    'pembimbing_2' => $pembimbing2 ?: '-',
+                    'year'         => $b->publish_year ?: '-',
+                    'call_number'  => $b->call_number ?: '-',
+                    'topics'       => $topics ?: '-',
+                    'language'     => $langName,
+                    'total_items'  => $b->items->count(),
+                    'status'       => $statusText,
+                ];
+            }
+        } elseif ($isJurnalExport) {
+            $headers = [
+                'No',
+                'Kode / Barcode Eksemplar',
+                'Judul Jurnal / Artikel',
+                'Keterangan / Tingkat Jurnal',
+                'Edisi / Vol. No.',
+                'Kala Terbit',
+                'Pengarang / Editor',
+                'Penerbit',
+                'Tempat Terbit',
+                'Tahun',
+                'ISSN',
+                'No. Panggil',
+                'Subjek / Topik',
+                'Bahasa',
+                'Link URL OJS / Daring',
+                'Total Eksemplar'
+            ];
+
+            foreach ($collection as $b) {
+                $itemCodes = $b->items->pluck('item_code')->filter()->implode(', ');
+                $topics = $b->topics->pluck('topic')->filter()->implode(', ');
+                $author = $b->author_names;
+                $tingkatJurnal = !empty($b->spec_detail_info) ? $b->spec_detail_info : '-';
+                $frequencyName = $b->frequency?->frequency ?? '-';
+                $langName = $b->language?->language_name ?: ($b->language_id === 'en' ? 'English' : ($b->language_id === 'ar' ? 'Arab' : 'Indonesia'));
+
+                $rows[] = [
+                    'no'             => $no++,
+                    'item_code'      => $itemCodes ?: '-',
+                    'title'          => $b->title,
+                    'tingkat_jurnal' => $tingkatJurnal,
+                    'edition'        => $b->edition ?: '-',
+                    'frequency'      => $frequencyName,
+                    'author'         => $author ?: '-',
+                    'publisher'      => $b->publisher?->publisher_name ?? '-',
+                    'place'          => $b->place?->place_name ?? '-',
+                    'year'           => $b->publish_year ?: '-',
+                    'isbn'           => $b->isbn_issn ?: '-',
+                    'call_number'    => $b->call_number ?: '-',
+                    'topics'         => $topics ?: '-',
+                    'language'       => $langName,
+                    'url'            => $b->file_att ?: '-',
+                    'total_items'    => $b->items->count(),
+                ];
+            }
+        } else {
+            $headers = [
+                'No',
+                'Kode / Barcode Eksemplar',
+                'Judul Dokumen / Buku',
+                'Format (GMD)',
+                'Pengarang / Penulis',
+                'Penerbit',
+                'Tempat Terbit',
+                'Tahun',
+                'ISBN / ISSN',
+                'No. Panggil',
+                'Klasifikasi (DDC)',
+                'Subjek / Topik',
+                'Bahasa',
+                'Total Eksemplar',
+                'Status / Akses'
+            ];
+
+            foreach ($collection as $b) {
+                $itemCodes = $b->items->pluck('item_code')->filter()->implode(', ');
+                $topics = $b->topics->pluck('topic')->filter()->implode(', ');
+                $author = $b->author_names;
+                $langName = $b->language?->language_name ?: ($b->language_id === 'en' ? 'English' : ($b->language_id === 'ar' ? 'Arab' : 'Indonesia'));
+                $statusText = $b->items->count() > 0 ? $b->items->count() . ' Eksemplar' : (!empty($b->file_att) ? 'Digital (e-Resource)' : 'Tersedia');
+
+                $rows[] = [
+                    'no'           => $no++,
+                    'item_code'    => $itemCodes ?: '-',
+                    'title'        => $b->title,
+                    'gmd'          => $b->gmd?->gmd_name ?? '-',
+                    'author'       => $author ?: '-',
+                    'publisher'    => $b->publisher?->publisher_name ?? '-',
+                    'place'        => $b->place?->place_name ?? '-',
+                    'year'         => $b->publish_year ?: '-',
+                    'isbn'         => $b->isbn_issn ?: '-',
+                    'call_number'  => $b->call_number ?: '-',
+                    'ddc'          => $b->classification ?: '-',
+                    'topics'       => $topics ?: '-',
+                    'language'     => $langName,
+                    'total_items'  => $b->items->count(),
+                    'status'       => $statusText,
+                ];
+            }
         }
 
         $metadata = [
@@ -1275,6 +1467,7 @@ class BiblioController extends Controller
             'notes' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'subjects' => 'nullable|array',
+            'language_id' => 'nullable|string|max:5',
             'copies_count' => 'nullable|integer|min:1',
             'initial_item_code' => 'nullable|string|max:20',
         ]);
@@ -1322,7 +1515,7 @@ class BiblioController extends Controller
             'file_att' => !empty($validated['url']) ? trim($validated['url']) : null,
             'notes' => $validated['notes'] ?? null,
             'image' => $imageName,
-            'language_id' => 'id',
+            'language_id' => $validated['language_id'] ?? 'id',
             'input_date' => Carbon::now(),
             'last_update' => Carbon::now(),
             'uid' => auth()->id() ?? 1,

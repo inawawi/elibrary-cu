@@ -74,8 +74,11 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Tipe Koleksi *</label>
                     <select name="coll_type_id" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none">
+                        @php
+                            $defaultCollTypeId = ($isJurnal || ($isSkripsi ?? false)) ? 1 : 2;
+                        @endphp
                         @foreach($collTypes as $ct)
-                            <option value="{{ $ct->coll_type_id }}">{{ $ct->coll_type_name }}</option>
+                            <option value="{{ $ct->coll_type_id }}" {{ $ct->coll_type_id == $defaultCollTypeId ? 'selected' : '' }}>{{ $ct->coll_type_name }}</option>
                         @endforeach
                     </select>
                 </div>

@@ -90,8 +90,8 @@
                 </div>
             </div>
 
-            <!-- Tahun & Nomor Panggil -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Tahun, Nomor Panggil & Bahasa -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                     <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Tahun Kelulusan / Skripsi *</label>
                     <input type="number" min="2000" max="2099" name="publish_year" value="{{ old('publish_year', date('Y')) }}" required
@@ -102,33 +102,54 @@
                     <input type="text" name="call_number" value="{{ old('call_number') }}" placeholder="Auto: SKR-[PRODI]-[TAHUN]-[NIM]"
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono text-slate-900 dark:text-white">
                 </div>
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Bahasa</label>
+                    <select name="language_id" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold text-slate-900 dark:text-white focus:outline-none">
+                        <option value="id" {{ old('language_id', 'id') == 'id' ? 'selected' : '' }}>Indonesia (id)</option>
+                        <option value="en" {{ old('language_id') == 'en' ? 'selected' : '' }}>English (en)</option>
+                        <option value="ar" {{ old('language_id') == 'ar' ? 'selected' : '' }}>Arab / Arabic (ar)</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Kode Barcode Skripsi (Awalan S) & Subjek Reviewer Multi-select -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                        <span>Kode Barcode Eksemplar Skripsi *</span>
-                        <span class="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-bold">Auto Awalan S: {{ $nextItemCode }}</span>
-                    </label>
-                    <input type="text" name="item_code" value="{{ old('item_code', $nextItemCode) }}" required placeholder="Contoh: {{ $nextItemCode }}"
-                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    <span class="text-[10px] text-slate-400 mt-1 block">Barcode skripsi dibedakan otomatis dengan kode depan S.</span>
-                </div>
-                <div>
-                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                        <span>Subjek / Bidang Ilmu (Bisa pilih > 1)</span>
-                        <span class="text-[10px] font-normal text-purple-600 dark:text-purple-400">Ctrl/Cmd + Klik</span>
-                    </label>
-                    <select name="subjects[]" multiple size="3" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        @foreach($reviewerTopics as $sub)
-                            <option value="{{ $sub }}" {{ (is_array(old('subjects')) && in_array($sub, old('subjects'))) ? 'selected' : '' }}>
-                                {{ $sub }}
-                            </option>
+            <!-- Kode Barcode Skripsi -->
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Kode Barcode Eksemplar Skripsi *</span>
+                    <span class="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-bold">Auto Awalan S: {{ $nextItemCode }}</span>
+                </label>
+                <input type="text" name="item_code" value="{{ old('item_code', $nextItemCode) }}" required placeholder="Contoh: {{ $nextItemCode }}"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <span class="text-[10px] text-slate-400 mt-1 block">Barcode skripsi dibedakan otomatis dengan kode depan S.</span>
+            </div>
+
+            <!-- Subjek / Bidang Ilmu (Select2 Tags Creatable & Rekomendasi) -->
+            <div>
+                @php
+                    $allSelectableTopics = array_values(array_unique(array_filter(array_merge(
+                        $reviewerTopics ?? [],
+                        isset($topics) ? $topics->pluck('topic')->toArray() : []
+                    ))));
+                @endphp
+                <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Subjek / Bidang Ilmu (Bisa pilih lebih dari 1 atau ketik baru)</span>
+                    <span class="text-[11px] font-normal text-purple-600 dark:text-purple-400">Pilih atau ketik topik baru lalu Enter</span>
+                </label>
+                <select id="subjects" name="subjects[]" multiple class="w-full">
+                    @foreach($allSelectableTopics as $sub)
+                        <option value="{{ $sub }}" {{ (is_array(old('subjects')) && in_array($sub, old('subjects'))) ? 'selected' : '' }}>
+                            {{ $sub }}
+                        </option>
+                    @endforeach
+                    @if(is_array(old('subjects')))
+                        @foreach(old('subjects') as $oldSub)
+                            @if(!in_array($oldSub, $allSelectableTopics))
+                                <option value="{{ $oldSub }}" selected>{{ $oldSub }}</option>
+                            @endif
                         @endforeach
-                    </select>
-                    <span class="text-[10px] text-slate-400 mt-1 block">Pilihan: Sistem Informasi, STI, TI, Bisnis Digital, Kewirausahaan, Metodologi Penelitian, Agama, Ekonomi & Keuangan, Pancasila.</span>
-                </div>
+                    @endif
+                </select>
+                <p class="text-[10px] text-slate-400 mt-1">Pilihan rekomendasi: Sistem Informasi, TI, Bisnis Digital, Kewirausahaan, Metodologi Penelitian, Agama, dll.</p>
             </div>
 
             <!-- Abstrak Skripsi -->
@@ -169,4 +190,16 @@
         </div>
     </form>
 </div>
+
+<script>
+    $(document).ready(function() {
+        $('#subjects').select2({
+            placeholder: '-- Pilih atau Ketik Subjek / Topik (Bisa lebih dari 1) --',
+            allowClear: true,
+            tags: true,
+            width: '100%',
+            multiple: true
+        });
+    });
+</script>
 @endsection

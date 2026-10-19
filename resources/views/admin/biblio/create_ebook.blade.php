@@ -126,8 +126,8 @@
                 </div>
             </div>
 
-            <!-- ISBN & Call Number -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- ISBN, Call Number & Bahasa -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                     <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">ISBN (Opsional)</label>
                     <input type="text" name="isbn_issn" value="{{ old('isbn_issn') }}" placeholder="Contoh: 978-602-..."
@@ -137,6 +137,14 @@
                     <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Nomor Panggil (Opsional)</label>
                     <input type="text" name="call_number" value="{{ old('call_number') }}" placeholder="Auto: EB-[TAHUN]-[RANDOM]"
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-mono text-slate-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Bahasa</label>
+                    <select name="language_id" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-bold text-slate-900 dark:text-white focus:outline-none">
+                        <option value="id" {{ old('language_id', 'id') == 'id' ? 'selected' : '' }}>Indonesia (id)</option>
+                        <option value="en" {{ old('language_id') == 'en' ? 'selected' : '' }}>English (en)</option>
+                        <option value="ar" {{ old('language_id') == 'ar' ? 'selected' : '' }}>Arab / Arabic (ar)</option>
+                    </select>
                 </div>
             </div>
 

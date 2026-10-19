@@ -282,7 +282,7 @@
                                             {{ $item->location?->location_name ?: 'Rak Umum' }}
                                         </td>
                                         <td class="py-3.5 px-4 text-slate-600 dark:text-slate-400">
-                                            {{ $item->collType?->coll_type_name ?: 'Sirkulasi' }}
+                                            {{ $item->collType?->coll_type_name ?: (($book->gmd_id == 262 || $book->gmd_id == 263) ? 'Reference' : 'Textbook') }}
                                         </td>
                                         <td class="py-3.5 px-4">
                                             @if($item->activeLoan)

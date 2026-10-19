@@ -42,8 +42,8 @@
                 <input type="text" id="jurnal_title" name="title" value="{{ old('title') }}" required placeholder="Contoh: Jurnal Teknologi dan Sistem Informasi (JTSI)..." class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
             </div>
 
-            <!-- Reviewer Requirements: Kolom Edisi & Kategori Akreditasi Jurnal -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Reviewer Requirements: Kolom Edisi, Kategori Akreditasi Jurnal & Bahasa -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                         <span>Kolom Edisi (Volume & Nomor) *</span>
@@ -61,6 +61,14 @@
                         @foreach($jurnalLevels as $lvl)
                             <option value="{{ $lvl }}" {{ old('spec_detail_info') == $lvl ? 'selected' : '' }}>{{ $lvl }}</option>
                         @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Bahasa</label>
+                    <select name="language_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none">
+                        <option value="id" {{ old('language_id', 'id') == 'id' ? 'selected' : '' }}>Indonesia (id)</option>
+                        <option value="en" {{ old('language_id') == 'en' ? 'selected' : '' }}>English (en)</option>
+                        <option value="ar" {{ old('language_id') == 'ar' ? 'selected' : '' }}>Arab / Arabic (ar)</option>
                     </select>
                 </div>
             </div>

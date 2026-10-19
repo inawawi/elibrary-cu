@@ -44,7 +44,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Nomor Panggil</label>
                     <input type="text" name="call_number" value="{{ old('call_number', $biblio->call_number) }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white font-bold focus:outline-none">
@@ -56,6 +56,14 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">ISBN / ISSN</label>
                     <input type="text" name="isbn_issn" value="{{ old('isbn_issn', $biblio->isbn_issn) }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-mono text-slate-900 dark:text-white font-medium focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Bahasa</label>
+                    <select name="language_id" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none">
+                        <option value="id" {{ old('language_id', $biblio->language_id ?? 'id') == 'id' ? 'selected' : '' }}>Indonesia (id)</option>
+                        <option value="en" {{ old('language_id', $biblio->language_id) == 'en' ? 'selected' : '' }}>English (en)</option>
+                        <option value="ar" {{ old('language_id', $biblio->language_id) == 'ar' ? 'selected' : '' }}>Arab / Arabic (ar)</option>
+                    </select>
                 </div>
             </div>
 
@@ -174,12 +182,36 @@
                 </div>
             </div>
 
-            <!-- Khusus e-Book: Input Jenis e-Book -->
             @php
+                $isSkripsiBiblio = $biblio->isSkripsi();
+                $isJournalBiblio = $biblio->isJournal();
                 $isEbookBiblio = $biblio->isEbook() || $biblio->gmd_id == 30;
                 $specData = json_decode($biblio->spec_detail_info ?? '{}', true) ?: [];
                 $curEbookType = $specData['jenis_ebook'] ?? (str_contains($biblio->edition ?? '', 'e-Book (') ? trim(str_replace(['e-Book (', ')'], '', $biblio->edition)) : '');
+                
+                $jurnalLevels = [
+                    'Jurnal Nasional',
+                    'Jurnal Nasional Terakreditasi',
+                    'Jurnal Internasional',
+                    'Jurnal Internasional Bereputasi'
+                ];
+                $curJurnalLevel = $biblio->spec_detail_info;
+
+                $curNim = $specData['nim'] ?? '';
+                $curProdi = $specData['prodi'] ?? '';
+                $curPembimbing1 = $specData['pembimbing_1'] ?? '';
+                $curPembimbing2 = $specData['pembimbing_2'] ?? '';
+                if ($isSkripsiBiblio && (empty($curNim) || empty($curPembimbing1))) {
+                    $skripsiRow = \Illuminate\Support\Facades\DB::table('tb_skripsi')->where('kd_skripsi', $biblio->biblio_id)->first();
+                    if ($skripsiRow) {
+                        $curNim = $curNim ?: $skripsiRow->nim;
+                        $curPembimbing1 = $curPembimbing1 ?: $skripsiRow->dosen;
+                        $curPembimbing2 = $curPembimbing2 ?: $skripsiRow->asdos;
+                    }
+                }
             @endphp
+
+            <!-- Khusus e-Book: Input Jenis e-Book -->
             @if($isEbookBiblio)
                 <div class="p-4 rounded-2xl bg-cyan-50/50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800/60">
                     <label class="block text-xs font-bold text-cyan-900 dark:text-cyan-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
@@ -194,6 +226,80 @@
                         <option value="Monograf & Hasil Penelitian"></option>
                         <option value="Buku Populer / Umum"></option>
                     </datalist>
+                </div>
+            @endif
+
+            <!-- Khusus Jurnal: Tingkat Akreditasi & Kala Terbit -->
+            @if($isJournalBiblio)
+                <div class="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/60 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                            <span>Tingkat / Kategori Akreditasi Jurnal</span>
+                            <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Khusus Jurnal</span>
+                        </label>
+                        <select name="spec_detail_info" class="w-full px-3 py-2.5 rounded-xl border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">-- Pilih Tingkat Akreditasi Jurnal --</option>
+                            @foreach($jurnalLevels as $lvl)
+                                <option value="{{ $lvl }}" {{ old('spec_detail_info', $curJurnalLevel) == $lvl ? 'selected' : '' }}>{{ $lvl }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider mb-1.5">Kala Terbit</label>
+                        <select name="frequency_id" class="w-full px-3 py-2.5 rounded-xl border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">-- Pilih Kala Terbit --</option>
+                            @php
+                                $targetFrequencies = [
+                                    8 => 'Annually (Tahunan)',
+                                    7 => '3 Times a Year (3 kali setahun)',
+                                    6 => 'Quarterly (Triwulan)',
+                                    4 => 'Monthly (Bulanan)'
+                                ];
+                            @endphp
+                            @foreach($targetFrequencies as $fId => $fLabel)
+                                <option value="{{ $fId }}" {{ old('frequency_id', $biblio->frequency_id) == $fId ? 'selected' : '' }}>{{ $fLabel }}</option>
+                            @endforeach
+                            @foreach($frequencies as $f)
+                                @if(!array_key_exists($f->frequency_id, $targetFrequencies))
+                                    <option value="{{ $f->frequency_id }}" {{ old('frequency_id', $biblio->frequency_id) == $f->frequency_id ? 'selected' : '' }}>{{ $f->frequency }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Khusus Skripsi: NIM, Prodi, Dosen Pembimbing -->
+            @if($isSkripsiBiblio)
+                <div class="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/60 space-y-4">
+                    <p class="text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider">Data Khusus Skripsi / Tugas Akhir</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">NIM Mahasiswa</label>
+                            <input type="text" name="student_nim" value="{{ old('student_nim', $curNim) }}" placeholder="Contoh: 12220001" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono font-bold text-slate-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Program Studi</label>
+                            <select name="prodi" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white">
+                                <option value="">-- Pilih Program Studi --</option>
+                                <option value="Teknologi Informasi" {{ old('prodi', $curProdi) === 'Teknologi Informasi' ? 'selected' : '' }}>Teknologi Informasi (S1)</option>
+                                <option value="Sistem Informasi" {{ old('prodi', $curProdi) === 'Sistem Informasi' ? 'selected' : '' }}>Sistem Informasi (S1)</option>
+                                <option value="Sistem dan Teknologi Informasi" {{ old('prodi', $curProdi) === 'Sistem dan Teknologi Informasi' ? 'selected' : '' }}>Sistem dan Teknologi Informasi (S1)</option>
+                                <option value="Bisnis Digital" {{ old('prodi', $curProdi) === 'Bisnis Digital' ? 'selected' : '' }}>Bisnis Digital (S1)</option>
+                                <option value="Kewirausahaan" {{ old('prodi', $curProdi) === 'Kewirausahaan' ? 'selected' : '' }}>Kewirausahaan (S1)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Dosen Pembimbing 1</label>
+                            <input type="text" name="pembimbing_1" value="{{ old('pembimbing_1', $curPembimbing1) }}" placeholder="Nama dosen pembimbing 1 beserta gelar..." class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Dosen Pembimbing 2 (Opsional)</label>
+                            <input type="text" name="pembimbing_2" value="{{ old('pembimbing_2', $curPembimbing2) }}" placeholder="Nama dosen pembimbing 2..." class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white">
+                        </div>
+                    </div>
                 </div>
             @endif
 
@@ -238,15 +344,84 @@
                 <textarea name="notes" rows="4" class="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none">{{ old('notes', $biblio->notes) }}</textarea>
             </div>
 
-            <!-- Link URL Jurnal / Sumber Digital Online -->
-            <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                    <span>Link URL Jurnal / OJS / Sumber Daring Online</span>
-                    <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Akses Daring / OJS</span>
-                </label>
-                <input type="url" name="file_att" value="{{ old('file_att', $biblio->file_att) }}" placeholder="Contoh: https://journal.cyber-univ.ac.id/index.php/..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <p class="text-[10px] text-slate-400 mt-1">Tautan langsung ke web jurnal atau OJS untuk akses naskah publikasi secara daring (online).</p>
-            </div>
+            <!-- Berkas Digital / Link Sumber Sesuai Tipe Koleksi -->
+            @if($isJournalBiblio)
+                <div class="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800">
+                    <label class="block text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Link URL Jurnal / OJS / Sumber Daring Online</span>
+                        <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Akses Daring / OJS</span>
+                    </label>
+                    <input type="text" name="file_att" value="{{ old('file_att', $biblio->file_att) }}" placeholder="Contoh: https://journal.cyber-univ.ac.id/index.php/..." class="w-full px-4 py-2.5 rounded-xl border border-purple-300 dark:border-purple-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <p class="text-[10px] text-slate-400 mt-1">Tautan langsung ke web jurnal atau OJS untuk akses naskah publikasi secara daring (online).</p>
+                </div>
+            @elseif($isEbookBiblio)
+                <div class="p-4 rounded-2xl bg-cyan-50/50 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800 space-y-3">
+                    <label class="block text-xs font-bold text-cyan-900 dark:text-cyan-300 uppercase tracking-wider flex items-center justify-between">
+                        <span>Berkas Digital e-Book & Tautan Daring</span>
+                        <span class="text-[10px] text-cyan-600 dark:text-cyan-400 font-semibold">Khusus e-Book</span>
+                    </label>
+                    @if(!empty($biblio->file_att))
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-900 border border-cyan-200 dark:border-cyan-700/60">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <i data-lucide="file-text" class="w-4 h-4 text-cyan-600 flex-shrink-0"></i>
+                                <span class="text-xs font-mono text-slate-700 dark:text-slate-300 truncate">{{ $biblio->file_att }}</span>
+                            </div>
+                            <a href="{{ $biblio->digital_url }}" target="_blank" class="px-3 py-1 rounded-lg bg-cyan-600 text-white font-bold text-xs hover:bg-cyan-700 flex-shrink-0 ml-3">
+                                Buka / Unduh Berkas
+                            </a>
+                        </div>
+                    @endif
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Ganti Berkas e-Book (Upload PDF / ePub Baru)</label>
+                            <input type="file" name="ebook_file" accept=".pdf,.epub" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-cyan-100 file:text-cyan-700">
+                            <p class="text-[10px] text-slate-400 mt-0.5">Biarkan kosong jika tidak ingin mengganti berkas e-book.</p>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Path File / URL Tautan e-Book</label>
+                            <input type="text" name="file_att" value="{{ old('file_att', $biblio->file_att) }}" placeholder="Contoh: files/ebooks/... atau https://..." class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono text-slate-900 dark:text-white">
+                        </div>
+                    </div>
+                </div>
+            @elseif($isSkripsiBiblio)
+                <div class="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 space-y-3">
+                    <label class="block text-xs font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider flex items-center justify-between">
+                        <span>Berkas Naskah Skripsi / Tugas Akhir</span>
+                        <span class="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">Khusus Skripsi</span>
+                    </label>
+                    @if(!empty($biblio->file_att))
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-700/60">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <i data-lucide="file-text" class="w-4 h-4 text-purple-600 flex-shrink-0"></i>
+                                <span class="text-xs font-mono text-slate-700 dark:text-slate-300 truncate">{{ $biblio->file_att }}</span>
+                            </div>
+                            <a href="{{ $biblio->digital_url }}" target="_blank" class="px-3 py-1 rounded-lg bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 flex-shrink-0 ml-3">
+                                Buka / Unduh Berkas
+                            </a>
+                        </div>
+                    @endif
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Ganti Berkas Skripsi (Upload PDF Baru)</label>
+                            <input type="file" name="skripsi_file" accept=".pdf,.doc,.docx,.zip,.rar" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-700">
+                            <p class="text-[10px] text-slate-400 mt-0.5">Biarkan kosong jika tidak ingin mengganti berkas skripsi.</p>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Path File / URL Naskah</label>
+                            <input type="text" name="file_att" value="{{ old('file_att', $biblio->file_att) }}" placeholder="Contoh: files/skripsi/..." class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono text-slate-900 dark:text-white">
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Lampiran Berkas / Tautan Digital Pelengkap (Opsional)</span>
+                        <span class="text-[10px] text-slate-500 font-semibold">Tautan Digital</span>
+                    </label>
+                    <input type="text" name="file_att" value="{{ old('file_att', $biblio->file_att) }}" placeholder="Contoh: files/buku/... atau tautan e-resource eksternal" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <p class="text-[10px] text-slate-400 mt-1">Opsional untuk buku teks/referensi jika memiliki suplemen berkas atau CD/akses daring.</p>
+                </div>
+            @endif
 
             <!-- Cover Preview & Upload -->
             <div>
