@@ -322,50 +322,105 @@ class MemberController extends Controller
     }
 
     /**
-     * Sinkronisasi data Dosen & Staf dari database kepegawaian eksternal (karyawanbs1)
-     * Menggunakan koneksi READ-ONLY (tanpa mengubah sumber data)
+     * Membaca konfigurasi koneksi database eksternal dari file .dbkon
+     * Mendukung format key:value maupun KEY=value, serta pemisahan section staff & mahasiswa
      */
-    public function syncExternal()
+    private function getDbkonConfig($type = 'student')
     {
-        // 1. Cari file konfigurasi .dbkon atau .db
         $possiblePaths = [
             base_path('.dbkon'),
             base_path('../.dbkon'),
             base_path('.db'),
             base_path('../.db'),
             'c:/laragon/www/elibrarycu/.dbkon',
-            'c:/laragon/www/elibrarycu/.db',
+            'c:/laragon/www/elibrary-cu/.dbkon',
+            '/var/www/html/.dbkon',
         ];
 
-        $config = [
-            'host' => '172.16.192.47',
-            'port' => 3304,
-            'user' => 'root',
-            'pass' => 'sT4ff.Cyb3r2o26',
-            'database' => 'stafF_br1',
-            'table' => 'karyawanbs1',
-        ];
+        // Default config fallback
+        if ($type === 'student') {
+            $config = [
+                'host' => '172.16.192.47',
+                'port' => 3303,
+                'database' => 'db_student_usi',
+                'user' => 'root',
+                'pass' => 'Stud3Nt$.Cyb3r2o26',
+                'table' => 'mhs',
+            ];
+        } else {
+            $config = [
+                'host' => '172.16.192.47',
+                'port' => 3304,
+                'database' => 'stafF_br1',
+                'user' => 'root',
+                'pass' => 'sT4ff.Cyb3r2o26',
+                'table' => 'karyawanbs1',
+            ];
+        }
 
         foreach ($possiblePaths as $path) {
             if (file_exists($path)) {
                 $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                foreach ($lines as $line) {
-                    $cleanLine = trim(ltrim($line, '#;'));
-                    if (strpos($cleanLine, ':') !== false) {
-                        list($key, $val) = explode(':', $cleanLine, 2);
-                        $key = strtolower(trim($key));
-                        $val = trim($val);
-                        if (in_array($key, ['ip', 'host', 'server'])) $config['host'] = $val;
-                        if (in_array($key, ['port'])) $config['port'] = (int)$val;
-                        if (in_array($key, ['user', 'username'])) $config['user'] = $val;
-                        if (in_array($key, ['pass', 'password', 'pwd'])) $config['pass'] = $val;
-                        if (in_array($key, ['db', 'database', 'dbname'])) $config['database'] = $val;
-                        if (in_array($key, ['table', 'tbl', 'tabel'])) $config['table'] = $val;
+                $currentSection = null;
+
+                foreach ($lines as $rawLine) {
+                    $trimmed = trim($rawLine);
+                    $clean = trim(ltrim($trimmed, '#; '));
+                    if ($clean === '') {
+                        continue;
+                    }
+
+                    // Deteksi section
+                    if (stripos($clean, 'non-mahasiswa') !== false || stripos($clean, 'dosen') !== false || stripos($clean, 'karyawan') !== false) {
+                        $currentSection = 'staff';
+                        continue;
+                    } elseif (stripos($clean, 'mahasiswa') !== false || stripos($clean, 'student') !== false) {
+                        $currentSection = 'student';
+                        continue;
+                    }
+
+                    // Tentukan delimiter: ':' atau '='
+                    $sep = null;
+                    if (strpos($clean, '=') !== false) {
+                        $sep = '=';
+                    } elseif (strpos($clean, ':') !== false) {
+                        $sep = ':';
+                    }
+
+                    if ($sep !== null) {
+                        list($k, $v) = explode($sep, $clean, 2);
+                        $k = strtolower(trim($k));
+                        $v = trim($v);
+
+                        if (str_starts_with($k, 'db_')) {
+                            $k = substr($k, 3);
+                        }
+
+                        if ($currentSection === null || $currentSection === $type) {
+                            if (in_array($k, ['ip', 'host', 'server'])) $config['host'] = $v;
+                            if (in_array($k, ['port'])) $config['port'] = (int)$v;
+                            if (in_array($k, ['user', 'username'])) $config['user'] = $v;
+                            if (in_array($k, ['pass', 'password', 'pwd'])) $config['pass'] = $v;
+                            if (in_array($k, ['db', 'database', 'dbname'])) $config['database'] = $v;
+                            if (in_array($k, ['table', 'tbl', 'tabel'])) $config['table'] = $v;
+                        }
                     }
                 }
                 break;
             }
         }
+
+        return $config;
+    }
+
+    /**
+     * Sinkronisasi data Dosen & Staf dari database kepegawaian eksternal (karyawanbs1)
+     * Menggunakan koneksi READ-ONLY (tanpa mengubah sumber data)
+     */
+    public function syncExternal()
+    {
+        // 1. Ambil konfigurasi database staff dari file .dbkon
+        $config = $this->getDbkonConfig('staff');
 
         try {
             // 2. Buat koneksi PDO ke database eksternal (READ ONLY)
@@ -400,6 +455,8 @@ class MemberController extends Controller
 
             $inserted = 0;
             $updated = 0;
+            $unchanged = 0;
+            $syncedItems = [];
             $now = Carbon::now();
             $today = Carbon::today()->toDateString();
 
@@ -446,28 +503,60 @@ class MemberController extends Controller
                 $member = Member::find($nip);
 
                 if ($member) {
-                    $member->member_name = $fullName;
-                    $member->member_type_id = $typeId;
-                    $member->gender = $gender;
-                    if (!empty($birthDate)) {
+                    $changes = [];
+
+                    if ($member->member_name !== $fullName) {
+                        $member->member_name = $fullName;
+                        $changes[] = 'Nama/Gelar';
+                    }
+                    if ($member->member_type_id !== $typeId) {
+                        $member->member_type_id = $typeId;
+                        $changes[] = 'Tipe Anggota';
+                    }
+                    if ((int)$member->gender !== (int)$gender) {
+                        $member->gender = $gender;
+                        $changes[] = 'Jenis Kelamin';
+                    }
+                    if (!empty($birthDate) && $member->birth_date !== $birthDate) {
                         $member->birth_date = $birthDate;
+                        $changes[] = 'Tgl Lahir';
                     }
-                    if (!empty($jabatan)) {
+                    if (!empty($jabatan) && $member->member_notes !== $jabatan) {
                         $member->member_notes = $jabatan;
+                        $changes[] = 'Jabatan';
                     }
-                    if (!empty($email)) {
+                    if (!empty($email) && $member->member_email !== $email) {
                         $member->member_email = $email;
+                        $changes[] = 'Email';
                     }
-                    if (!empty($phone)) {
+                    if (!empty($phone) && $member->member_phone !== $phone) {
                         $member->member_phone = $phone;
+                        $changes[] = 'No. HP';
                     }
-                    if (!empty($alamat)) {
+                    if (!empty($alamat) && $member->member_address !== $alamat) {
                         $member->member_address = $alamat;
+                        $changes[] = 'Alamat';
                     }
-                    $member->expire_date = null; // Aktif selama bertugas
-                    $member->last_update = $now;
-                    $member->save();
-                    $updated++;
+
+                    if (count($changes) > 0) {
+                        $member->expire_date = null; // Aktif selama bertugas
+                        $member->last_update = $now;
+                        $member->save();
+                        $updated++;
+                        $syncedItems[] = [
+                            'status' => 'Diperbarui',
+                            'badge' => 'updated',
+                            'member_id' => $nip,
+                            'member_name' => $fullName,
+                            'prodi' => !empty($jabatan) ? $jabatan : ($isDosen ? 'Dosen' : 'Staf'),
+                            'kelas' => '-',
+                            'email' => $email ?: '-',
+                            'phone' => $phone ?: '-',
+                            'changes' => implode(', ', $changes) . ' diperbarui',
+                        ];
+                    } else {
+                        $unchanged++;
+                    }
                 } else {
                     Member::create([
                         'member_id' => $nip,
@@ -489,6 +578,17 @@ class MemberController extends Controller
                         'last_update' => $now,
                     ]);
                     $inserted++;
+                    $syncedItems[] = [
+                        'status' => 'Baru Ditambahkan',
+                        'badge' => 'new',
+                        'member_id' => $nip,
+                        'member_name' => $fullName,
+                        'prodi' => !empty($jabatan) ? $jabatan : ($isDosen ? 'Dosen' : 'Staf'),
+                        'kelas' => '-',
+                        'email' => $email ?: '-',
+                        'phone' => $phone ?: '-',
+                        'changes' => 'Anggota baru ditambahkan',
+                    ];
                 }
 
                 // Jika Dosen, daftarkan pula sebagai Author/Pengarang agar terhubung ke pembimbing tugas akhir/skripsi
@@ -505,7 +605,21 @@ class MemberController extends Controller
             }
 
             $totalProcessed = $inserted + $updated;
+            $syncReport = [
+                'type' => 'staff',
+                'title' => 'Laporan Hasil Sinkronisasi Dosen & Staf',
+                'source_db' => $config['database'],
+                'source_table' => $config['table'],
+                'total_source' => count($rows),
+                'inserted' => $inserted,
+                'updated' => $updated,
+                'unchanged' => $unchanged,
+                'total_changed' => $totalProcessed,
+                'items' => $syncedItems,
+            ];
+
             return redirect()->route('admin.member.index', ['tab' => 'non-mahasiswa'])
+                ->with('syncReport', $syncReport)
                 ->with('success', "Sinkronisasi berhasil! Sebanyak {$totalProcessed} data Dosen & Staf berhasil diproses ({$inserted} anggota baru ditambahkan, {$updated} diperbarui) tanpa mengubah sumber data eksternal.");
         } catch (\Throwable $e) {
             return redirect()->route('admin.member.index', ['tab' => 'non-mahasiswa'])
@@ -514,142 +628,94 @@ class MemberController extends Controller
     }
 
     /**
-     * Sinkronisasi data Mahasiswa dari API Web Student (students.cyber-univ.ac.id)
-     * Menggunakan koneksi READ-ONLY (GET) tanpa mengubah web/data sumber
-     * Tidak menghapus data lama, hanya menambahkan mahasiswa yang belum ada di database elibrary
+     * Sinkronisasi data Mahasiswa langsung dari Database eksternal (db_student_usi tabel mhs)
+     * Menggunakan koneksi READ-ONLY tanpa mengubah atau mempengaruhi database sumber
+     * Tidak menghapus data lama, menambahkan mahasiswa baru dan memperbarui profil jika ada perubahan
      */
     public function syncStudentApi(Request $request)
     {
-        // 1. Cari konfigurasi API dari file .dbkon atau .db
-        $possiblePaths = [
-            base_path('.dbkon'),
-            base_path('../.dbkon'),
-            base_path('.db'),
-            base_path('../.db'),
-            'c:/laragon/www/elibrarycu/.dbkon',
-            'c:/laragon/www/elibrarycu/.db',
-        ];
-
-        $apiUrl = 'https://students.cyber-univ.ac.id/api/mahasiswa/63251171';
-        $apiKey = 'randstudent851851851yes';
-
-        foreach ($possiblePaths as $path) {
-            if (file_exists($path)) {
-                $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                foreach ($lines as $line) {
-                    $cleanLine = trim(ltrim($line, '#;'));
-                    if (strpos($cleanLine, ':') !== false) {
-                        list($k, $v) = explode(':', $cleanLine, 2);
-                        $k = strtolower(trim($k));
-                        $v = trim($v);
-                        if (str_contains($k, 'api') && (str_contains($k, 'url') || str_contains($k, 'endpoint'))) {
-                            $apiUrl = $v;
-                        } elseif ((str_contains($k, 'api') && str_contains($k, 'key')) || (str_contains($k, 'key') && str_contains($k, 'api'))) {
-                            $apiKey = $v;
-                        }
-                    }
-                }
-                break;
-            }
-        }
-
-        // Bolehkan override endpoint jika dikirim dari input form/modal
-        if ($request->filled('api_url')) {
-            $apiUrl = trim($request->input('api_url'));
-        }
+        // 1. Ambil konfigurasi database mahasiswa dari file .dbkon
+        $config = $this->getDbkonConfig('student');
 
         try {
-            // 2. Kirim request GET (Read-Only) ke API Web Student
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $apiUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                "X-API-KEY: " . $apiKey,
-                "Accept: application/json",
-                "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) ElibraryCU/1.0",
+            // 2. Buat koneksi PDO ke database eksternal db_student_usi (READ ONLY)
+            $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset=utf8mb4";
+            $pdo = new \PDO($dsn, $config['user'], $config['pass'], [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                \PDO::ATTR_TIMEOUT => 5,
             ]);
 
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            curl_close($ch);
+            // 3. Ambil data dari tabel mhs dan join dengan tabel jrskampus untuk nama prodi (Strictly Read-Only Query)
+            $sql = "SELECT 
+                        m.nim, 
+                        m.nm_mhs, 
+                        m.jen_kel, 
+                        m.tgl_lhr, 
+                        m.alm, 
+                        m.no_rmh, 
+                        m.kota, 
+                        m.kd_pos, 
+                        m.telp, 
+                        m.no_telp_hp, 
+                        m.emailaddress, 
+                        m.kd_lokal, 
+                        m.kd_jrs, 
+                        m.th_masuk, 
+                        m.jenjang, 
+                        j.nm_jrs
+                    FROM mhs m
+                    LEFT JOIN jrskampus j ON m.kd_jrs = j.kd_jrs
+                    ORDER BY m.th_masuk DESC, m.nim ASC";
 
-            if ($response === false) {
-                $host = parse_url($apiUrl, PHP_URL_HOST);
-                $ip = @gethostbyname($host);
-                return redirect()->route('admin.member.index', ['tab' => 'mahasiswa'])
-                    ->with('error', "Gagal menghubungi API Web Student ({$host} [{$ip}]): {$curlError}. Jaringan/firewall server belum mengizinkan koneksi keluar ke host tersebut atau endpoint di file .dbkon sedang tidak dapat dijangkau.");
-            }
-
-            if ($httpCode === 401) {
-                return redirect()->route('admin.member.index', ['tab' => 'mahasiswa'])
-                    ->with('error', "Autentikasi API Web Student gagal (401 Unauthorized). Pastikan API Key di file .dbkon sudah sesuai.");
-            }
-
-            if ($httpCode >= 400) {
-                return redirect()->route('admin.member.index', ['tab' => 'mahasiswa'])
-                    ->with('error', "Server API Web Student mengembalikan status HTTP {$httpCode}.");
-            }
-
-            // 3. Parse JSON response
-            $json = json_decode($response, true);
-            if (!is_array($json)) {
-                return redirect()->route('admin.member.index', ['tab' => 'mahasiswa'])
-                    ->with('error', "Format data dari API Web Student tidak valid.");
-            }
-
-            // Ekstrak array data mahasiswa
-            $items = $json;
-            if (isset($json['data']) && is_array($json['data'])) {
-                $items = $json['data'];
-            } elseif (isset($json['nim']) || isset($json['member_id'])) {
-                $items = [$json];
-            }
-
-            // Jika data dari endpoint kosong
-            if (empty($items)) {
-                return redirect()->route('admin.member.index', ['tab' => 'mahasiswa'])
-                    ->with('info', "Koneksi ke API Web Student berhasil (HTTP 200), namun belum ada data mahasiswa baru yang tersedia dari endpoint '{$apiUrl}'. Seluruh data mahasiswa yang sudah ada di e-Library tetap aman.");
-            }
+            $stmt = $pdo->query($sql);
+            $rows = $stmt->fetchAll();
 
             // 4. Proses data mahasiswa: TIDAK ADA DATA LAMA YANG DIHAPUS
-            // Sinkronisasi hanya menambahkan data yang belum ada di tabel member elibrary
+            // Sinkronisasi hanya menambahkan data yang belum ada di tabel member elibrary dan update profil jika ada perubahan
             $inserted = 0;
             $updated = 0;
+            $unchanged = 0;
+            $syncedItems = [];
             $now = Carbon::now();
             $today = Carbon::today()->toDateString();
 
-            foreach ($items as $item) {
-                if (!is_array($item)) {
-                    continue;
-                }
-
-                $nim = trim($item['nim'] ?? $item['member_id'] ?? $item['nim_mhs'] ?? $item['id'] ?? '');
+            foreach ($rows as $row) {
+                $nim = trim($row['nim'] ?? '');
                 if (empty($nim)) {
                     continue;
                 }
 
-                $nama = trim($item['nama'] ?? $item['nama_mhs'] ?? $item['name'] ?? $item['member_name'] ?? '');
+                $nama = trim($row['nm_mhs'] ?? '');
                 if (empty($nama)) {
                     continue;
                 }
 
-                $email = trim($item['email'] ?? $item['email_mhs'] ?? '');
-                $phone = trim($item['telepon'] ?? $item['telp'] ?? $item['no_hp'] ?? $item['hp'] ?? $item['phone'] ?? '');
-                $alamat = trim($item['alamat'] ?? $item['alamat_mhs'] ?? $item['address'] ?? '');
-                $prodi = trim($item['prodi'] ?? $item['program_studi'] ?? $item['jurusan'] ?? $item['nama_prodi'] ?? '');
-                $kelas = trim($item['kelas'] ?? $item['kd_kelas'] ?? '');
-                
-                $sexRaw = strtoupper(trim($item['jenis_kelamin'] ?? $item['jk'] ?? $item['gender'] ?? $item['sex'] ?? ''));
-                $gender = in_array($sexRaw, ['P', '2', 'PEREMPUAN', 'FEMALE']) ? 2 : 1;
+                $email = trim($row['emailaddress'] ?? '');
+                $phone = trim($row['no_telp_hp'] ?: ($row['telp'] ?? ''));
 
-                // Format tanggal lahir yang valid
+                // Susun alamat lengkap
+                $addrParts = [];
+                if (!empty($row['alm'])) {
+                    $addr = trim($row['alm']);
+                    if (!empty($row['no_rmh'])) {
+                        $addr .= ' No. ' . trim($row['no_rmh']);
+                    }
+                    $addrParts[] = $addr;
+                }
+                if (!empty($row['kota'])) $addrParts[] = trim($row['kota']);
+                if (!empty($row['kd_pos'])) $addrParts[] = trim($row['kd_pos']);
+                $alamat = implode(', ', $addrParts);
+
+                $prodi = trim($row['nm_jrs'] ?? '');
+                $kelas = trim($row['kd_lokal'] ?? '');
+
+                // Gender (1: Laki-laki, 2: Perempuan)
+                $gender = (strtoupper(trim($row['jen_kel'] ?? '')) === 'P') ? 2 : 1;
+
+                // Format tanggal lahir
                 $birthDate = null;
-                $rawBirth = trim($item['tgl_lahir'] ?? $item['tgllahir'] ?? $item['tanggal_lahir'] ?? $item['birth_date'] ?? '');
+                $rawBirth = trim($row['tgl_lhr'] ?? '');
                 if (!empty($rawBirth) && $rawBirth !== '0000-00-00') {
                     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawBirth)) {
                         list($y, $m, $d) = explode('-', $rawBirth);
@@ -690,38 +756,91 @@ class MemberController extends Controller
                         'last_update' => $now,
                     ]);
                     $inserted++;
+                    $syncedItems[] = [
+                        'status' => 'Baru Ditambahkan',
+                        'badge' => 'new',
+                        'member_id' => $nim,
+                        'member_name' => $nama,
+                        'prodi' => $prodi ?: '-',
+                        'kelas' => $kelas ?: '-',
+                        'email' => $email ?: '-',
+                        'phone' => $phone ?: '-',
+                        'changes' => 'Anggota baru ditambahkan',
+                    ];
                 } else {
-                    // Mahasiswa sudah ada: Data TIDAK DIHAPUS, lengkapi field yang masih kosong
-                    $changed = false;
-                    if (empty($existing->member_email) && !empty($email)) {
+                    // Mahasiswa sudah ada: Data TIDAK DIHAPUS, perbarui profil jika ada perubahan
+                    $changes = [];
+
+                    if (!empty($nama) && $existing->member_name !== $nama) {
+                        $existing->member_name = $nama;
+                        $changes[] = 'Nama';
+                    }
+                    if (!empty($email) && $existing->member_email !== $email) {
                         $existing->member_email = $email;
-                        $changed = true;
+                        $changes[] = 'Email';
                     }
-                    if (empty($existing->member_phone) && !empty($phone)) {
+                    if (!empty($phone) && $existing->member_phone !== $phone) {
                         $existing->member_phone = $phone;
-                        $changed = true;
+                        $changes[] = 'No. HP';
                     }
-                    if (empty($existing->member_notes) && !empty($memberNotes)) {
+                    if (!empty($alamat) && $existing->member_address !== $alamat) {
+                        $existing->member_address = $alamat;
+                        $changes[] = 'Alamat';
+                    }
+                    if (!empty($memberNotes) && $existing->member_notes !== $memberNotes) {
                         $existing->member_notes = $memberNotes;
-                        $changed = true;
+                        $changes[] = 'Prodi/Kelas';
                     }
-                    if (empty($existing->birth_date) && !empty($birthDate)) {
+                    if (!empty($birthDate) && $existing->birth_date !== $birthDate) {
                         $existing->birth_date = $birthDate;
-                        $changed = true;
+                        $changes[] = 'Tgl Lahir';
                     }
-                    if ($changed) {
+                    if (!empty($gender) && (int)$existing->gender !== (int)$gender) {
+                        $existing->gender = $gender;
+                        $changes[] = 'Jenis Kelamin';
+                    }
+
+                    if (count($changes) > 0) {
                         $existing->last_update = $now;
                         $existing->save();
                         $updated++;
+                        $syncedItems[] = [
+                            'status' => 'Diperbarui',
+                            'badge' => 'updated',
+                            'member_id' => $nim,
+                            'member_name' => $nama,
+                            'prodi' => $prodi ?: '-',
+                            'kelas' => $kelas ?: '-',
+                            'email' => $email ?: '-',
+                            'phone' => $phone ?: '-',
+                            'changes' => implode(', ', $changes) . ' diperbarui',
+                        ];
+                    } else {
+                        $unchanged++;
                     }
                 }
             }
 
+            $totalProcessed = $inserted + $updated;
+            $syncReport = [
+                'type' => 'mahasiswa',
+                'title' => 'Laporan Hasil Sinkronisasi Mahasiswa',
+                'source_db' => $config['database'],
+                'source_table' => 'mhs',
+                'total_source' => count($rows),
+                'inserted' => $inserted,
+                'updated' => $updated,
+                'unchanged' => $unchanged,
+                'total_changed' => $totalProcessed,
+                'items' => $syncedItems,
+            ];
+
             return redirect()->route('admin.member.index', ['tab' => 'mahasiswa'])
+                ->with('syncReport', $syncReport)
                 ->with('success', "Sinkronisasi berhasil! Sebanyak {$inserted} data mahasiswa baru berhasil ditambahkan" . ($updated > 0 ? " dan {$updated} data profil diperbarui." : ".") . " Seluruh data mahasiswa lama tetap terjaga aman.");
         } catch (\Throwable $e) {
             return redirect()->route('admin.member.index', ['tab' => 'mahasiswa'])
-                ->with('error', "Gagal melakukan sinkronisasi dengan API Web Student: " . $e->getMessage());
+                ->with('error', "Gagal melakukan sinkronisasi dengan database mahasiswa: " . $e->getMessage());
         }
     }
 

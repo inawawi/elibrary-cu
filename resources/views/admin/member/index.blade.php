@@ -33,12 +33,12 @@
         <!-- Tombol Aksi Tambah & Sinkronisasi -->
         <div class="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             @if($activeTab === 'mahasiswa')
-            <!-- Tombol Sinkronisasi Mahasiswa via API Web Student -->
+            <!-- Tombol Sinkronisasi Mahasiswa via Database (db_student_usi) -->
             <form action="{{ route('admin.member.sync-student') }}" method="POST" id="form-sync-student" onsubmit="return confirmSyncStudent(event)">
                 @csrf
-                <button type="submit" id="btn-sync-student" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex-shrink-0 cursor-pointer" title="Sinkron data mahasiswa baru dari API Web Student">
+                <button type="submit" id="btn-sync-student" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex-shrink-0 cursor-pointer" title="Sinkron data mahasiswa langsung dari database mhs">
                     <i data-lucide="refresh-cw" class="w-4 h-4" id="icon-sync-student"></i>
-                    <span id="text-sync-student">Sinkron Mahasiswa (API)</span>
+                    <span id="text-sync-student">Sinkron Mahasiswa (DB)</span>
                 </button>
             </form>
             @else
@@ -398,6 +398,199 @@
     </div>
 </div>
 
+@if(session('syncReport'))
+@php $report = session('syncReport'); @endphp
+<!-- Modal Popup Tampilan Tabel Hasil Sinkronisasi -->
+<div x-data="{ 
+        modalOpen: true, 
+        searchTerm: '', 
+        filterStatus: 'all',
+        items: {{ json_encode($report['items'] ?? []) }},
+        get filteredItems() {
+            return this.items.filter(item => {
+                const term = this.searchTerm.toLowerCase().trim();
+                const matchSearch = !term || 
+                    (item.member_id && item.member_id.toLowerCase().includes(term)) ||
+                    (item.member_name && item.member_name.toLowerCase().includes(term)) ||
+                    (item.prodi && item.prodi.toLowerCase().includes(term)) ||
+                    (item.kelas && item.kelas.toLowerCase().includes(term)) ||
+                    (item.changes && item.changes.toLowerCase().includes(term));
+                
+                const matchStatus = this.filterStatus === 'all' || 
+                    (this.filterStatus === 'new' && item.badge === 'new') ||
+                    (this.filterStatus === 'updated' && item.badge === 'updated');
+
+                return matchSearch && matchStatus;
+            });
+        }
+    }" 
+    x-init="if (window.lucide) { $nextTick(() => lucide.createIcons()); }"
+    x-show="modalOpen" 
+    x-cloak
+    class="fixed inset-0 z-50 overflow-y-auto"
+    aria-labelledby="modal-title" role="dialog" aria-modal="true">
+
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+         @click="modalOpen = false"></div>
+
+    <div class="flex min-h-screen items-center justify-center p-3 sm:p-6">
+        <div class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-slate-900 text-left shadow-2xl transition-all w-full max-w-4xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+            
+            <!-- Modal Header -->
+            <div class="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between bg-slate-50/70 dark:bg-slate-800/40">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-inner">
+                        <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white" id="modal-title">
+                            {{ $report['title'] ?? 'Hasil Sinkronisasi Data Anggota' }}
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Sumber: <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">{{ $report['source_db'] }}.{{ $report['source_table'] }}</span> &bull; 
+                            Total Terbaca: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ number_format($report['total_source']) }} data</span>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="modalOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 sm:p-5 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">
+                    <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total di Sumber</div>
+                    <div class="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5">{{ number_format($report['total_source']) }}</div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40">
+                    <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">Baru Ditambahkan</div>
+                    <div class="text-lg font-black text-emerald-700 dark:text-emerald-300 mt-0.5">+{{ number_format($report['inserted']) }}</div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
+                    <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400">Data Diperbarui</div>
+                    <div class="text-lg font-black text-blue-700 dark:text-blue-300 mt-0.5">{{ number_format($report['updated']) }}</div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">
+                    <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Tidak Berubah / Sudah Sesuai</div>
+                    <div class="text-lg font-black text-slate-600 dark:text-slate-400 mt-0.5">{{ number_format($report['unchanged']) }}</div>
+                </div>
+            </div>
+
+            <!-- Filter & Search Toolbar (jika ada items) -->
+            <template x-if="items.length > 0">
+                <div class="px-5 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <button type="button" @click="filterStatus = 'all'" 
+                            :class="filterStatus === 'all' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+                            Semua Perubahan (<span x-text="items.length"></span>)
+                        </button>
+                        <button type="button" @click="filterStatus = 'new'" 
+                            :class="filterStatus === 'new' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+                            Baru ({{ $report['inserted'] }})
+                        </button>
+                        <button type="button" @click="filterStatus = 'updated'" 
+                            :class="filterStatus === 'updated' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700'"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+                            Diperbarui ({{ $report['updated'] }})
+                        </button>
+                    </div>
+
+                    <div class="relative w-full sm:w-64">
+                        <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" x-model="searchTerm" placeholder="Cari NIM, nama, prodi..." 
+                            class="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none">
+                    </div>
+                </div>
+            </template>
+
+            <!-- Table Body (Scrollable) -->
+            <div class="overflow-y-auto flex-grow p-4 sm:p-6">
+                <template x-if="items.length > 0">
+                    <div>
+                        <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100/75 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700">
+                                        <th class="py-3 px-3.5 text-center w-12">No</th>
+                                        <th class="py-3 px-3.5 w-28">Status</th>
+                                        <th class="py-3 px-3.5 w-32">NIM / ID</th>
+                                        <th class="py-3 px-3.5 min-w-[180px]">Nama Anggota</th>
+                                        <th class="py-3 px-3.5 min-w-[160px]">Prodi / Info</th>
+                                        <th class="py-3 px-3.5 min-w-[150px]">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                    <template x-for="(item, idx) in filteredItems" :key="item.member_id + '-' + idx">
+                                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                                            <td class="py-3 px-3.5 text-center font-semibold text-slate-400" x-text="idx + 1"></td>
+                                            <td class="py-3 px-3.5">
+                                                <span x-show="item.badge === 'new'" 
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                                    <i data-lucide="plus" class="w-3 h-3"></i> Baru
+                                                </span>
+                                                <span x-show="item.badge === 'updated'" 
+                                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                                    <i data-lucide="edit-3" class="w-3 h-3"></i> Diperbarui
+                                                </span>
+                                            </td>
+                                            <td class="py-3 px-3.5 font-mono font-bold text-slate-800 dark:text-slate-200" x-text="item.member_id"></td>
+                                            <td class="py-3 px-3.5">
+                                                <div class="font-bold text-slate-900 dark:text-white" x-text="item.member_name"></div>
+                                                <div class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                                                    <span x-show="item.email && item.email !== '-'" x-text="item.email"></span>
+                                                    <span x-show="item.phone && item.phone !== '-'" x-text="item.phone"></span>
+                                                </div>
+                                            </td>
+                                            <td class="py-3 px-3.5 text-slate-600 dark:text-slate-300">
+                                                <div class="font-semibold" x-text="item.prodi || '-'"></div>
+                                                <div class="text-[10px] text-slate-400" x-show="item.kelas && item.kelas !== '-'" x-text="'Kelas: ' + item.kelas"></div>
+                                            </td>
+                                            <td class="py-3 px-3.5">
+                                                <span class="text-[11px] text-slate-600 dark:text-slate-300 font-medium" x-text="item.changes"></span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div x-show="filteredItems.length === 0" class="py-8 text-center text-slate-400 text-xs">
+                            Tidak ada data yang sesuai dengan filter / pencarian "<span x-text="searchTerm"></span>".
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="items.length === 0">
+                    <div class="py-12 px-4 text-center">
+                        <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center mb-3">
+                            <i data-lucide="check" class="w-8 h-8 text-emerald-500"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">Semua Data Sudah Terkini</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+                            Tidak ada data anggota baru atau pembaruan profil yang ditemukan dari database <span class="font-mono font-semibold">{{ $report['source_db'] }}.{{ $report['source_table'] }}</span>. Seluruh data di e-Library sudah sinkron.
+                        </p>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                    Total: <strong class="text-slate-700 dark:text-slate-200" x-text="filteredItems.length"></strong> data ditampilkan
+                </div>
+                <button type="button" @click="modalOpen = false"
+                    class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md shadow-brand-500/20 transition-all cursor-pointer">
+                    Tutup Tampilan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 <script>
 (function() {
     function updateBulkBar() {
@@ -519,7 +712,7 @@ function confirmSync(e) {
 }
 
 function confirmSyncStudent(e) {
-    const confirmed = confirm('Mulai sinkronisasi data Mahasiswa dari API Web Student (students.cyber-univ.ac.id)?\n\nCATATAN:\n• Data mahasiswa yang sudah ada di e-Library TIDAK AKAN DIHAPUS.\n• Sistem hanya menambahkan mahasiswa yang belum ada di database e-Library.\n• Aplikasi sumber dibaca secara Read-Only.');
+    const confirmed = confirm('Mulai sinkronisasi data Mahasiswa langsung dari Database (db_student_usi tabel mhs)?\n\nCATATAN:\n• Data mahasiswa yang sudah ada di e-Library TIDAK AKAN DIHAPUS.\n• Sistem hanya menambahkan mahasiswa baru dan memperbarui profil jika ada perubahan.\n• Database sumber diakses secara READ-ONLY (aman tanpa perubahan pada server sumber).\n• Hasil pembaruan akan ditampilkan dalam popup tabel.');
     if (!confirmed) {
         e.preventDefault();
         return false;
@@ -533,7 +726,7 @@ function confirmSyncStudent(e) {
         btn.disabled = true;
         btn.classList.add('opacity-75', 'cursor-wait');
         icon.classList.add('animate-spin');
-        text.innerText = 'Menyinkronkan API...';
+        text.innerText = 'Menyinkronkan DB...';
     }
     return true;
 }
